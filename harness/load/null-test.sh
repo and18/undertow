@@ -49,7 +49,7 @@ sampler_start() {
               | sed 's/^undertow-k6-run-[a-f0-9]*/k6/' >> "$f"
             sleep 2
         done
-    ) &
+    ) >/dev/null 2>&1 &
     echo $!
 }
 
@@ -98,7 +98,7 @@ for phase in $PHASES; do
 
         pid=$(sampler_start "$cpuf")
 
-        docker compose --profile load run --rm -T \
+        docker compose --profile load run --rm -T -T \
             -e PHASE="$phase" -e RATE="$rate" -e DURATION="$DURATION" \
             -e OUTFILE="s-$tag" \
             k6 run --quiet /scripts/null-test.js > "$k6log" 2>&1
