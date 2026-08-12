@@ -210,6 +210,7 @@ volumes:
   pgdata:
   vmdata:
   grafanadata:
+  varnishwork:
 
 networks:
   ut:
