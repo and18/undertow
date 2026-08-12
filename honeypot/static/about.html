@@ -1,51 +1,109 @@
-# /etc/nginx/conf.d/00-agentic-log.conf
-#
-# Formato di log per la caratterizzazione del traffico agentico.
-#
-# Campi non presenti nei formati standard, e ragione per cui servono:
-#
-#   conn, conn_req   Identificativo della connessione TCP e numero progressivo
-#                    della richiesta al suo interno. Sono i due campi che
-#                    permettono di misurare il RIUSO DELLE CONNESSIONI, una
-#                    delle differenze strutturali fra client umani e agentici.
-#                    Senza questi, il dato piu' interessante e' irrecuperabile.
-#
-#   sig_agent        Header Signature-Agent (Web Bot Auth, draft IETF).
-#   sig_input        Header Signature-Input (RFC 9421).
-#                    Permettono di distinguere gli agenti che si autenticano
-#                    crittograficamente da quelli che dichiarano solo uno
-#                    user-agent falsificabile.
-#
-#   rt               Tempo di elaborazione lato server: serve a separare la
-#                    latenza indotta dal client da quella del server.
-#
-#   accept, lang     Un client reale negozia contenuto e lingua; molti agenti
-#                    no. Segnale secondario di classificazione.
-#
-# Nota: l'indirizzo IP e' registrato in chiaro perche' serve alla verifica
-# reverse-DNS dei crawler dichiarati. Va anonimizzato prima di qualsiasi
-# pubblicazione del dataset.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About &middot; The Slow Shelf</title>
+<meta name="description" content="What this site is, what it records, and why.">
+<link rel="canonical" href="https://theslowshelf.org/about.html">
+<style>
+body{max-width:44rem;margin:0 auto;padding:2rem 1.25rem;
+font:16px/1.7 Georgia,'Times New Roman',serif;color:#222;background:#fdfdfb}
+a{color:#33507a}
+header{border-bottom:1px solid #ddd;padding-bottom:.75rem;margin-bottom:2rem;
+font-family:system-ui,sans-serif;font-size:.85rem}
+footer{border-top:1px solid #ddd;margin-top:3rem;padding-top:1rem;
+font-family:system-ui,sans-serif;font-size:.8rem;color:#666}
+h1{font-size:1.6rem;line-height:1.3}
+h2{font-size:1.15rem;margin-top:2.25rem}
+ul{padding-left:1.25rem} li{margin:.35rem 0}
+p{margin:1.1rem 0}
+</style>
+</head>
+<body>
+<header><a href="/">The Slow Shelf</a> &middot;
+<a href="/library.html">Library</a> &middot;
+<a href="/authors.html">Authors</a> &middot;
+<a href="/subjects.html">Subjects</a> &middot;
+<a href="/about.html">About</a></header>
 
-log_format agentic escape=json
-  '{'
-  '"t":"$time_iso8601",'
-  '"ip":"$remote_addr",'
-  '"m":"$request_method",'
-  '"u":"$request_uri",'
-  '"s":$status,'
-  '"b":$body_bytes_sent,'
-  '"rt":$request_time,'
-  '"proto":"$server_protocol",'
-  '"conn":"$connection",'
-  '"conn_req":"$connection_requests",'
-  '"ua":"$http_user_agent",'
-  '"ref":"$http_referer",'
-  '"accept":"$http_accept",'
-  '"lang":"$http_accept_language",'
-  '"enc":"$http_accept_encoding",'
-  '"sig_agent":"$http_signature_agent",'
-  '"sig_input":"$http_signature_input",'
-  '"from":"$http_from"'
-  '}';
+<h1>About this site</h1>
 
-server_tokens off;
+<p>The Slow Shelf serves public domain literature as plain, readable web
+pages. No trackers, no analytics scripts, no advertising, no JavaScript.
+The texts come from <a href="https://www.gutenberg.org">Project
+Gutenberg</a> and remain in the public domain.</p>
+
+<p>It is also a measurement site. It exists to study how automated clients
+&mdash; search crawlers, AI training crawlers, and retrieval agents &mdash;
+behave when they encounter an ordinary text archive.</p>
+
+<h2>Why</h2>
+
+<p>In 2026, automated traffic overtook human traffic on the web for the
+first time. Most published figures come from a small number of
+infrastructure providers reporting on their own networks, in aggregate.
+There is very little public data describing what automated clients actually
+do at the level of individual requests: how deep they crawl, how many
+connections they open in parallel, whether they reuse those connections, how
+often they return, and how their arrival patterns differ from human ones.</p>
+
+<p>Those parameters matter, because web infrastructure was designed around
+human behaviour. Understanding how machine clients diverge from it is a
+prerequisite to building systems that serve both well.</p>
+
+<h2>What is recorded</h2>
+
+<p>This site records standard web server access logs. For each request:</p>
+
+<ul>
+<li>Timestamp, requested path, response status and size</li>
+<li>User-agent string and referrer, where sent</li>
+<li>Content negotiation headers (accept, language, encoding)</li>
+<li>HTTP protocol version and server-side processing time</li>
+<li>A connection identifier and per-connection request counter, used to
+    measure connection reuse</li>
+<li>HTTP Message Signature headers, where present</li>
+<li>Source IP address</li>
+</ul>
+
+<p>No cookies are set. No client-side scripts run. There is nothing here
+that tracks a visitor across sites, because there is no mechanism on this
+site capable of doing so.</p>
+
+<h2>How the data is handled</h2>
+
+<p>IP addresses are used for one purpose: verifying that clients claiming to
+be a particular crawler actually originate from that operator's published
+address ranges. Any dataset published from this work will have addresses
+removed or aggregated to network level before release.</p>
+
+<p>Analysis is concerned with aggregate behaviour &mdash; distributions,
+rates, and patterns across client classes. Individual visitors are not of
+interest and are not profiled.</p>
+
+<h2>For crawler operators</h2>
+
+<p>This site permits all crawlers, including AI training and retrieval
+crawlers. See <a href="/robots.txt">robots.txt</a>. This is deliberate: a
+site that blocks crawlers cannot observe them.</p>
+
+<p>There is no rate limiting. Crawl at whatever rate your systems normally
+use &mdash; the natural rate is the measurement.</p>
+
+<p>If you operate a crawler and would prefer your traffic excluded from the
+analysis, or if you have questions about the methodology, get in touch and
+it will be honoured.</p>
+
+<h2>Contact</h2>
+
+<p>Correspondence about this project is welcome, particularly from other
+people working on web traffic measurement.</p>
+
+<p>Findings will be published openly, including the methodology and, where
+it can be done responsibly, the underlying data.</p>
+
+<footer>Public domain texts from
+<a href="https://www.gutenberg.org">Project Gutenberg</a>.</footer>
+</body>
+</html>
