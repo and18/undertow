@@ -23,13 +23,13 @@ services:
     mem_limit: 1g
     volumes:
       - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
-    environment:
-      VARNISH_SIZE: "${VARNISH_SIZE:-256m}"
-      # Politica di sfratto e dimensione cache sono variabili di sweep.
-      VARNISH_EXTRA: "-p thread_pool_min=50 -p thread_pool_max=1000"
+      - varnishwork:/var/lib/varnish
+    # -n fissa la working directory: senza, varnishd usa una cartella
+    # basata sull'hostname e l'exporter non la trova.
     command: >
       varnishd -F -f /etc/varnish/default.vcl
-      -a http=:80,HTTP -a proxy=:8443,PROXY
+      -n /var/lib/varnish/ut
+      -a http=:80,HTTP
       -s malloc,${VARNISH_SIZE:-256m}
       -p thread_pool_min=50 -p thread_pool_max=1000
     ports:
@@ -40,13 +40,12 @@ services:
     networks: [ut]
 
   varnish-exporter:
-    image: jonnenauha/prometheus_varnish_exporter:1.6.1
+    build: ./varnish
     container_name: ut-varnish-exporter
     cpuset: "${CPUSET_OBS:-7}"
-    command: ["-verbose", "-no-exit"]
-    pid: "service:varnish"
+    command: ["-n", "/var/lib/varnish/ut", "-web.listen-address", ":9131", "-no-exit"]
     volumes:
-      - /var/lib/varnish:/var/lib/varnish
+      - varnishwork:/var/lib/varnish
     depends_on: [varnish]
     networks: [ut]
 
