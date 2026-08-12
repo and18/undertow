@@ -133,3 +133,38 @@ out, run from a datacenter host.
 
 Code: MIT. Data and figures: CC BY 4.0. Corpus: public domain
 (Project Gutenberg).
+
+## Field notes
+
+### 2026-08-12 — Site live
+
+Honeypot deployed: 2,237 pages, 50 public domain works. Sitemap submitted
+to Google and Bing; IndexNow ping to the Bing-compatible network.
+
+First traffic within hours. Three distinct classes of automated client
+appeared before any AI crawler did:
+
+- **Declared search crawlers.** YandexBot arrived first (IndexNow), then
+  Bingbot and Googlebot.
+- **Infrastructure scanners.** l9explore, zgrab, ModatScanner,
+  FlowIQLabsBot. Certificate transparency logs appear to be the discovery
+  channel — arrival preceded any search indexing.
+- **Undeclared automation presenting as browsers.** Highest-volume client
+  claimed Chrome 56 on Windows 7 and requested ~126 company-name paths
+  (`/bachem`, `/kl-gates`, `/lululemon`) that exist nowhere on the site and
+  are in no sitemap. Consistent with brand-enumeration against
+  newly registered domains. Second-highest claimed Chrome 130 and crawled
+  the index pages in order on a reused connection.
+
+Also observed: probes for `/v1/models` (OpenAI-compatible API endpoint) and
+`/wp-json`. Scanning for exposed LLM proxies is automated traffic *seeking
+AI infrastructure* — a category none of the usual taxonomies (crawler /
+agent / scraper) accounts for.
+
+**Implication for the workload model.** User-agent alone cannot separate
+traffic classes: the highest-volume automated client on day one presented
+as a consumer browser. Classification will require reverse DNS, published
+IP ranges, and behavioural signals. The most robust behavioural signal so
+far is 404s on unlinked paths — a client requesting URLs that appear in no
+page and no sitemap is guessing, not navigating, and no header can fake
+that away.
