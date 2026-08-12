@@ -1,0 +1,217 @@
+# harness/docker-compose.yml
+#
+# Sistema sotto test + osservazione.
+#
+# Le CPU sono fissate per container (cpuset) perche' senza questo non si puo'
+# dimostrare quale componente sia il collo di bottiglia. La ripartizione
+# assume almeno 8 core; adattare CPUSET_* in .env su macchine piu' piccole.
+#
+# Il generatore di carico NON e' qui: gira separatamente (vedi harness/load/).
+#
+#   docker compose up -d
+#   docker compose --profile load run --rm k6 run /scripts/null-test.js
+
+name: undertow
+
+services:
+
+  # ---------------------------------------------------------------- cache --
+  varnish:
+    image: varnish:7.5
+    container_name: ut-varnish
+    cpuset: "${CPUSET_VARNISH:-2}"
+    mem_limit: 1g
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
+    environment:
+      VARNISH_SIZE: "${VARNISH_SIZE:-256m}"
+      # Politica di sfratto e dimensione cache sono variabili di sweep.
+      VARNISH_EXTRA: "-p thread_pool_min=50 -p thread_pool_max=1000"
+    command: >
+      varnishd -F -f /etc/varnish/default.vcl
+      -a http=:80,HTTP -a proxy=:8443,PROXY
+      -s malloc,${VARNISH_SIZE:-256m}
+      -p thread_pool_min=50 -p thread_pool_max=1000
+    ports:
+      - "8080:80"
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [ut]
+
+  varnish-exporter:
+    image: jonnenauha/prometheus_varnish_exporter:1.6.1
+    container_name: ut-varnish-exporter
+    cpuset: "${CPUSET_OBS:-7}"
+    command: ["-verbose", "-no-exit"]
+    pid: "service:varnish"
+    volumes:
+      - /var/lib/varnish:/var/lib/varnish
+    depends_on: [varnish]
+    networks: [ut]
+
+  # ------------------------------------------------------------------ app --
+  app:
+    build: ./app
+    container_name: ut-app
+    cpuset: "${CPUSET_APP:-3,4}"
+    mem_limit: 2g
+    environment:
+      # --- variabili di sweep: il pool e' la risorsa limitata --------------
+      THREADS: "${THREADS:-32}"
+      BACKLOG: "${BACKLOG:-256}"
+      DB_POOL_MIN: "${DB_POOL_MIN:-2}"
+      DB_POOL_MAX: "${DB_POOL_MAX:-16}"
+      # --------------------------------------------------------------------
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: undertow
+      PGUSER: undertow
+      PGPASSWORD: undertow
+      CACHE_TTL: "${CACHE_TTL:-3600}"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [ut]
+
+  # ------------------------------------------------------------------- db --
+  db:
+    image: postgres:16-alpine
+    container_name: ut-db
+    cpuset: "${CPUSET_DB:-5}"
+    mem_limit: 2g
+    environment:
+      POSTGRES_DB: undertow
+      POSTGRES_USER: undertow
+      POSTGRES_PASSWORD: undertow
+    command: >
+      postgres
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c track_io_timing=on
+      -c log_min_duration_statement=1000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U undertow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [ut]
+
+  db-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: ut-db-exporter
+    cpuset: "${CPUSET_OBS:-7}"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://undertow:undertow@db:5432/undertow?sslmode=disable"
+    depends_on: [db]
+    networks: [ut]
+
+  # --------------------------------------------------------- osservazione --
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.102.1
+    container_name: ut-vm
+    cpuset: "${CPUSET_OBS:-7}"
+    command:
+      - "-storageDataPath=/vm"
+      - "-retentionPeriod=6"
+      - "-promscrape.config=/etc/scrape.yml"
+      # Risoluzione 1s: senza, il transitorio del collasso e' invisibile.
+      - "-promscrape.suggestScrapeInterval=false"
+    volumes:
+      - vmdata:/vm
+      - ./observability/scrape.yml:/etc/scrape.yml:ro
+    ports:
+      - "8428:8428"
+    networks: [ut]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: ut-node-exporter
+    cpuset: "${CPUSET_OBS:-7}"
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.processes"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks: [ut]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: ut-cadvisor
+    cpuset: "${CPUSET_OBS:-7}"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks: [ut]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: ut-grafana
+    cpuset: "${CPUSET_OBS:-7}"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: undertow
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafanadata:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on: [victoriametrics]
+    networks: [ut]
+
+  # ------------------------------------------------------------ strumenti --
+  loader:
+    build: ./app
+    container_name: ut-loader
+    profiles: ["tools"]
+    cpuset: "${CPUSET_APP:-3,4}"
+    environment:
+      PGHOST: db
+      PGDATABASE: undertow
+      PGUSER: undertow
+      PGPASSWORD: undertow
+    volumes:
+      - ../cache:/corpus:ro
+    command: ["python", "/srv/load_corpus.py", "--corpus", "/corpus"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [ut]
+
+  k6:
+    image: grafana/k6:0.52.0
+    container_name: ut-k6
+    profiles: ["load"]
+    cpuset: "${CPUSET_K6:-0,1}"
+    environment:
+      TARGET: "${TARGET:-http://varnish:80}"
+      K6_OUT: "${K6_OUT:-json=/results/raw.json}"
+    volumes:
+      - ./load:/scripts:ro
+      - ./results:/results
+    networks: [ut]
+
+volumes:
+  pgdata:
+  vmdata:
+  grafanadata:
+
+networks:
+  ut:
+    driver: bridge
