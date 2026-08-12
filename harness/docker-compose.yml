@@ -122,8 +122,6 @@ services:
       - "-storageDataPath=/vm"
       - "-retentionPeriod=6"
       - "-promscrape.config=/etc/scrape.yml"
-      # Risoluzione 1s: senza, il transitorio del collasso e' invisibile.
-      - "-promscrape.suggestScrapeInterval=false"
     volumes:
       - vmdata:/vm
       - ./observability/scrape.yml:/etc/scrape.yml:ro
