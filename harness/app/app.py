@@ -160,14 +160,6 @@ def health():
     return uncacheable(jsonify(ok=True))
 
 
-@app.get("/metrics")
-def metrics():
-    POOLCFG.labels("threads").set(int(os.environ.get("THREADS", "32")))
-    POOLCFG.labels("backlog").set(int(os.environ.get("BACKLOG", "256")))
-    POOLCFG.labels("db_pool_max").set(DB_POOL_MAX)
-    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
-
-
 @app.get("/")
 def index():
     stats = query(
@@ -237,6 +229,20 @@ def links(book_id, n):
         (book_id, n))
     return cacheable(jsonify(rows))
 
+
+# Le metriche NON devono passare dal pool di thread dell'applicazione:
+# quando il pool satura, lo scrape si accoderebbe e la strumentazione si
+# spegnerebbe proprio nell'istante che si vuole misurare. start_http_server
+# apre un socket e un thread propri, indipendenti da gunicorn.
+from prometheus_client import start_http_server
+
+def _init_metrics():
+    POOLCFG.labels("threads").set(int(os.environ.get("THREADS", "32")))
+    POOLCFG.labels("backlog").set(int(os.environ.get("BACKLOG", "256")))
+    POOLCFG.labels("db_pool_max").set(DB_POOL_MAX)
+    start_http_server(9000)
+
+_init_metrics()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

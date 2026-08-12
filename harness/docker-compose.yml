@@ -33,7 +33,7 @@ services:
       -s malloc,${VARNISH_SIZE:-256m}
       -p thread_pool_min=50 -p thread_pool_max=1000
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       app:
         condition: service_healthy
@@ -43,7 +43,6 @@ services:
     build: ./varnish
     container_name: ut-varnish-exporter
     cpuset: "${CPUSET_OBS:-7}"
-    command: ["-n", "/var/lib/varnish/ut", "-web.listen-address", ":9131", "-no-exit"]
     volumes:
       - varnishwork:/var/lib/varnish
     depends_on: [varnish]
@@ -129,7 +128,7 @@ services:
       - vmdata:/vm
       - ./observability/scrape.yml:/etc/scrape.yml:ro
     ports:
-      - "8428:8428"
+      - "127.0.0.1:8428:8428"
     networks: [ut]
 
   node-exporter:
@@ -142,19 +141,6 @@ services:
     pid: host
     volumes:
       - /:/host:ro,rslave
-    networks: [ut]
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: ut-cadvisor
-    cpuset: "${CPUSET_OBS:-7}"
-    privileged: true
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
     networks: [ut]
 
   grafana:
@@ -170,7 +156,7 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafanadata:/var/lib/grafana
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on: [victoriametrics]
     networks: [ut]
 

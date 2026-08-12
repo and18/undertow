@@ -1,12 +1,10 @@
-# L'exporter di Varnish non ha un'immagine pubblica: si costruisce.
-# Deve stare sulla stessa immagine di Varnish perche' invoca varnishstat,
-# e condividere la working directory con varnishd.
-
-FROM golang:1.22-alpine AS build
-RUN apk add --no-cache git
-RUN go install github.com/jonnenauha/prometheus_varnish_exporter@v1.6.1
+# Exporter minimale per Varnish, costruito sull'immagine di Varnish
+# perche' deve invocare varnishstat e vedere la stessa working directory
+# di varnishd (montata come volume condiviso).
 
 FROM varnish:7.5
 USER root
-COPY --from=build /go/bin/prometheus_varnish_exporter /usr/local/bin/
-ENTRYPOINT ["/usr/local/bin/prometheus_varnish_exporter"]
+RUN apt-get update && apt-get install -y --no-install-recommends python3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY exporter.py /usr/local/bin/exporter.py
+ENTRYPOINT ["python3", "/usr/local/bin/exporter.py"]
