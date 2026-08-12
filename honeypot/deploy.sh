@@ -35,6 +35,7 @@ sudo rsync -a --delete "$SITE_SRC/" "$WEBROOT/"
 
 log "installo i file statici"
 sudo cp "$REPO/honeypot/static/robots.txt" "$WEBROOT/robots.txt"
+sudo cp "$REPO/honeypot/static/favicon.ico" "$WEBROOT/989bd4b93d864525a40b9b19bc590fed.txt"
 sudo cp "$REPO/honeypot/static/about.html" "$WEBROOT/about.html"
 [[ -f "$REPO/honeypot/static/404.html" ]] && \
     sudo cp "$REPO/honeypot/static/404.html" "$WEBROOT/404.html"
