@@ -135,12 +135,18 @@ services:
     image: prom/node-exporter:v1.8.1
     container_name: ut-node-exporter
     cpuset: "${CPUSET_OBS:-7}"
+    # In WSL2 il mount di / con rslave non e' supportato. Si montano
+    # solo /proc e /sys, che sono le fonti effettivamente usate per CPU,
+    # memoria, rete e socket: le metriche filesystem non servono qui.
     command:
-      - "--path.rootfs=/host"
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
       - "--collector.processes"
+      - "--no-collector.filesystem"
     pid: host
     volumes:
-      - /:/host:ro,rslave
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
     networks: [ut]
 
   grafana:
