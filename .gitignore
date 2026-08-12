@@ -1,4 +1,35 @@
-OCI
-.venv
+# Contenuto generato — si rigenera, non si versiona
 site/
 cache/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Dati sperimentali (grandi; archiviati altrove)
+data/raw/
+data/parquet/
+*.parquet
+*.hdr
+
+# Log
+*.log
+logs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Segreti — non devono mai finire nel repo
+*.pem
+*.key
+.env
+.env.*
+oci_api_key*
+OCI
