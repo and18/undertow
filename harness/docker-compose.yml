@@ -192,7 +192,6 @@ services:
     cpuset: "${CPUSET_K6:-0,1}"
     environment:
       TARGET: "${TARGET:-http://varnish:80}"
-      K6_OUT: "${K6_OUT:-json=/results/raw.json}"
     volumes:
       - ./load:/scripts:ro
       - ./results:/results
