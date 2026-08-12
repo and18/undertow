@@ -98,7 +98,7 @@ for phase in $PHASES; do
 
         pid=$(sampler_start "$cpuf")
 
-        docker compose --profile load run --rm \
+        docker compose --profile load run --rm -T \
             -e PHASE="$phase" -e RATE="$rate" -e DURATION="$DURATION" \
             -e OUTFILE="s-$tag" \
             k6 run --quiet /scripts/null-test.js > "$k6log" 2>&1
