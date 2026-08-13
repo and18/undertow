@@ -59,6 +59,14 @@ sampler_peak() {
              END {for (c in m) printf "%s=%.0f ", c, m[c]}' "$1"
 }
 
+annotate() {
+    curl -s -X POST http://localhost:3000/api/annotations \
+        -H 'Content-Type: application/json' \
+        -u admin:undertow \
+        -d "{\"time\":$(date +%s000),\"tags\":[\"undertow\",\"$1\"],\"text\":\"$2\"}" \
+        > /dev/null 2>&1 || true
+}
+
 # --- verifica preliminare -------------------------------------------------
 log "verifico che lo stack risponda"
 if ! docker compose ps --status running --format '{{.Service}}' | grep -q varnish; then
@@ -96,6 +104,8 @@ for phase in $PHASES; do
         cpuf="$OUT/cpu-$tag.csv"
         k6log="$OUT/k6-$tag.log"
 
+        annotate "$phase-$rate" "Inizio gradino $rate req/s"
+
         pid=$(sampler_start "$cpuf")
 
         docker compose --profile load run --rm -T -T \
@@ -124,6 +134,8 @@ for phase in $PHASES; do
                "$rate" "$dropped" "$reqs" "$p99" "$failed" "$peak" >> "$REPORT"
 
         if [[ "$dropped" == "0" ]]; then echo "ok"; else echo "scartate: $dropped"; fi
+
+        annotate "$phase-$rate" "Fine gradino $rate req/s"
         sleep "$GAP"
     done
     echo >> "$REPORT"
