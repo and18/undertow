@@ -20,7 +20,7 @@ log() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 # --- generazione opzionale del contenuto --------------------------------
 if [[ "${1:-}" == "--generate" ]]; then
     log "rigenero il sito"
-    "$VENV/bin/python" "$REPO/honeypot/content/generate.py" --books 50
+    "$VENV/bin/python" "$REPO/honeypot/content/generate.py" --books 500
 fi
 
 if [[ ! -d "$SITE_SRC" ]]; then
