@@ -44,8 +44,8 @@ export const options = {
       duration: DURATION,
       // Larghi di proposito: se i VU finiscono, k6 scarta iterazioni per
       // un motivo che non c'entra con la capacita' reale del generatore.
-      preAllocatedVUs: Math.min(Math.max(RATE * 2, 100), 6000),
-      maxVUs: Math.min(Math.max(RATE * 4, 200), 12000),
+      preAllocatedVUs: Math.min(Math.max(Math.ceil(RATE * 0.05), 20), 500),
+      maxVUs: Math.min(Math.max(Math.ceil(RATE * 0.2), 50), 2000),
       gracefulStop: '10s',
     },
   },
