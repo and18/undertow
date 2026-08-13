@@ -34,6 +34,15 @@ CACHE_TTL = int(os.environ.get("CACHE_TTL", "3600"))
 DB_POOL_MIN = int(os.environ.get("DB_POOL_MIN", "2"))
 DB_POOL_MAX = int(os.environ.get("DB_POOL_MAX", "16"))
 
+# Insieme fisso di termini di ricerca. Il costo di una ricerca full-text
+# dipende da quanti capitoli contengono il termine — 83 ms per "whale",
+# 1330 ms per "night" — quindi un termine scelto liberamente renderebbe
+# il costo della query una variabile non controllata del workload. Con un
+# insieme fisso, campionato in modo identico dai due profili, il costo
+# medio per richiesta e' una costante nota dell'esperimento.
+# I termini vanno scelti misurandoli sul corpus: vedi tools/pick_terms.py.
+SEARCH_TERMS = []  # popolato da profiles/search-terms.txt
+
 app = Flask(__name__)
 
 # --------------------------------------------------------------- metriche --
@@ -189,18 +198,31 @@ def book(book_id):
 
 @app.get("/book/<int:book_id>/ch/<int:n>")
 def chapter(book_id, n):
-    """Capitolo: cacheable, ma nella coda lunga.
+    """Capitolo: cacheable, nella coda lunga.
 
-    E' l'endpoint che il traffico agentico colpisce e quello umano quasi
-    mai: la cache si riempie di contenuti richiesti una volta sola,
-    sfrattando quelli caldi.
+    Fa quello che fa una pagina reale: contenuto, metadati del libro,
+    indice per la navigazione, link uscenti. Una singola lookup su chiave
+    primaria costerebbe ~5 ms, e a quel costo il pool di thread non si
+    riempirebbe a nessuna composizione del traffico: l'esperimento non
+    potrebbe produrre il fenomeno che deve misurare. Il costo qui non e'
+    gonfiato artificialmente, e' quello di una pagina applicativa vera.
     """
     row = query(
         "SELECT book_id, n, title, body FROM chapters"
         " WHERE book_id = %s AND n = %s", (book_id, n), one=True)
     if not row:
         return uncacheable(jsonify(error="not found")), 404
-    return cacheable(jsonify(row))
+
+    row["book"] = query(
+        "SELECT id, title, author, n_chapters FROM books WHERE id = %s",
+        (book_id,), one=True)
+    row["toc"] = query(
+        "SELECT n, title, words FROM chapters WHERE book_id = %s ORDER BY n",
+        (book_id,))
+    row["links"] = query(
+        "SELECT dst_book, dst_n FROM links WHERE src_book = %s AND src_n = %s",
+        (book_id, n))
+    return cacheable(row and jsonify(row))
 
 
 @app.get("/search")
