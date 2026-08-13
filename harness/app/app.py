@@ -219,9 +219,23 @@ def chapter(book_id, n):
     row["toc"] = query(
         "SELECT n, title, words FROM chapters WHERE book_id = %s ORDER BY n",
         (book_id,))
-    row["links"] = query(
-        "SELECT dst_book, dst_n FROM links WHERE src_book = %s AND src_n = %s",
-        (book_id, n))
+    # Estratti dei capitoli collegati. Una pagina cacheable e' costosa da
+    # generare — e' per questo che la si mette in cache. Senza questo
+    # lavoro il capitolo costa ~6 ms, e per la legge di Little il pool da
+    # 16 thread saturerebbe solo oltre 2600 req/s all'origine: un ritmo
+    # che il GIL non lascia raggiungere. L'esperimento non potrebbe
+    # produrre il fenomeno che deve misurare.
+    row["related"] = query(
+        "SELECT c.book_id, c.n, c.title, b.title AS book_title,"
+        "       left(c.body, 400) AS excerpt,"
+        "       ts_headline('english', c.body,"
+        "                   plainto_tsquery('english', %s),"
+        "                   'MaxFragments=1, MaxWords=30') AS preview "
+        "FROM links l"
+        "  JOIN chapters c ON c.book_id = l.dst_book AND c.n = l.dst_n"
+        "  JOIN books b ON b.id = c.book_id "
+        "WHERE l.src_book = %s AND l.src_n = %s",
+        (row["title"], book_id, n))
     return cacheable(row and jsonify(row))
 
 
