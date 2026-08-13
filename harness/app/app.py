@@ -215,9 +215,16 @@ def search():
         return uncacheable(jsonify(error="q required")), 400
     rows = query(
         "SELECT book_id, n, title,"
-        "       ts_rank(tsv, plainto_tsquery('english', %s)) AS rank "
+        "       ts_rank(tsv, plainto_tsquery('english', %s)) AS rank,"
+        # ts_headline genera lo snippet evidenziato rileggendo il corpo del
+        # capitolo. E' l'operazione costosa di ogni motore di ricerca reale,
+        # ed e' cio' che porta la latenza dell'endpoint nell'ordine delle
+        # decine di millisecondi: senza, il pool di thread non si riempie
+        # mai e la saturazione da misurare non si manifesta.
+        "       ts_headline('english', body, plainto_tsquery('english', %s),"
+        "                   'MaxFragments=3, MaxWords=40') AS snippet "
         "FROM chapters WHERE tsv @@ plainto_tsquery('english', %s) "
-        "ORDER BY rank DESC LIMIT 20", (q, q))
+        "ORDER BY rank DESC LIMIT 25", (q, q, q))
     return uncacheable(jsonify(query=q, results=rows))
 
 
