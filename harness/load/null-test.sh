@@ -142,9 +142,9 @@ done
             # p99 di 17 secondi e il 3% di fallimenti descrive un sistema
             # gia' rotto, anche se il generatore ha retto il ritmo.
             ok=$(jq -r '
-                if (.metrics.dropped_iterations.values.count // 1) == 0
-                   and (.metrics.http_req_failed.values.rate // 1) < 0.001
-                   and (.metrics.http_req_duration.values["p(99)"] // 9999) < 200
+                if ((.metrics.dropped_iterations.values.count // 0) == 0)
+                   and ((.metrics.http_req_failed.values.rate // 0) < 0.001)
+                   and ((.metrics.http_req_duration.values["p(99)"] // 9999) < 200)
                 then "1" else "0" end' "$f" 2>/dev/null || echo 0)
             if [[ "$ok" == "1" ]]; then best="$rate"; else break; fi
         done
