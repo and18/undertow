@@ -24,7 +24,11 @@ import psycopg2
 
 MIN_CHAPTER_CHARS = 1200
 MAX_CHAPTERS_PER_BOOK = 60
-LINKS_PER_CHAPTER = 4
+# Dodici link uscenti per capitolo, non quattro. E' il numero di elementi
+# correlati che una pagina di CMS reale mostra, e determina il costo di
+# generazione della pagina: con quattro, il capitolo costa ~12 ms e il
+# pool di thread non potrebbe mai saturarsi sotto il tetto imposto dal GIL.
+LINKS_PER_CHAPTER = 12
 
 START_RE = re.compile(r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG.*?\*\*\*", re.I)
 END_RE = re.compile(r"\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG.*?\*\*\*", re.I)
