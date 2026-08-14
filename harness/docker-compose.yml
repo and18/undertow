@@ -177,6 +177,9 @@ services:
       PGPASSWORD: undertow
     volumes:
       - ../cache:/corpus:ro
+      # Montato invece che copiato nell'immagine: elimina ogni ambiguita'
+      # sul fatto che il container esegua la versione corrente del file.
+      - ./app/load_corpus.py:/srv/load_corpus.py:ro
     command: ["python", "/srv/load_corpus.py", "--corpus", "/corpus"]
     depends_on:
       db:
