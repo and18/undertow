@@ -56,7 +56,7 @@ export const options = {
 // Il corpus: 495 libri, fino a 60 capitoli ciascuno. Gli id non sono
 // contigui, quindi si campiona dalla lista reale raccolta in setup.
 export function setup() {
-  const res = http.get(`${TARGET}/library`);
+  const res = http.get(`${TARGET}/library`, { responseType: 'text' });
   const books = JSON.parse(res.body).map(b => ({ id: b.id, n: b.n_chapters }));
   return { books: books };
 }
