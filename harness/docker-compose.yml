@@ -54,6 +54,11 @@ services:
     container_name: ut-app
     cpuset: "${CPUSET_APP:-3,4}"
     mem_limit: 2g
+    volumes:
+      # Montato durante lo sviluppo: elimina l'ambiguita' sul fatto che il
+      # container esegua la versione corrente. Da rimuovere prima della
+      # campagna finale, cosi' l'immagine e' autocontenuta.
+      - ./app/app.py:/srv/app.py:ro
     environment:
       # --- variabili di sweep: il pool e' la risorsa limitata --------------
       THREADS: "${THREADS:-32}"
