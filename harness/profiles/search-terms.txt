@@ -1,0 +1,44 @@
+# Termini di ricerca dell'esperimento — generato da tools/pick_terms.py
+# banda: 100-200 ms  corpus: vedi harness/.env
+# generato: 2026-08-13T20:32:19+0200
+# formato: termine <tab> costo_mediano_ms <tab> risultati
+monastery	102.9	25
+fever	103.1	25
+island	104.8	25
+voyage	109.2	25
+manuscript	110.2	25
+judge	111.9	25
+desert	112.8	25
+novel	114.6	25
+nurse	117.3	25
+bridge	121.1	25
+carriage	123.3	25
+storm	124.0	25
+ship	126.0	25
+captain	126.1	25
+window	130.3	25
+altar	130.3	25
+page	132.6	25
+village	135.9	25
+regiment	140.0	25
+street	141.5	25
+chapel	141.8	25
+trial	143.1	25
+shout	143.2	25
+plague	144.4	25
+road	149.4	25
+merchant	152.2	25
+lawyer	152.4	25
+soldier	155.6	25
+marriage	159.2	25
+kiss	161.2	25
+orphan	164.1	25
+contract	169.0	25
+autumn	170.7	25
+baron	172.0	25
+rent	178.4	25
+inheritance	179.9	25
+wages	184.1	25
+sermon	189.1	25
+servant	194.7	25
+queen	198.4	25
