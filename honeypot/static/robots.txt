@@ -1,51 +1,87 @@
-# /etc/nginx/conf.d/00-agentic-log.conf
+# theslowshelf.org
 #
-# Formato di log per la caratterizzazione del traffico agentico.
+# Questo sito permette esplicitamente tutti i crawler, inclusi quelli di
+# addestramento e di recupero AI. E' l'opposto della pratica corrente ed e'
+# deliberato: il sito fa parte di un progetto di ricerca pubblico sul
+# traffico web automatizzato. Vedere /about.html.
 #
-# Campi non presenti nei formati standard, e ragione per cui servono:
-#
-#   conn, conn_req   Identificativo della connessione TCP e numero progressivo
-#                    della richiesta al suo interno. Sono i due campi che
-#                    permettono di misurare il RIUSO DELLE CONNESSIONI, una
-#                    delle differenze strutturali fra client umani e agentici.
-#                    Senza questi, il dato piu' interessante e' irrecuperabile.
-#
-#   sig_agent        Header Signature-Agent (Web Bot Auth, draft IETF).
-#   sig_input        Header Signature-Input (RFC 9421).
-#                    Permettono di distinguere gli agenti che si autenticano
-#                    crittograficamente da quelli che dichiarano solo uno
-#                    user-agent falsificabile.
-#
-#   rt               Tempo di elaborazione lato server: serve a separare la
-#                    latenza indotta dal client da quella del server.
-#
-#   accept, lang     Un client reale negozia contenuto e lingua; molti agenti
-#                    no. Segnale secondario di classificazione.
-#
-# Nota: l'indirizzo IP e' registrato in chiaro perche' serve alla verifica
-# reverse-DNS dei crawler dichiarati. Va anonimizzato prima di qualsiasi
-# pubblicazione del dataset.
+# Il contenuto e' di pubblico dominio (Project Gutenberg). Nessun diritto
+# viene rivendicato sui testi.
 
-log_format agentic escape=json
-  '{'
-  '"t":"$time_iso8601",'
-  '"ip":"$remote_addr",'
-  '"m":"$request_method",'
-  '"u":"$request_uri",'
-  '"s":$status,'
-  '"b":$body_bytes_sent,'
-  '"rt":$request_time,'
-  '"proto":"$server_protocol",'
-  '"conn":"$connection",'
-  '"conn_req":"$connection_requests",'
-  '"ua":"$http_user_agent",'
-  '"ref":"$http_referer",'
-  '"accept":"$http_accept",'
-  '"lang":"$http_accept_language",'
-  '"enc":"$http_accept_encoding",'
-  '"sig_agent":"$http_signature_agent",'
-  '"sig_input":"$http_signature_input",'
-  '"from":"$http_from"'
-  '}';
+User-agent: *
+Allow: /
 
-server_tokens off;
+# --- Addestramento e recupero AI, elencati esplicitamente ---------------
+# L'elenco nominale non e' tecnicamente necessario dato l'Allow generico,
+# ma rende la dichiarazione inequivocabile e verificabile.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: omgili
+Allow: /
+
+User-agent: Timpibot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+
+Sitemap: https://theslowshelf.org/sitemap.xml
