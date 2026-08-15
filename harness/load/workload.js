@@ -132,20 +132,31 @@ function zipfRank(N) {
   return Math.min(Math.floor(Math.pow(N, Math.random())), N - 1);
 }
 
-// Stato di attraversamento, uno per VU: ogni VU ha il proprio contesto
-// JavaScript, quindi queste variabili sono per-VU e persistono fra
-// iterazioni. Modella un crawler che scende in un libro capitolo dopo
-// capitolo prima di passare al successivo.
+// Stato di attraversamento, uno per VU.
+//
+// Il rapporto di accesso unico e' un PARAMETRO del modello, non un
+// effetto della durata del test. Zhang et al. (SoCC 2025) misurano
+// 70-100% di URL unici per gli agenti AI reali; una scansione ciclica
+// semplice su un corpus finito scende al 14% su run lunghi, perche' il
+// cursore torna sui propri passi.
+//
+// Per mantenerlo alto: ogni VU parte da una posizione casuale e avanza
+// con un passo coprimo con la dimensione del corpus, cosi' che il ciclo
+// completo copra tutto lo spazio prima di ripetersi; e riparte da una
+// nuova posizione casuale prima di chiudere il giro.
+const TRAV_STRIDE = 4093;   // primo, coprimo con 16954
+
 let cursor = -1;
-let stride = 0;
+let steps = 0;
 
 function traversalIndex(data) {
-  if (cursor < 0) {
+  if (cursor < 0 || steps >= data.total) {
     cursor = Math.floor(Math.random() * data.total);
-    stride = 1;
+    steps = 0;
   }
-  const idx = cursor % data.total;
-  cursor += stride;
+  const idx = cursor;
+  cursor = (cursor + TRAV_STRIDE) % data.total;
+  steps++;
   return idx;
 }
 
