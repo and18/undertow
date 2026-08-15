@@ -166,13 +166,17 @@ export default function (data) {
     url = `${TARGET}/book/${loc.book}/ch/${loc.n}`;
   }
 
+  // Il transpiler di k6 non supporta lo spread negli oggetti: gli header
+  // si costruiscono per assegnazione.
+  const headers = {
+    'User-Agent': agentic ? 'undertow-agent/1.0' : 'undertow-human/1.0',
+  };
+  // Il profilo umano negozia contenuto e lingua, quello agentico no.
+  // Parametro secondario, registrato ma non variato in questa fase.
+  if (!agentic) headers['Accept-Language'] = 'en-GB,en;q=0.9';
+
   const res = http.get(url, {
-    headers: {
-      'User-Agent': agentic ? 'undertow-agent/1.0' : 'undertow-human/1.0',
-      // Il profilo umano negozia contenuto e lingua, quello agentico no.
-      // Parametro secondario, registrato ma non variato in questa fase.
-      ...(agentic ? {} : { 'Accept-Language': 'en-GB,en;q=0.9' }),
-    },
+    headers: headers,
     tags: { profile: agentic ? 'agent' : 'human' },
   });
 
