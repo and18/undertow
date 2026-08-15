@@ -137,6 +137,7 @@ C=""
 for rate in $CAP_RATES; do
     printf '    %s req/s ... ' "$rate"
     cold_cache
+    sleep 30
     docker compose --profile load run --rm -T \
         -e MODEL=traversal -e RATE="$rate" -e DURATION=120s \
         -e OUTFILE="cap-$rate" -e ENDPOINT=chapter \
