@@ -61,6 +61,18 @@ cold_cache() {
 }
 
 run_k6() {  # model, rate, outfile, [alpha]
+    # Due fasi: la prima scalda la cache e viene SCARTATA, la seconda
+    # misura. Senza questa separazione l'hit ratio includerebbe i miss
+    # obbligatori del riempimento iniziale e risulterebbe molto piu'
+    # basso del valore a regime — falsando h_H e con esso tutto il
+    # modello che ne deriva.
+    docker compose --profile load run --rm -T \
+        -e MODEL="$1" -e RATE="$2" -e DURATION="${SETTLE}s" \
+        -e ALPHA="${4:-0}" -e OUTFILE="warm-$3" -e ENDPOINT=chapter \
+        k6 run --quiet /scripts/workload.js < /dev/null \
+        > "$OUT/k6-warm-$3.log" 2>&1
+    rm -f "$HARNESS/results/warm-$3.json"
+
     docker compose --profile load run --rm -T \
         -e MODEL="$1" -e RATE="$2" -e DURATION="$DURATION" \
         -e ALPHA="${4:-0}" -e OUTFILE="$3" -e ENDPOINT=chapter \
