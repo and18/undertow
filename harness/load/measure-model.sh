@@ -39,7 +39,7 @@ DURATION="${DURATION:-300s}"          # lungo: serve il regime stazionario
 SETTLE="${SETTLE:-180}"               # si campiona solo dopo questo tempo
 ALPHA_TARGET="${ALPHA_TARGET:-0.25}"  # dove si vuole il ginocchio
 PROBE_RATE="${PROBE_RATE:-400}"       # ritmo per misurare h_H e h_A
-CAP_RATES="${CAP_RATES:-100 200 300 400 500 600}"
+CAP_RATES="${CAP_RATES:-10 20 30 40 50 60 80 100}"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="$HARNESS/results/model-$STAMP"
