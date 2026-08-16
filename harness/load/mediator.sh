@@ -197,16 +197,19 @@ for size in $SIZES; do
             > "$OUT/k6-w-$tag.log" 2>&1
         rm -f "$HARNESS/results/w-$tag.json"
 
-        # Contatore e orologio prima della finestra di misura.
-        origin_before=$(vmq_sum 'ut_requests_total')
-        t_before=$(date +%s)
-
         docker compose --profile load run --rm -T \
             -e MODEL=mix -e ALPHA="$a" -e RATE="$LAMBDA" -e DURATION="${MEASURE}s" \
             -e ENDPOINT=chapter -e OUTFILE="m-$tag" \
             k6 run --quiet /scripts/workload.js < /dev/null \
             > "$OUT/k6-$tag.log" 2>&1 &
         kp=$!
+
+        # Baseline dopo l'avvio del generatore: prendendola prima, il
+        # denominatore includerebbe l'avvio del container e la finestra
+        # risulterebbe piu' lunga del periodo in cui il carico e' fluito.
+        sleep 2
+        origin_before=$(vmq_sum 'ut_requests_total')
+        t_before=$(date +%s.%N)
 
         # Campionamento diagnostico per l'intera finestra. Da qui NON esce
         # la misura del carico all'origine — quella viene dal delta del
@@ -227,7 +230,7 @@ for size in $SIZES; do
         wait "$kp" 2>/dev/null
 
         origin_after=$(vmq_sum 'ut_requests_total')
-        t_after=$(date +%s)
+        t_after=$(date +%s.%N)
 
         inf=$(awk -v s="$inf" -v n="$ns" 'BEGIN{printf "%.2f", (n>0)?s/n:0}')
 
