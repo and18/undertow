@@ -49,7 +49,7 @@ SEED="${SEED:-42}"
 
 if [[ "${DRY:-0}" == "1" ]]; then
     SIZES="128m 512m"; ALPHAS="0.00 0.50"; REPS=1
-    WARMUP=45; MEASURE=45; DRAIN=10
+    WARMUP=300; MEASURE=45; DRAIN=10
 fi
 
 OUT="${OUT:-$HARNESS/results/mediator-$(date +%Y%m%d-%H%M%S)}"
@@ -131,7 +131,7 @@ for size in $SIZES; do
         inf=0; ac=0; dc=0; ns=0
         while kill -0 $kp 2>/dev/null && [[ $ns -lt 40 ]]; do
             v=$(vmq 'ut_requests_inflight')
-            orps=$(curl -s "http://localhost:8428/api/v1/query?query=rate(ut_requests_total%5B30s%5])" \
+            orps=$(curl -s "http://localhost:8428/api/v1/query?query=sum(rate(ut_requests_total%5B30s%5D))" \
                    | jq -r '[.data.result[].value[1]|tonumber]|add // 0')
             if awk -v a="$max_orps" -v b="$orps" 'BEGIN { exit !(b > a) }'; then
                 max_orps="$orps"
@@ -179,16 +179,16 @@ done
   echo "================================================================"
   awk -F, 'NR>1 && $10!="" {
       key=$1" "$2; n[key]++; v[key,n[key]]=$10
-      hit[key]+=$12+$14; mis[key]+=$13+$15
+      hit[key]+=$12+$14; mis[key]+=$13+$15; orps[key]+=$19
   }
   END {
-    printf "%-8s %-7s %5s %11s %10s\n", "cache", "alpha", "n", "p99 med", "hit"
+    printf "%-8s %-7s %5s %11s %10s %10s\n", "cache", "alpha", "n", "p99 med", "hit", "orig rps"
     for (k in n) {
       c=n[k]
       for(i=1;i<=c;i++) for(j=i+1;j<=c;j++) if(v[k,j]+0<v[k,i]+0){t=v[k,i];v[k,i]=v[k,j];v[k,j]=t}
       m=(c%2)?v[k,(c+1)/2]:(v[k,c/2]+v[k,c/2+1])/2
       split(k,p," ")
-      printf "%-8s %-7s %5d %11.1f %10.3f\n", p[1], p[2], c, m, (hit[k]+mis[k]>0)?hit[k]/(hit[k]+mis[k]):0
+      printf "%-8s %-7s %5d %11.1f %10.3f %10.1f\n", p[1], p[2], c, m, (hit[k]+mis[k]>0)?hit[k]/(hit[k]+mis[k]):0, orps[k]/c
     }
   }' "$CSV" | (read -r h; echo "$h"; sort -k1,1 -k2,2)
 
