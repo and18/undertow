@@ -66,7 +66,12 @@ log() { printf '\033[1m==>\033[0m %s\n' "$*" | tee -a "$LOG"; }
 vmq() { curl -s "http://localhost:8428/api/v1/query?query=$1" \
         | jq -r '.data.result[0].value[1] // "0"'; }
 
-[[ -f "$CSV" ]] || echo "cache,alpha,rep,lambda,completed,dropped,failed,p50,p95,p99,p999,hit_h,miss_h,hit_a,miss_a,inflight,app_cpu,db_cpu,ts" > "$CSV"
+if [[ ! -f "$CSV" ]]; then
+    echo "cache,alpha,rep,lambda,completed,dropped,failed,p50,p95,p99,p999,hit_h,miss_h,hit_a,miss_a,inflight,app_cpu,db_cpu,origin_rps,ts" > "$CSV"
+elif ! head -n 1 "$CSV" | grep -q 'origin_rps'; then
+    tmp=$(mktemp)
+    awk -F, 'BEGIN{OFS=","} NR==1 {print $0 ",origin_rps"} NR>1 {print $0 ","}' "$CSV" > "$tmp" && mv "$tmp" "$CSV"
+fi
 
 {
   echo "MEDIATOR — $(date -Is)"
@@ -103,6 +108,7 @@ for size in $SIZES; do
 
         printf '  [%2d/%2d] %s alpha=%s rep=%s ... ' "$i" "$total" "$size" "$a" "$rep"
         tag="${size}-a${a}-r${rep}"
+        max_orps=0
 
         docker compose restart varnish >/dev/null 2>&1
         sleep 8
@@ -125,6 +131,11 @@ for size in $SIZES; do
         inf=0; ac=0; dc=0; ns=0
         while kill -0 $kp 2>/dev/null && [[ $ns -lt 40 ]]; do
             v=$(vmq 'ut_requests_inflight')
+            orps=$(curl -s "http://localhost:8428/api/v1/query?query=rate(ut_requests_total%5B30s%5])" \
+                   | jq -r '[.data.result[].value[1]|tonumber]|add // 0')
+            if awk -v a="$max_orps" -v b="$orps" 'BEGIN { exit !(b > a) }'; then
+                max_orps="$orps"
+            fi
             read -r x y <<<"$(docker stats --no-stream --format '{{.Name}} {{.CPUPerc}}' 2>/dev/null \
                 | awk '/ut-app /{gsub(/%/,"",$2); p=$2} /ut-db /{gsub(/%/,"",$2); q=$2} END{print p+0, q+0}')"
             inf=$(awk -v s="$inf" -v v="$v" 'BEGIN{print s+v}')
@@ -150,10 +161,10 @@ for size in $SIZES; do
                 (.metrics.ut_miss_zipf.values.count // 0),
                 (.metrics.ut_hit_traversal.values.count // 0),
                 (.metrics.ut_miss_traversal.values.count // 0)] | @tsv' "$f")"
-            echo "$size,$a,$rep,$LAMBDA,$comp,$drop,$fail,$p50,$p95,$p99,$p999,$hh,$mh,$ha,$ma,$inf,$ac,$dc,$(date -Is)" >> "$CSV"
-            printf 'p99=%s inflight=%s\n' "$p99" "$inf"
+            echo "$size,$a,$rep,$LAMBDA,$comp,$drop,$fail,$p50,$p95,$p99,$p999,$hh,$mh,$ha,$ma,$inf,$ac,$dc,$max_orps,$(date -Is)" >> "$CSV"
+            printf 'p99=%s inflight=%s origin_rps=%s\n' "$p99" "$inf" "$max_orps"
         else
-            echo "$size,$a,$rep,$LAMBDA,,,,,,,,,,,,$inf,$ac,$dc,$(date -Is)" >> "$CSV"
+            echo "$size,$a,$rep,$LAMBDA,,,,,,,,,,,,$inf,$ac,$dc,$max_orps,$(date -Is)" >> "$CSV"
             echo "FALLITO"
         fi
         sleep "$DRAIN"
