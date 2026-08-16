@@ -479,6 +479,30 @@ before the final campaign so the image is self-contained.
 
 ---
 
+## 15. Knee definition — pre-registered
+
+Fixed before the sweep, deliberately: a threshold chosen after seeing the
+data is chosen, however unconsciously, to make the result work.
+
+    K = inf{ alpha : p99(alpha) > 10 * p99(alpha=0) }
+
+Relative rather than absolute, so it transfers to systems with different
+baseline latency. Ten-fold degradation is far outside normal operating
+variance (measured run-to-run spread at alpha=0 is under 20%) and well
+below the collapse observed in calibration (27x).
+
+Secondary criteria, reported alongside: request completion ratio below
+99%, and pool occupancy above 90%.
+
+If the three criteria disagree, all three are reported and the
+disagreement discussed. None is selected after the fact.
+
+Operating point derived from measurement (commit 18db2f2, cache 128m):
+h_H = 0.830, h_A = 0.493, C = 74 req/s, r = 2.98, lambda_total = 260 req/s.
+Predicted knee at alpha = 0.35, with u_0 = 0.60.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
