@@ -180,7 +180,7 @@ export default function (data) {
   // Il transpiler di k6 non supporta lo spread negli oggetti: gli header
   // si costruiscono per assegnazione.
   const headers = {
-    'User-Agent': agentic ? 'undertow-agent/1.0' : 'undertow-human/1.0',
+    'User-Agent': agentic ? 'undertow-lowloc/1.0' : 'undertow-highloc/1.0',
   };
   // Il profilo umano negozia contenuto e lingua, quello agentico no.
   // Parametro secondario, registrato ma non variato in questa fase.
