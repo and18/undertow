@@ -503,3 +503,10 @@ before the final campaign so the image is self-contained.
 - **2026-08-14** — Honeypot: Googlebot vs Meta connection-reuse contrast
   recorded (339 vs 1 requests per connection). Probes for MCP transports
   observed. Collection continues; parameter extraction after ≥1 week.
+- **2026-08-15/16** — First composition sweep, 70 measurements. Knee at
+  α = 0.15, sharp (5.2× p99 for a 5-point change at constant total rate).
+  Prediction of α = 0.35 failed by 2.3×; cause identified as isolated
+  vs in-mixture hit ratio measurement. Model structure validated after
+  reparameterisation. Variance explosion at the transition observed
+  (3.4× spread across repetitions at α = 0.15, against 1.1× elsewhere).
+  See docs/findings.md.
