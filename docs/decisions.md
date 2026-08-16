@@ -503,6 +503,31 @@ Predicted knee at alpha = 0.35, with u_0 = 0.60.
 
 ---
 
+## 16. Knee reported as a band, not a point (amends §15)
+
+At the transition the outcome is probabilistic: at α = 0.15 three of five
+runs exceeded the pre-registered threshold and two did not. A single α is
+therefore not well defined. The criterion is reported as K50 and K90 —
+first α at which 50% and 90% of runs exceed the threshold — with the
+interval between them as the unstable band. The original single-threshold
+pre-registration stands as made; this refines the reporting, not the
+criterion.
+
+---
+
+## 17. Identity is never inferred from behaviour
+
+Traffic is assigned to a tier by the strongest available evidence:
+cryptographic (Web Bot Auth), provider-attributed (published IP range,
+reverse DNS), declared (user-agent), behavioural, unknown. Behavioural
+features construct workload classes; they never assign operator identity.
+
+Forced by measurement: AhrefsBot is the only signed operator on the
+honeypot and opens one connection per request, while GPTBot is unsigned
+and reuses connections 217 times. Identity and cost are independent.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
