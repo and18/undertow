@@ -208,7 +208,7 @@ for size in $SIZES; do
         # denominatore includerebbe l'avvio del container e la finestra
         # risulterebbe piu' lunga del periodo in cui il carico e' fluito.
         sleep 2
-        origin_before=$(vmq_sum 'ut_requests_total')
+        origin_before=$(vmq_sum 'sum(ut_requests_total{endpoint="chapter"})')
         t_before=$(date +%s.%N)
 
         # Campionamento diagnostico per l'intera finestra. Da qui NON esce
@@ -229,7 +229,7 @@ for size in $SIZES; do
         done
         wait "$kp" 2>/dev/null
 
-        origin_after=$(vmq_sum 'ut_requests_total')
+        origin_after=$(vmq_sum 'sum(ut_requests_total{endpoint="chapter"})')
         t_after=$(date +%s.%N)
 
         inf=$(awk -v s="$inf" -v n="$ns" 'BEGIN{printf "%.2f", (n>0)?s/n:0}')
