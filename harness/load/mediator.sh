@@ -48,7 +48,9 @@
 #
 # WORKING SET
 #
-#   245 MB, 16.954 oggetti, ~10,6 KB medi in cache dopo compressione.
+#   Footprint misurata: ~438 MB (16.954 oggetti, 25,9 KB medi in cache).
+#   I 245 MB citati in versioni precedenti erano la dimensione del testo
+#   in PostgreSQL, non quella degli oggetti memorizzati da Varnish.
 #
 # Uso:
 #   DRY=1 ./load/mediator.sh          verifica della logica, NON dati
@@ -162,7 +164,7 @@ log "$total misure, stima $(awk -v n="$total" -v w="$WARMUP" -v m="$MEASURE" \
 # --- ciclo principale ------------------------------------------------------
 i=0
 for size in $SIZES; do
-    log "cache = $size  ($(awk -v s="${size%m}" 'BEGIN{printf "%.0f", 100*s/245}')% del working set)"
+    log "cache = $size configurati"
     sed -i "s/^VARNISH_SIZE=.*/VARNISH_SIZE=$size/" .env
     docker compose up -d --force-recreate varnish >/dev/null 2>&1
     sleep 10
