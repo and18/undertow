@@ -305,10 +305,10 @@ done
   echo
   echo "COME LEGGERE"
   echo
-  echo "  Working set nominale 245 MB:"
-  echo "    128m =  52%   sotto il working set, competizione forte"
-  echo "    256m = 104%   appena sopra"
-  echo "    512m = 209%   margine ampio, nessuna competizione attesa"
+  echo "  Capacita' di cache configurata. La footprint effettiva degli"
+  echo "  oggetti in cache non e' stata misurata: i 245 MB citati altrove"
+  echo "  sono la dimensione del corpus in PostgreSQL, non quella delle"
+  echo "  risposte compresse che Varnish memorizza."
   echo
   echo "  VERIFICA DELL'ANELLO CENTRALE"
   echo "    orig prev = lambda x (1 - hit),  dedotto"
