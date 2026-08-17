@@ -528,6 +528,31 @@ and reuses connections 217 times. Identity and cost are independent.
 
 ---
 
+## 18. Cache size is stated as a ratio, and the denominator must be named
+
+"Cache larger than the working set" is meaningless without specifying
+which working set. The 245 MB figure used throughout is the corpus text
+size in PostgreSQL; what Varnish stores is gzipped JSON responses, whose
+aggregate footprint has not been measured directly. 256 MB exceeds the
+nominal figure and still exhibits contention; 512 MB does not.
+
+Every statement about cache sizing must name its denominator, and the
+effective footprint must be measured rather than derived.
+
+---
+
+## 19. Correlations along a driven chain identify nothing
+
+Where a single independent variable drives every link of a causal chain,
+every correlation along that chain approaches unity by construction.
+Reporting them as evidence of mechanism would be circular.
+
+Mechanism is established only by intervening on the hypothesised mediator
+and observing whether the effect disappears. This is the design of F6 and
+should be the design of any subsequent mechanistic claim in this project.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
@@ -559,3 +584,11 @@ and reuses connections 217 times. Identity and cost are independent.
   reparameterisation. Variance explosion at the transition observed
   (3.4× spread across repetitions at α = 0.15, against 1.1× elsewhere).
   See docs/findings.md.
+- **2026-08-16** — Mediator intervention (45 measurements, 3 cache sizes,
+  α to 1.00). Knee at α=0.30 with 128 MB, α=1.00 with 256 MB, absent with
+  512 MB. At α=0.50, cache size alone moves p99 from 3096 ms to 1 ms.
+  Cost inverts at large cache: low-locality reaches hit=1.000 against
+  Zipf's 0.980. Offered and served origin load agree to 4–7% below
+  saturation and diverge above it, with served pinned at 74–76 req/s,
+  consistent with the independently measured capacity. Cache contention
+  strongly supported as the causal mediator. See docs/findings.md §F6.

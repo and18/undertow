@@ -30,12 +30,12 @@ profile is Phase 4F and has not been done.
 **Configuration.** Commit 6f2c2e7. 16-core host (WSL2, Ryzen AI 7 350),
 CPU-pinned: k6 on cores 0–3, Varnish 4–7, app 8–9, PostgreSQL 10–11,
 observability 14–15. `THREADS=8`, `BACKLOG=128`, `DB_POOL_MAX=12`,
-`VARNISH_SIZE=128m` (52% of the 245 MB working set). Corpus: 495 books,
-16,954 chapters, 203,437-edge link graph, fixed seed. Cacheable endpoint
-only. **Total arrival rate held constant at 260 req/s throughout.** Cold
-cache before every measurement; 180 s warm-up discarded; 180 s measured.
-70 measurements, randomised execution order (seed 42), 5 repetitions per
-point and 10 at α ∈ {0.30, 0.35, 0.40}.
+`VARNISH_SIZE=128m`. Corpus: 495 books, 16,954 chapters, 203,437-edge
+link graph, fixed seed. Cacheable endpoint only. **Total arrival rate
+held constant at 260 req/s throughout.** Cold cache before every
+measurement; 180 s warm-up discarded; 180 s measured. 70 measurements,
+randomised execution order (seed 42), 5 repetitions per point and 10 at
+α ∈ {0.30, 0.35, 0.40}.
 
 **Result.**
 
@@ -60,8 +60,7 @@ change in traffic composition**, at constant total arrival rate.
 **This is not "more load breaks things".** Offered load is identical at
 every point. Only composition changes.
 
-**Amplification.** This is the quantity that distinguishes the result
-from prior work. Origin load is λ·(1 − h):
+**Amplification.** Origin load is λ·(1 − h):
 
     α = 0.00 → 260 × 0.171 = 44.5 req/s
     α = 0.15 → 260 × 0.266 = 69.2 req/s
@@ -81,13 +80,7 @@ falls just below saturation. This is *consistent with* the rapid growth
 of queueing delay as utilisation approaches capacity. It is not a
 validated fit: no queueing model has been specified, no service-time
 distribution measured, no theoretical curve compared against data.
-Claiming agreement with theory would require all four. Recorded as an
-open direction, not a result.
-
-**Caveat on C.** Capacity C = 74 req/s was measured under `THREADS=8`,
-`VARNISH_SIZE=128m`, `DB_POOL_MAX=12`. Any quantitative use of C under a
-different configuration requires re-measurement — including the mediator
-experiment, which changes cache size.
+Recorded as an open direction, not a result.
 
 ---
 
@@ -109,9 +102,7 @@ revision of this document, and because it illustrates why inference from
 an aggregate must not substitute for the disaggregated measurement when
 the latter is available — and it was, in the same CSV.
 
-**Direct measurement.** Per-class hit counters were recorded per run
-(`ut_hit_zipf`, `ut_miss_zipf`, `ut_hit_traversal`,
-`ut_miss_traversal`). Disaggregating the sweep:
+**Direct measurement.**
 
 | α | h high-locality | h low-locality | h total |
 |---|---|---|---|
@@ -129,18 +120,18 @@ the latter is available — and it was, in the same CSV.
 
 Two effects, in opposite directions:
 
-- **High-locality degrades modestly**: 0.829 → 0.777 across the full
-  range. Popular content is requested often enough to survive eviction
-  pressure. The decline is monotonic over eleven consecutive points,
-  which makes noise an unlikely explanation.
+- **High-locality degrades modestly**: 0.829 → 0.777. Popular content is
+  requested often enough to survive eviction pressure. The decline is
+  monotonic over eleven consecutive points, which makes noise an unlikely
+  explanation.
 - **Low-locality *improves***: 0.296 → 0.401. As its share grows, the
   low-locality class accumulates cache residency and begins to benefit
-  from its own long tail. This was not anticipated and runs against the
-  intuition that a scanning workload can never benefit from caching.
+  from its own long tail. Not anticipated, and against the intuition that
+  a scanning workload can never benefit from caching.
 
 **Decomposition at α = 0.50.** With both per-class ratios frozen at their
 α → 0 values, the aggregate would be 0.5 × 0.829 + 0.5 × 0.296 = 0.563.
-Observed: 0.589. The difference decomposes as:
+Observed: 0.589.
 
 | | change | contribution to h_total |
 |---|---|---|
@@ -148,8 +139,7 @@ Observed: 0.589. The difference decomposes as:
 | low-locality | 0.296 → 0.401 | **+0.053** |
 | net | | **+0.026** |
 
-**The interaction is bidirectional and its net sign is positive.** The
-low-locality class gains more than the high-locality class loses.
+**The interaction is bidirectional and its net sign is positive.**
 
 **What this means for the model.** The failure was not interference
 degrading the high-locality class — that effect exists but is small. The
@@ -165,18 +155,15 @@ functions of composition, not parameters.
 **Stated for others.** Any mixture model of traffic classes parameterised
 with per-class hit ratios measured in isolation will misestimate the
 tolerable fraction of the aggressive class — here by 2.3×, in the
-optimistic direction. This does not appear to be stated in the caching
-literature.
+optimistic direction.
 
 **Caveat.** At α = 0.05 the low-locality hit ratio rests on 5% of a run's
-requests; that point is the least reliable in the table. Per-point
-confidence intervals have not been computed.
+requests; that point is the least reliable. Per-point confidence
+intervals have not been computed.
 
 ---
 
 ## F3. The transition is bimodal before it is broken
-
-Dispersion across repetitions is not uniform:
 
 | α | individual p99 values (ms) | spread |
 |---|---|---|
@@ -190,30 +177,36 @@ Below the knee the system is predictable. Above it, predictably broken.
 by more than 3×.** Two of five runs at α = 0.15 stayed under the
 pre-registered threshold; three did not.
 
+**Independent replication.** The mediator campaign (F6), a separate
+experiment run a day later with three repetitions, gave a median p99 of
+944 ms at 128 MB / α = 0.15 — *below* the 10× threshold, where F1 gave
+1476 ms, *above* it. Same configuration, opposite verdicts. This is not a
+contradiction between the experiments: it is the unstable band,
+reproduced independently.
+
 **Operational implication.** The danger is not that the system becomes
 slow. It stops being *predictable* before it becomes slow. An operator
 watching medians — or p95 averaged over hours — sees nothing until the
 collapse. The variance moves first.
 
-Working name for this region: **the unstable band**. It is not the knee,
-which is a threshold; it is the interval in which the outcome becomes a
-coin flip.
+Working name for this region: **the unstable band**.
 
-**Consequence for the knee definition.** Because the outcome at α = 0.15
-is probabilistic, a single threshold is not well defined. The
-pre-registered criterion should be reported as two quantities:
+**Consequence for the knee definition.** Because the outcome is
+probabilistic, a single threshold is not well defined. The criterion is
+reported as two quantities:
 
     K50 = first α at which >=50% of runs exceed the threshold
     K90 = first α at which >=90% of runs exceed the threshold
 
-with [K50, K90] reported as the unstable band. On these data K50 = 0.15
-and K90 = 0.20, but with five repetitions those estimates are coarse.
+with [K50, K90] as the unstable band. On the F1 data K50 = 0.15 and
+K90 = 0.20; with five repetitions those estimates are coarse, and the
+three repetitions of F6 are not sufficient to refine them.
 
 **Caveat.** Five repetitions suffice to observe anomalous dispersion, not
 to establish bimodality. Whether the distribution is genuinely bimodal or
 merely heavy-tailed cannot be settled from these data. A dedicated
 experiment is required: α from 0.12 to 0.18 in steps of 0.01, at least 20
-repetitions, full latency distributions rather than summary percentiles.
+repetitions, full latency distributions.
 
 ---
 
@@ -229,25 +222,17 @@ system queues rather than rejects.
 
 **Prediction, untested.** Varying `BACKLOG` (64, 128, 256) should move
 the plateau roughly proportionally while leaving the *position* of the
-knee unchanged. If confirmed, this separates two quantities:
-
-- **where** the system breaks — set by cache behaviour and origin
-  capacity;
-- **how badly** it breaks — set by admission policy.
-
-This is the empirical link between the measurement and the mitigation
-argument: admission control does not prevent the transition, it bounds
-the consequences. The arithmetic above is suggestive, not evidence.
+knee unchanged. If confirmed, this separates **where** the system breaks
+(cache behaviour and origin capacity) from **how badly** it breaks
+(admission policy). The arithmetic above is suggestive, not evidence.
 
 ---
 
 ## F5. Honeypot: identity and behaviour are independent
 
 **Status: preliminary.** 82,618 requests over 4.5 days (2026-08-12 to
-2026-08-16), roughly 24,000/day once the site was indexed. No
-quantitative claim will be published on fewer than eight weeks. The
-contrasts below are recorded because they are large, and because one of
-them changes how the classification problem should be framed.
+2026-08-16), roughly 24,000/day once indexed. No quantitative claim will
+be published on fewer than eight weeks.
 
 | class | requests | req/connection | req/unique URL | 404s |
 |---|---|---|---|---|
@@ -275,8 +260,7 @@ behaved" — n = 1 operator, and a *training* crawler rather than an agent.
 
 **Genuinely agentic traffic — retrieval fetchers acting for a user in
 real time — amounts to 16 requests out of 82,618.** The honeypot is
-currently measuring automated web traffic, not agentic traffic. That
-distinction must be maintained in anything published from it.
+currently measuring automated web traffic, not agentic traffic.
 
 **The finding worth keeping: identity and behaviour are independent.**
 
@@ -286,16 +270,14 @@ scheme — and it opens a fresh TCP connection for every single request,
 exactly like Meta. GPTBot, which offers no cryptographic identity at all,
 reuses connections 217 times on average.
 
-**Verifiable identity says nothing about infrastructure cost.** A scheme
-that authenticates crawlers does not, by itself, distinguish expensive
-ones from cheap ones. A policy built on identity alone — admit the
-signed, reject the unsigned — will admit expensive traffic and reject
-cheap traffic. This is an argument for class-based resource budgeting
-over identity-based admission, and it arrived from measurement rather
-than from the design.
+**Verifiable identity says nothing about infrastructure cost.** A policy
+built on identity alone — admit the signed, reject the unsigned — will
+admit expensive traffic and reject cheap traffic. This is an argument for
+class-based resource budgeting over identity-based admission, and it
+arrived from measurement rather than from the design.
 
-**A classification hierarchy follows.** Traffic is assigned to a tier by
-the strongest available evidence:
+**Classification hierarchy.** Traffic is assigned to a tier by the
+strongest available evidence:
 
 1. cryptographically authenticated (Web Bot Auth signature verifies)
 2. provider-attributed (source address in a published range, reverse DNS)
@@ -303,18 +285,126 @@ the strongest available evidence:
 4. behavioural (no trusted identity; observed access pattern)
 5. unknown
 
-With one rule: **identity is never inferred from behaviour.** Behavioural
-features construct workload classes; they do not assign operator
-identity. On day one the highest-volume automated client presented as
-Chrome 42 on Windows 7 — behaviour showed it was automated, but could not
-show whose.
+With one rule: **identity is never inferred from behaviour.**
 
 **Caveats.** 2026-08-12 and 2026-08-16 are partial days. Logs were
-concatenated from rotated archives in an order that was not strictly
-chronological, which does not affect aggregate counts but precludes
-time-series analysis without re-sorting. The `browser-like` class
-includes the author's own test traffic and the deployment health checks,
-not yet excluded.
+concatenated from rotated archives in a non-chronological order, which
+does not affect aggregate counts but precludes time-series analysis
+without re-sorting. The `browser-like` class includes the author's own
+test traffic and the deployment health checks, not yet excluded.
+
+---
+
+## F6. Removing cache-capacity pressure removes the transition
+
+**This is the central result.** The preceding findings establish a
+phenomenon and a correlated chain. Because α drives every link of that
+chain by construction, correlations along it identify nothing. F6
+intervenes on the hypothesised mediator directly.
+
+**Question.** Does eliminating contention for cache space eliminate the
+low-locality-induced origin saturation?
+
+**Configuration.** Commit 34027a7. Same host and pinning as F1.
+`THREADS=8`, `BACKLOG=128`, `DB_POOL_MAX=12`, λ = 260 req/s throughout.
+Cache size varied across three values; α across five; 3 repetitions;
+45 measurements. Cold cache before every point; **600 s warm-up
+discarded** (the validated minimum — see corrections), 180 s measured.
+α and repetition randomised within each cache size; cache size not
+randomised, since changing it requires restarting Varnish.
+
+**Result.**
+
+| cache | α | p99 median (ms) | hit | origin offered | origin served |
+|---|---|---|---|---|---|
+| **128 MB** | 0.00 | 121.8 | 0.827 | 44.9 | 47.6 |
+| | 0.15 | 944.1 | 0.732 | 69.6 | 74.0 |
+| | 0.30 | **2982.0** | 0.671 | 85.5 | 75.5 |
+| | 0.50 | 3095.8 | 0.594 | 105.5 | 74.7 |
+| | 1.00 | 3027.1 | 0.470 | 137.7 | 75.6 |
+| **256 MB** | 0.00 | 30.5 | 0.931 | 18.0 | 19.2 |
+| | 0.15 | 62.7 | 0.868 | 34.3 | 35.9 |
+| | 0.30 | 99.6 | 0.823 | 46.0 | 48.0 |
+| | 0.50 | 252.3 | 0.763 | 61.6 | 64.8 |
+| | 1.00 | **689.2** | 0.730 | 70.1 | 73.0 |
+| **512 MB** | 0.00 | 23.0 | 0.980 | 5.1 | 6.1 |
+| | 0.15 | 20.0 | 0.989 | 3.0 | 3.7 |
+| | 0.30 | 1.0 | 0.995 | 1.4 | 2.0 |
+| | 0.50 | 1.0 | 0.997 | 0.8 | 1.3 |
+| | 1.00 | 1.0 | 1.000 | 0.0 | 0.2 |
+
+Applying the pre-registered criterion (`p99 > 10 × p99(α=0)`) within each
+cache size:
+
+| cache | threshold | knee |
+|---|---|---|
+| 128 MB | 1218 ms | **α = 0.30** |
+| 256 MB | 305 ms | **α = 1.00** |
+| 512 MB | 230 ms | **not observed through α = 1.00** |
+
+**Increasing cache capacity systematically shifts the transition toward
+higher low-locality fractions and eventually eliminates it within the
+tested range.** With three cache sizes and a discrete threshold, this
+establishes the direction of the shift, not the functional form of
+K(S/W).
+
+**The single most striking comparison.** At α = 0.50, with identical
+total load, identical application, identical database, and identical
+workload, changing only the cache size takes the p99 from **3096 ms to
+1 ms** — a factor of roughly 3000.
+
+**The cost inverts at large cache.** At 512 MB the low-locality workload
+is not more expensive than the high-locality one — it is *less*:
+
+    α = 0.00 → hit = 0.980, p99 = 23 ms
+    α = 1.00 → hit = 1.000, p99 =  1 ms
+
+Traversal covers the object space systematically, so after warm-up every
+object is resident and every request is a hit. Zipf retains an
+inexhaustible tail and keeps touching new objects. **The cost of the
+low-locality workload is not a property of the workload. It emerges from
+its interaction with bounded cache capacity.**
+
+**Offered versus served origin load.** The two columns above are distinct
+quantities: *offered* is λ(1−h), what the cache passes through; *served*
+is the application's own request counter divided by elapsed time.
+
+Below saturation they agree to within 4–7%, which closes the cache →
+origin link quantitatively rather than by assumption.
+
+At 128 MB with α ≥ 0.30 they diverge, and the divergence grows (−12%,
+−29%, −45%) while the served rate pins at **74–76 req/s**. That value is
+consistent with the origin capacity C = 74 req/s measured three days
+earlier by an independent method. The gap between offered and served is
+work accumulating in the queue — which is precisely what produces the
+plateau of F4.
+
+**Interpretation.** This is strong evidence that cache contention
+mediates the observed transition. It is an intervention that removes the
+phenomenon in this system; it does not establish that no other mechanism
+could produce a similar transition in a different deployment, and the
+ablations of Q3 remain necessary to identify which behavioural property
+of the low-locality profile drives the effect.
+
+**Nominal working set is not effective cache capacity.** 256 MB is 104%
+of the 245 MB nominal working set, yet at α = 1.00 the hit ratio is only
+0.730 and a transition is still observed. Only 512 MB removes it. The
+245 MB figure is the corpus text size in the database, not the footprint
+of the gzipped JSON responses that Varnish actually stores, and the
+effective footprint has not been measured directly. Any statement of the
+form "cache sized above the working set" must specify which working set.
+This is recorded as an open measurement, not resolved.
+
+**Caveats.**
+- Three repetitions per point: sufficient for a qualitative
+  discrimination, not for estimating K50/K90 or the shape of K(S/W).
+- The application request counter used for *served* load includes the
+  Docker health check (one request per 5 s, i.e. 0.2 req/s). At saturated
+  rates this is 0.27% of the total and does not affect any conclusion; at
+  512 MB, where rates fall below 1 req/s, it accounts for essentially all
+  of the apparent positive discrepancy. Subsequent runs restrict the
+  query to `endpoint="chapter"`.
+- One cache implementation, one origin workload, one host.
 
 ---
 
@@ -322,48 +412,48 @@ not yet excluded.
 
 Ordered by how much they would change the work.
 
-**Q1 — Is cache contention the mechanism, or a correlate?** The mediator
-intervention answers this: size the cache above the working set, removing
-eviction competition. Verified precondition: at 512 MB with 600 s
-warm-up, h_H reaches 0.981, so origin load at α = 0 falls to ~5 req/s,
-7% of capacity. If the mechanism is cache contention, the knee must
-vanish at every α including 1.00. *The single most important outstanding
-experiment.*
+**Q1 — Is cache contention the mechanism? — ANSWERED (F6).** Strongly
+supported by intervention. Remaining refinement: measure the effective
+cache footprint directly, and add cache sizes between 256 and 512 MB to
+constrain the shape of K(S/W).
 
-**Q2 — Does the knee position move with the cache/working-set ratio?** A
-binary outcome (knee at 128m, absent at 512m) is weaker than a
-quantitative one. If K = K(S/W) moves systematically, the relation is
-quantitative and far harder to obtain by accident.
-
-**Q3 — Which behavioural factor produces the effect?** Only locality is
+**Q2 — Which behavioural factor produces the effect?** Only locality is
 varied so far. The other eight parameters — connection reuse, burstiness,
 session state, think time, concurrency, client caching, header
-completeness, diurnal modulation — require single-factor ablations.
+completeness, diurnal modulation — require single-factor ablations. Until
+these are done, "low-locality" cannot become "agentic".
 
-**Q4 — Does the shape survive a different bottleneck?** Here the binding
+**Q3 — Does the shape survive a different bottleneck?** Here the binding
 resource is PostgreSQL CPU. Reducing DB cores, constraining the
 connection pool below the thread pool, or introducing a downstream
 service each move it. If the normalised curve keeps its shape,
 generalisation is demonstrated; if not, the dependency has been found.
 
-**Q5 — Is the knee invariant under normalisation?** Thread pools of 4, 8
+**Q4 — Is the knee invariant under normalisation?** Thread pools of 4, 8
 and 12 with arrival rates scaled to hold λW/N constant should collapse
 onto one curve.
 
-**Q6 — Is the GIL contributing?** App CPU at the knee is ~31% against an
+**Q5 — Is the GIL contributing?** App CPU at the knee is ~31% against an
 observed ceiling near 80%, which suggests not. Direct control:
-`--workers 2 --threads 4` against `--workers 1 --threads 8` — same thread
-count, double interpreter capacity.
+`--workers 2 --threads 4` against `--workers 1 --threads 8`.
 
-**Q7 — Does the service-time distribution change near the knee?** Only
+**Q6 — Does the service-time distribution change near the knee?** Only
 the mean is measured. If the coefficient of variation rises as saturation
-approaches, the cost distribution is changing and not merely its mean —
-which matters for any queueing treatment.
+approaches, the cost distribution is changing and not merely its mean.
 
-**Q8 — How does the unstable band behave under realistic dynamics?** All
+**Q7 — Characterise the unstable band.** α from 0.12 to 0.18 at 0.01,
+≥20 repetitions, full latency distributions. Needed to establish whether
+the distribution is bimodal and to estimate K50/K90 properly.
+
+**Q8 — Does admission control bound severity without moving the knee?**
+The `BACKLOG` sweep of F4, and then per-class resource budgeting: the
+mitigation argument requires demonstrating that giving the low-locality
+class its own thread and connection quota preserves service for the rest.
+
+**Q9 — How does the unstable band behave under realistic dynamics?** All
 measurements use stationary arrival rates. Real automated traffic is
 bursty and lacks a diurnal cycle. A system whose *mean* utilisation sits
-below the knee may still spend part of each day inside the unstable band.
+below the knee may still spend part of each day inside the band.
 
 ---
 
@@ -386,17 +476,27 @@ A running list. Nothing is deleted.
   in-mixture low-locality hit ratio was ≈ 0.13, inferred from the
   aggregate slope — is **retracted**. Direct per-class measurement gives
   0.30–0.40 and shows the effect runs opposite to the one inferred. The
-  structural conclusion (per-class hit ratios are not invariant under
-  composition) survives; the magnitude and mechanism do not.
-- **2026-08-16.** The mediator dry run (45 s warm-up) produced identical
-  hit ratios at 128 MB and 512 MB, which is impossible: it was measuring
-  cache fill, not steady state. Dry-run parameters were changed. Dry-run
-  numbers are a check of script logic and are never data.
+  structural conclusion survives; the magnitude and mechanism do not.
+- **2026-08-16.** The mediator dry run (120 s warm-up) produced nearly
+  identical hit ratios at 128 MB and 512 MB, which is impossible: it was
+  measuring cache fill, not steady state. Dry-run numbers are a check of
+  script logic and are never data.
 - **2026-08-16.** An external review flagged a suspected column offset in
   the per-class extraction. It was not present: `sweep.sh` and
   `mediator.sh` use different CSV schemas (hit_h at column 14 and 12
-  respectively), and the command in question ran against the sweep
-  schema. The data confirm it independently — at α = 0 the low-locality
-  hit ratio is exactly 0.000 and h_total equals h_high-locality, which is
-  only possible if the columns are correct. Recorded because two CSV
-  schemas in one project is a latent hazard.
+  respectively), and the command ran against the sweep schema. The data
+  confirm it independently — at α = 0 the low-locality hit ratio is
+  exactly 0.000 and h_total equals h_high-locality, which is only
+  possible if the columns are correct. Recorded because two CSV schemas
+  in one project is a latent hazard; `mediator.sh` now validates its
+  header and exits rather than migrating silently.
+- **2026-08-16.** The origin request counter used in F6 includes the
+  Docker health check. Quantified at 0.2 req/s: negligible under load,
+  dominant in the 512 MB rows where rates fall below 1 req/s. No
+  conclusion changes; the query is restricted to `endpoint="chapter"`
+  from the next run onward.
+- **2026-08-16.** The "working set = 245 MB" figure used throughout is
+  the corpus text size in PostgreSQL, not the footprint of cached
+  responses. It should not be used to claim a cache is "larger than the
+  working set" — 256 MB exceeds it nominally and still exhibits
+  contention. The effective footprint requires direct measurement.
