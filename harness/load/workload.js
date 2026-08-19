@@ -40,6 +40,7 @@
  */
 
 import http from 'k6/http';
+import exec from 'k6/execution';
 import { check } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
 
@@ -132,32 +133,29 @@ function zipfRank(N) {
   return Math.min(Math.floor(Math.pow(N, Math.random())), N - 1);
 }
 
-// Stato di attraversamento, uno per VU.
+// Stato di attraversamento.
 //
-// Il rapporto di accesso unico e' un PARAMETRO del modello, non un
-// effetto della durata del test. Zhang et al. (SoCC 2025) misurano
-// 70-100% di URL unici per gli agenti AI reali; una scansione ciclica
-// semplice su un corpus finito scende al 14% su run lunghi, perche' il
-// cursore torna sui propri passi.
+// I crawler reali NON rivisitano. Sull'honeypot GPTBot, AhrefsBot e
+// Amazonbot mostrano tutti req/url = 1,00 e gini = 0,00 su circa 19.000
+// pagine: accesso perfettamente uniforme, ogni pagina una volta sola.
 //
-// Per mantenerlo alto: ogni VU parte da una posizione casuale e avanza
-// con un passo coprimo con la dimensione del corpus, cosi' che il ciclo
-// completo copra tutto lo spazio prima di ripetersi; e riparte da una
-// nuova posizione casuale prima di chiudere il giro.
-const TRAV_STRIDE = 4093;   // primo, coprimo con 16954
-
-let cursor = -1;
-let steps = 0;
-
+// Il cursore per-VU precedente rivisitava, perche' VU indipendenti si
+// sovrappongono: a lambda=260 con alpha=0,5 il rapporto risultava circa
+// 1,4, quindi il 28% delle richieste agentiche erano ripetizioni che la
+// cache poteva servire. Questo GONFIA h_A e sottostima il costo.
+//
+// iterationInTest e' un contatore globale monotono su tutti i VU dello
+// scenario. Mappato con una permutazione moltiplicativa (moltiplicatore
+// coprimo con la dimensione del corpus, verificato) produce indici
+// distinti finche' il numero di iterazioni resta sotto quella
+// dimensione. Oltre, riavvolge: il rapporto req/url atteso e'
+//
+//     max(1, alpha * RATE * durata / total)
+//
+// e va riportato per ogni punto, perche' e' un limite di scala del
+// testbed e non una proprieta' del modello.
 function traversalIndex(data) {
-  if (cursor < 0 || steps >= data.total) {
-    cursor = Math.floor(Math.random() * data.total);
-    steps = 0;
-  }
-  const idx = cursor;
-  cursor = (cursor + TRAV_STRIDE) % data.total;
-  steps++;
-  return idx;
+  return permute(exec.scenario.iterationInTest, data.total);
 }
 
 // -------------------------------------------------------------------------
