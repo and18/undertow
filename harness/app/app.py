@@ -20,12 +20,13 @@ Metriche esposte su /metrics per lo scrape.
 """
 
 import os
+import threading
 import time
 from contextlib import contextmanager
 
 import psycopg2
 from psycopg2 import pool as pgpool
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, abort, jsonify, request
 from prometheus_client import (
     CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest,
 )
@@ -33,6 +34,14 @@ from prometheus_client import (
 CACHE_TTL = int(os.environ.get("CACHE_TTL", "3600"))
 DB_POOL_MIN = int(os.environ.get("DB_POOL_MIN", "2"))
 DB_POOL_MAX = int(os.environ.get("DB_POOL_MAX", "16"))
+
+# ------------------------------------------------------ budget per classe --
+
+BUDGET_LOW = int(os.environ.get("BUDGET_LOW", "0"))
+BUDGET_WAIT = float(os.environ.get("BUDGET_WAIT", "0.5"))
+
+_low_sem = (threading.BoundedSemaphore(BUDGET_LOW)
+            if BUDGET_LOW > 0 else None)
 
 # Insieme fisso di termini di ricerca. Il costo di una ricerca full-text
 # dipende da quanti capitoli contengono il termine — 83 ms per "whale",
@@ -54,6 +63,11 @@ LAT = Histogram("ut_request_seconds", "Latenza lato applicazione",
                 buckets=(.001, .005, .01, .025, .05, .1, .25, .5,
                          1, 2.5, 5, 10, 30, 60))
 INFLIGHT = Gauge("ut_requests_inflight", "Richieste in elaborazione")
+INFLIGHT_CLS = Gauge("ut_requests_inflight_class", "In volo per classe", ["cls"])
+BUDGET_ADMITTED = Counter("ut_budget_admitted_total", "Amesse", ["cls"])
+BUDGET_SHED = Counter("ut_budget_shed_total", "Rifiutate per budget", ["cls"])
+BUDGET_WAITED = Histogram("ut_budget_wait_seconds", "Attesa per uno slot",
+                          buckets=(.001, .01, .05, .1, .25, .5, 1, 2))
 DBWAIT = Histogram("ut_db_pool_wait_seconds", "Attesa per una connessione DB",
                    buckets=(.0001, .001, .005, .01, .05, .1, .5, 1, 5, 10))
 DBBUSY = Gauge("ut_db_pool_busy", "Connessioni DB in uso")
@@ -128,20 +142,56 @@ def query(sql, args=(), one=False):
 
 # ------------------------------------------------------------ middleware --
 
+def request_class():
+    """Classifica la richiesta per il banco prova."""
+    ua = request.headers.get("User-Agent", "")
+    return "low" if "lowloc" in ua else "high"
+
+
 @app.before_request
 def _start():
     request._t0 = time.perf_counter()
+    request._cls = request_class()
+    request._slot = False
     INFLIGHT.inc()
+    INFLIGHT_CLS.labels(request._cls).inc()
+
+    if _low_sem is not None and request._cls == "low":
+        t = time.perf_counter()
+        got = _low_sem.acquire(timeout=BUDGET_WAIT)
+        BUDGET_WAITED.observe(time.perf_counter() - t)
+        if not got:
+            BUDGET_SHED.labels("low").inc()
+            abort(503)
+        request._slot = True
+        BUDGET_ADMITTED.labels("low").inc()
+
+
+@app.teardown_request
+def _release(exc=None):
+    if getattr(request, "_slot", False):
+        _low_sem.release()
+        request._slot = False
 
 
 @app.after_request
 def _end(resp):
     INFLIGHT.dec()
+    INFLIGHT_CLS.labels(getattr(request, "_cls", "?")).dec()
     ep = request.endpoint or "unknown"
     cacheable = resp.headers.get("X-UT-Cacheable", "0")
     LAT.labels(ep, cacheable).observe(time.perf_counter() - request._t0)
     REQ.labels(ep, str(resp.status_code), cacheable).inc()
     return resp
+
+
+@app.errorhandler(503)
+def _shed(e):
+    r = jsonify(error="capacity budget", retry_after=2)
+    r.status_code = 503
+    r.headers["Retry-After"] = "2"
+    r.headers["X-UT-Cacheable"] = "0"
+    return r
 
 
 def cacheable(resp, ttl=None):

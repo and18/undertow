@@ -65,6 +65,8 @@ services:
       BACKLOG: "${BACKLOG:-256}"
       DB_POOL_MIN: "${DB_POOL_MIN:-2}"
       DB_POOL_MAX: "${DB_POOL_MAX:-16}"
+      BUDGET_LOW: "${BUDGET_LOW:-0}"
+      BUDGET_WAIT: "${BUDGET_WAIT:-0.5}"
       # --------------------------------------------------------------------
       PGHOST: db
       PGPORT: "5432"
