@@ -295,7 +295,7 @@ test traffic and the deployment health checks, not yet excluded.
 
 ---
 
-## F6. Cache-capacity intervention shifts and removes the transition
+## F6. Removing cache-capacity pressure removes the transition
 
 **This is the central result.** The preceding findings establish a
 phenomenon and a correlated chain. Because α drives every link of that
@@ -353,22 +353,17 @@ total load, identical application, identical database, and identical
 workload, changing only the cache size takes the p99 from **3096 ms to
 1 ms** — a factor of roughly 3000.
 
-**The cost inverts at large cache — as caching theory predicts.** At
-512 MB the low-locality workload is not more expensive than the
-high-locality one — it is *less*:
+**The cost inverts at large cache.** At 512 MB the low-locality workload
+is not more expensive than the high-locality one — it is *less*:
 
     α = 0.00 → hit = 0.980, p99 = 23 ms
     α = 1.00 → hit = 1.000, p99 =  1 ms
 
-This is expected rather than surprising, and is stated here to illustrate
-the mechanism, not as a finding. A cyclic scan is pathological for a
-cache only while the cache is smaller than the object set: above that
-threshold every object is resident after the first pass and every request
-hits, whereas a Zipf distribution retains an inexhaustible tail and keeps
-touching new objects. It is the standard rationale for scan-resistant
-eviction policies. **The cost of the low-locality workload is therefore
-not a property of the workload; it emerges from its interaction with
-bounded cache capacity.**
+Traversal covers the object space systematically, so after warm-up every
+object is resident and every request is a hit. Zipf retains an
+inexhaustible tail and keeps touching new objects. **The cost of the
+low-locality workload is not a property of the workload. It emerges from
+its interaction with bounded cache capacity.**
 
 **Offered versus served origin load.** The two columns above are distinct
 quantities: *offered* is λ(1−h), what the cache passes through; *served*
@@ -391,15 +386,14 @@ could produce a similar transition in a different deployment, and the
 ablations of Q3 remain necessary to identify which behavioural property
 of the low-locality profile drives the effect.
 
-**Cache sizes are reported as configured capacity, not as multiples of a
-working set.** The 245 MB figure used elsewhere is the corpus text size
-in PostgreSQL, not the footprint of the gzipped JSON responses Varnish
-stores; the effective footprint has not been measured. 256 MB exceeds the
-nominal figure and still exhibits contention. The defensible statement is
-therefore the direct experimental one: **512 MB of configured capacity is
-sufficient to eliminate the contention observed under this workload**,
-256 MB is not, and 128 MB is far from it. Whether 512 MB is above or
-below the true footprint is an open measurement.
+**Nominal working set is not effective cache capacity.** 256 MB is 104%
+of the 245 MB nominal working set, yet at α = 1.00 the hit ratio is only
+0.730 and a transition is still observed. Only 512 MB removes it. The
+245 MB figure is the corpus text size in the database, not the footprint
+of the gzipped JSON responses that Varnish actually stores, and the
+effective footprint has not been measured directly. Any statement of the
+form "cache sized above the working set" must specify which working set.
+This is recorded as an open measurement, not resolved.
 
 **Caveats.**
 - Three repetitions per point: sufficient for a qualitative
