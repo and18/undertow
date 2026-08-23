@@ -62,6 +62,10 @@ const hitZipf  = new Counter('ut_hit_zipf');
 const missZipf = new Counter('ut_miss_zipf');
 const hitTrav  = new Counter('ut_hit_traversal');
 const missTrav = new Counter('ut_miss_traversal');
+const okZipf   = new Counter('ut_ok_zipf');
+const okTrav   = new Counter('ut_ok_traversal');
+const shedZipf = new Counter('ut_shed_zipf');
+const shedTrav = new Counter('ut_shed_traversal');
 const latZipf  = new Trend('ut_lat_zipf', true);
 const latTrav  = new Trend('ut_lat_traversal', true);
 
@@ -199,6 +203,11 @@ export default function (data) {
   });
 
   check(res, { 'status 200': (r) => r.status === 200 });
+  if (agentic) {
+    if (res.status === 503) shedTrav.add(1); else if (res.status === 200) okTrav.add(1);
+  } else {
+    if (res.status === 503) shedZipf.add(1); else if (res.status === 200) okZipf.add(1);
+  }
 
   const hit = res.headers['X-Cache'] === 'HIT';
   if (agentic) {
