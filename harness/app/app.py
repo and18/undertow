@@ -38,7 +38,20 @@ DB_POOL_MAX = int(os.environ.get("DB_POOL_MAX", "16"))
 # ------------------------------------------------------ budget per classe --
 
 BUDGET_LOW = int(os.environ.get("BUDGET_LOW", "0"))
-BUDGET_WAIT = float(os.environ.get("BUDGET_WAIT", "0.5"))
+# Attesa zero, e la ragione e' strutturale.
+#
+# Il semaforo viene acquisito da before_request, che gira gia' su un
+# thread di gunicorn. Una richiesta che ATTENDE uno slot tiene occupato
+# quel thread mentre aspetta: con BUDGET_WAIT=0.5 la campagna del
+# 2026-08-23 ha misurato un peggioramento monotono, fino a 6,4 volte il
+# riferimento con budget=1. Il meccanismo aggiungeva latenza senza
+# liberare nulla.
+#
+# Con attesa zero, la richiesta o ottiene subito uno slot o riceve subito
+# 503 con Retry-After, e il thread torna libero in microsecondi. Solo
+# cosi' la classe batch occupa al massimo BUDGET_LOW thread e alla classe
+# interattiva ne restano garantiti THREADS meno BUDGET_LOW.
+BUDGET_WAIT = float(os.environ.get("BUDGET_WAIT", "0"))
 
 _low_sem = (threading.BoundedSemaphore(BUDGET_LOW)
             if BUDGET_LOW > 0 else None)
@@ -158,7 +171,8 @@ def _start():
 
     if _low_sem is not None and request._cls == "low":
         t = time.perf_counter()
-        got = _low_sem.acquire(timeout=BUDGET_WAIT)
+        got = (_low_sem.acquire(timeout=BUDGET_WAIT) if BUDGET_WAIT > 0
+               else _low_sem.acquire(blocking=False))
         BUDGET_WAITED.observe(time.perf_counter() - t)
         if not got:
             BUDGET_SHED.labels("low").inc()
