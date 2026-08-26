@@ -129,7 +129,7 @@ for job in "${jobs[@]}"; do
 
     annotate "warmup alpha=$a rep=$rep"
     docker compose --profile load run --rm -T \
-        -e MODEL=mix -e ALPHA="$a" -e RATE="$LAMBDA" -e DURATION="${WARMUP}s" \
+        -e MODEL=mix -e ALPHA="$a" -e RATE="$LAMBDA" -e DURATION="${WARMUP}s" -e SEED="$SEED" \
         -e ENDPOINT="$ENDPOINT" -e OUTFILE="warm-$tag" \
         k6 run --quiet /scripts/workload.js < /dev/null \
         > "$OUT/k6-warm-$tag.log" 2>&1
@@ -137,7 +137,7 @@ for job in "${jobs[@]}"; do
 
     annotate "MEASURE alpha=$a rep=$rep"
     docker compose --profile load run --rm -T \
-        -e MODEL=mix -e ALPHA="$a" -e RATE="$LAMBDA" -e DURATION="${MEASURE}s" \
+        -e MODEL=mix -e ALPHA="$a" -e RATE="$LAMBDA" -e DURATION="${MEASURE}s" -e SEED="$SEED" \
         -e ENDPOINT="$ENDPOINT" -e OUTFILE="m-$tag" \
         k6 run --quiet /scripts/workload.js < /dev/null \
         > "$OUT/k6-$tag.log" 2>&1 &

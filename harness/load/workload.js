@@ -111,13 +111,10 @@ export function setup() {
   }
   return {
     ids: ids, cum: cum, total: total,
-    // Offset casuale per run, condiviso da tutti i VU. Senza, warm-up e
-    // misura percorrono la stessa permutazione a partire da zero e la
-    // misura trova in cache esattamente cio' che il warm-up ha caricato.
-    // Con l'offset, la finestra di misura visita una porzione diversa
-    // dello spazio mentre la cache contiene la precedente — che e' anche
-    // il comportamento di un crawler che prosegue la scansione.
-    offset: Math.floor(Math.random() * 1e9),
+    // Offset deterministico, dal seed dell'esperimento.
+    // Un offset casuale rende l'hit ratio della classe a bassa localita'
+    // non riproducibile tra run altrimenti identici.
+    offset: (SEED * 7919) % total,
   };
 }
 

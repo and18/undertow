@@ -133,14 +133,14 @@ for budget in $BUDGETS; do
         sleep 8
 
         docker compose --profile load run --rm -T \
-            -e MODEL=mix -e ALPHA="$ALPHA" -e RATE="$LAMBDA" -e DURATION="${WARMUP}s" \
+            -e MODEL=mix -e ALPHA="$ALPHA" -e RATE="$LAMBDA" -e DURATION="${WARMUP}s" -e SEED="$SEED" \
             -e ENDPOINT=chapter -e OUTFILE="w-$tag" \
             k6 run --quiet /scripts/workload.js < /dev/null \
             > "$OUT/k6-w-$tag.log" 2>&1
         rm -f "$HARNESS/results/w-$tag.json"
 
         docker compose --profile load run --rm -T \
-            -e MODEL=mix -e ALPHA="$ALPHA" -e RATE="$LAMBDA" -e DURATION="${MEASURE}s" \
+            -e MODEL=mix -e ALPHA="$ALPHA" -e RATE="$LAMBDA" -e DURATION="${MEASURE}s" -e SEED="$SEED" \
             -e ENDPOINT=chapter -e OUTFILE="m-$tag" \
             k6 run --quiet /scripts/workload.js < /dev/null \
             > "$OUT/k6-$tag.log" 2>&1 &
