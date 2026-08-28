@@ -43,6 +43,7 @@ import http from 'k6/http';
 import exec from 'k6/execution';
 import { check } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
+import { sleep } from 'k6';
 
 const TARGET   = __ENV.TARGET   || 'http://varnish:80';
 const MODEL    = __ENV.MODEL    || 'mix';
@@ -66,6 +67,20 @@ const okZipf   = new Counter('ut_ok_zipf');
 const okTrav   = new Counter('ut_ok_traversal');
 const shedZipf = new Counter('ut_shed_zipf');
 const shedTrav = new Counter('ut_shed_traversal');
+// Il rinvio non e' una perdita se il client torna. Un crawler batch puo'
+// permettersi di riprovare fra due secondi: nessuno sta aspettando. Nella
+// campagna del 2026-08-28 il generatore non riprovava, quindi ogni 503
+// appariva come lavoro perso e il budget sembrava costare il 12,6% del
+// throughput batch. I ritenti si contano separatamente dai primi
+// tentativi, altrimenti il carico offerto non sarebbe piu' confrontabile
+// con il riferimento.
+const retriedTrav   = new Counter('ut_retried_traversal');
+const abandonedTrav = new Counter('ut_abandoned_traversal');
+
+// RETRY_MAX=0 riproduce il comportamento precedente ed e' la
+// configurazione di riferimento.
+const RETRY_MAX = parseInt(__ENV.RETRY_MAX || '0');
+const RETRY_CAP = parseFloat(__ENV.RETRY_CAP || '5');   // secondi
 const latZipf  = new Trend('ut_lat_zipf', true);
 const latTrav  = new Trend('ut_lat_traversal', true);
 
@@ -185,33 +200,51 @@ export default function (data) {
     url = `${TARGET}/book/${loc.book}/ch/${loc.n}`;
   }
 
-  // Il transpiler di k6 non supporta lo spread negli oggetti: gli header
-  // si costruiscono per assegnazione.
   const headers = {
     'User-Agent': agentic ? 'undertow-lowloc/1.0' : 'undertow-highloc/1.0',
   };
-  // Il profilo umano negozia contenuto e lingua, quello agentico no.
-  // Parametro secondario, registrato ma non variato in questa fase.
   if (!agentic) headers['Accept-Language'] = 'en-GB,en;q=0.9';
 
-  const res = http.get(url, {
+  let res = http.get(url, {
     headers: headers,
     tags: { profile: agentic ? 'agent' : 'human' },
   });
 
-  check(res, { 'status 200': (r) => r.status === 200 });
-  if (agentic) {
-    if (res.status === 503) shedTrav.add(1); else if (res.status === 200) okTrav.add(1);
-  } else {
-    if (res.status === 503) shedZipf.add(1); else if (res.status === 200) okZipf.add(1);
+  // Solo la classe batch riprova, e solo sul 503 del budget.
+  let attempts = 0;
+  while (agentic && res.status === 503 && attempts < RETRY_MAX) {
+    shedTrav.add(1);
+    // Retry-After in secondi; il server invia 2. Il limite superiore
+    // evita che un valore anomalo blocchi il VU.
+    const ra = Math.min(parseFloat(res.headers['Retry-After'] || '2'), RETRY_CAP);
+    sleep(ra);
+    attempts++;
+    retriedTrav.add(1);
+    res = http.get(url, {
+      headers: headers,
+      tags: { profile: 'agent', retry: 'true' },
+    });
   }
+
+  check(res, { 'status 200': (r) => r.status === 200 });
 
   const hit = res.headers['X-Cache'] === 'HIT';
   if (agentic) {
-    if (hit) hitTrav.add(1); else missTrav.add(1);
+    if (res.status === 503) {
+      // Ancora rinviata dopo l'ultimo tentativo: questa e' persa davvero.
+      if (attempts >= RETRY_MAX) abandonedTrav.add(1);
+      if (RETRY_MAX === 0) shedTrav.add(1);
+    } else if (res.status === 200) {
+      okTrav.add(1);
+      if (hit) hitTrav.add(1); else missTrav.add(1);
+    }
     latTrav.add(res.timings.duration);
   } else {
-    if (hit) hitZipf.add(1); else missZipf.add(1);
+    if (res.status === 503) shedZipf.add(1);
+    else if (res.status === 200) {
+      okZipf.add(1);
+      if (hit) hitZipf.add(1); else missZipf.add(1);
+    }
     latZipf.add(res.timings.duration);
   }
 }
