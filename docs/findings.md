@@ -305,6 +305,101 @@ unchanged, this separates **where** the system breaks (cache behaviour
 and origin capacity) from **how badly** (admission policy). Arithmetic,
 not evidence.
 
+## O8. The boundary survives a change of architecture
+
+**The invariance test.** O2 established that the knee occurs at a
+resource-utilisation boundary rather than at a fixed traffic composition,
+but all four campaigns supporting it ran on one machine. If the boundary
+were an artefact of that hardware — its cache hierarchy, its SMT, its
+scheduler — the claim would not transfer.
+
+The harness was rebuilt on a different architecture and the campaign
+repeated.
+
+**Configuration.** Oracle Cloud VM.Standard.A1.Flex, 6 Ampere
+Neoverse-N1 cores, no SMT (1 thread per core), 24 GB, Ubuntu 24.04
+aarch64. CPU-pinned: k6 core 0, Varnish 1, app 2, PostgreSQL 3–5,
+observability shares core 0. `THREADS=8`, `BACKLOG=128`,
+`VARNISH_SIZE=128m` — identical to the x86 host. Corpus identical: 495
+books, 16,954 chapters, 203,437-edge link graph, same seed.
+
+Parameters measured on this machine: h_H = 0.791, **h_A = 0.000**,
+C ≈ 85–100 req/s. λ held constant at 220 req/s. 65 measurements,
+randomised order, 5 repetitions per point and 10 at α ∈ {0.30, 0.35,
+0.40}.
+
+**Result.**
+
+| α | p99 median (ms) | p95 (ms) | hit ratio | pool occupancy |
+|---|---|---|---|---|
+| 0.00 | 82.9 | 46.9 | 0.827 | 21% |
+| 0.05 | 105.9 | 57.4 | 0.791 | 25% |
+| 0.10 | 141.9 | 80.3 | 0.753 | 40% |
+| 0.15 | 184.6 | 115.1 | 0.713 | 53% |
+| 0.20 | 407.1 | 232.4 | 0.673 | 72% |
+| **0.25** | **1970.8** | 1390.4 | 0.636 | **89%** |
+| 0.30 | 2547.1 | 2430.8 | 0.601 | 95% |
+| 0.35 | 2606.6 | 2483.9 | 0.565 | 97% |
+| 0.40 | 2635.4 | 2510.9 | 0.528 | 97% |
+| 0.50 | 2626.4 | 2527.5 | 0.452 | 97% |
+
+Pre-registered criterion (p99 > 10 × 82.9 = 829 ms): **knee at
+α = 0.25, pool occupancy 89%**.
+
+**The invariance, across five campaigns:**
+
+| host | date | knee at α | pool occupancy |
+|---|---|---|---|
+| Ryzen AI 7 350, WSL2, 16 threads | 2026-08-15 | 0.15 | 96% |
+| same | 2026-08-16 | 0.30 | 97% |
+| same | 2026-08-18 | not reached | max 75% |
+| same | 2026-08-19 | 0.20 | 93% |
+| **Ampere Neoverse-N1, 6 cores** | **2026-08-27** | **0.25** | **89%** |
+
+**The composition at which the knee occurs varies from 0.15 to 0.30
+across architectures, CPU generations, core counts, SMT presence and
+database warmth. The pool occupancy at which it occurs stays between 89%
+and 97%.**
+
+The 2026-08-18 campaign remains the control: it never exceeded 75%
+occupancy and never produced a knee at any α.
+
+**What this licenses, and what it does not.** It licenses reporting the
+boundary in normalised terms — an operator watching their own pool
+occupancy has a transferable quantity, whereas someone else's α is
+useless to them. It does not license claiming a universal constant: two
+architectures are two points, the pool size was 8 in every campaign, and
+the bottleneck was PostgreSQL CPU throughout. Q4 (varying pool size and
+bottleneck type) remains open.
+
+**A secondary observation: the transition is sharper on the noisier
+machine.** Dispersion across repetitions at α = 0.30 was 4% here (ten
+runs between 2495 and 2597 ms) against more than 300% on the x86 host at
+its transition point. Without SMT, without competing processes and
+without a virtualisation layer, the ARM host behaves far more
+deterministically. The unstable band of O6 is therefore not a property of
+the phenomenon alone but of the platform's own variability — which
+weakens the "bimodal" reading and strengthens the operational one: the
+variance that matters is the variance a real deployment actually has.
+
+**The curve is also better resolved here.** Five points below the knee
+and five above, with a graded rise (185 → 407 → 1971 ms) rather than the
+single jump observed on x86 (468 → 2681 ms). Hit ratio falls almost
+perfectly linearly, −0.075 per 0.10 of α, consistent with h_A = 0.
+
+**h_A = 0.000, and why it is the correct value.** On this machine the
+low-locality class achieves no cache hits at all. The mechanism is
+textbook: a sequential scan over an object set larger than the cache
+causes LRU to evict precisely the object that will be needed next. It
+also matches the honeypot, where GPTBot, AhrefsBot and Amazonbot all show
+requests-per-URL of exactly 1.00 and a Gini coefficient of 0.00. The
+values of 0.30–0.52 measured earlier on x86 were an artefact — see the
+retraction of 2026-08-26.
+
+Amplification is therefore r = (1 − 0) / (1 − 0.791) = **4.8**: at equal
+request counts, exhaustive traffic imposes nearly five times the origin
+load of human traffic.
+
 ---
 
 # Part 3 — Operator behaviour (honeypot)
@@ -505,3 +600,34 @@ Nothing is deleted.
   budget does it deserve". The first is machine-dependent (O2) and its
   second half is queueing theory from 1961. Prior results are retained;
   their role changed.
+- **2026-08-26.** All measurements of the low-locality class hit ratio
+  h_A taken before this date are **retracted**. The traversal profile
+  used a random per-run offset into the corpus permutation, introduced on
+  2026-08-19 to prevent warm-up and measurement traversing the same
+  sequence. Because the permutation is bijective modulo the corpus size,
+  only `offset mod 16954` mattered, and its value determined how much the
+  measurement window overlapped the portion of the corpus the warm-up had
+  just loaded. The overlap — and therefore h_A — was a lottery.
+
+  Demonstrated on the ARM host: three consecutive repetitions, identical
+  configuration, identical rate, **exactly 7201 completed requests each**,
+  zero dropped, system far below saturation. Measured h_A: **0.051,
+  0.287, 0.362**.
+
+  This explains the incoherent values recorded earlier: 0.493 on
+  2026-08-13, 0.330–0.392 across the sweeps of 15–19 August, 0.002 and
+  0.378 in two runs thirty minutes apart on 2026-08-26. None of them were
+  measuring a property of the workload.
+
+  Fixed by deriving the offset deterministically from the experiment
+  seed. Verification: three repetitions now return **0.667, 0.667,
+  0.667** — identical to three decimal places.
+
+  The value that stands is **h_A = 0.000**, measured under a warm-up
+  long enough to exceed cache capacity, which is the steady-state regime
+  and the one matching real crawler behaviour on the honeypot.
+
+  Consequences: r rises from 2.6 to **4.8**; the amplification claim in
+  O1 was conservative by roughly a factor of two; F2's per-class
+  decomposition must be re-measured before it can be claimed, since it
+  rests on h_A values now known to be unreliable.

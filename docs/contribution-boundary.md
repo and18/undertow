@@ -187,6 +187,15 @@ in the optimistic direction.
 (Intel CAT/RDT, Bubble-Up, Quasar). Search that literature before
 claiming novelty. **Outstanding check.**
 
+**C10 — The resource boundary survives a change of architecture.**
+`not found`. Five campaigns across x86 (Ryzen, WSL2, 16 threads, SMT) and
+ARM (Ampere Neoverse-N1, 6 cores, no SMT): the composition at which the
+knee occurs varies 0.15–0.30, the pool occupancy at which it occurs stays
+89–97%. Nobody has published a normalised stability boundary for
+composition-driven origin saturation, nor demonstrated its
+architecture-independence.
+*Caveat:* two architectures, one pool size, one bottleneck type. Q4 open.
+
 ---
 
 ## Column 3 — Must still be demonstrated.
@@ -246,6 +255,10 @@ querying commercial assistants against the site.
 
 **D6 — Is C9 already published under other terminology?** Search the CPU
 shared-cache contention literature before claiming it.
+
+**D7 — Re-measure the per-class interaction of O4/F2.** The bidirectional
+decomposition rests on h_A values retracted on 2026-08-26. Re-run with
+the deterministic offset before claiming it.
 
 ---
 

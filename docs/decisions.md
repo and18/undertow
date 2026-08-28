@@ -553,6 +553,145 @@ should be the design of any subsequent mechanistic claim in this project.
 
 ---
 
+## 20. A load generator parameter drawn at random is an uncontrolled variable
+
+**Decision.** Every source of randomness in the workload generator is
+derived from the experiment seed. Nothing calls `Math.random()` for a
+quantity that affects what is measured.
+
+**Why — the evidence.** On 2026-08-19 a random per-run offset was added
+to the traversal profile, to stop warm-up and measurement traversing the
+same sequence. The intent was right. The implementation made the result
+a lottery: because the index permutation is bijective modulo the corpus
+size, only `offset mod 16954` mattered, and its value determined how much
+of the measurement window overlapped the portion of corpus the warm-up
+had just loaded.
+
+Three consecutive repetitions on identical configuration, identical rate,
+**exactly 7201 completed requests each**, zero dropped, system far below
+saturation, produced h_A = **0.051, 0.287, 0.362**.
+
+With the offset derived from the seed, the same three repetitions return
+**0.667, 0.667, 0.667**.
+
+**The general principle, now stated twice in this log.** §6 recorded that
+a load generator parameter not derived from the intended workload is
+itself an uncontrolled variable — there, virtual user counts. This is the
+same error in a different place. Randomness that is not seeded is not
+randomness in an experiment; it is an unmeasured input.
+
+**Consequence.** All h_A measurements before 2026-08-26 are retracted.
+See `findings.md`.
+
+---
+
+## 21. Configuration is per host, and every host is recalibrated
+
+**Decision.** `harness/.env` is a local copy and is not versioned. The
+repository holds `harness/env.<host-class>` — currently `env.x86-16` and
+`env.arm6` — and each machine copies its own into place.
+
+**Why.** §14 argued that sweep parameters must be versioned or no run is
+reproducible, and versioned `.env` directly. That was right for one
+machine and wrong for two: a single file cannot describe both a 16-thread
+x86 host and a 6-core ARM host, and versioning it means each machine
+overwrites the other's configuration at every pull.
+
+**Recalibration is not optional.** Moving the harness to a new machine
+invalidates every derived quantity. The order is fixed:
+
+1. `null-test.sh` — is the generator the bottleneck on this hardware?
+2. `calibrate.sh` — is the workload I/O-bound, and does the database
+   scale with load rather than sitting flat at one saturated core?
+3. `measure-model.sh` — h_H, h_A and C **on this machine**.
+
+Only then may a sweep run. On the ARM host this took four attempts: the
+first three CPU allocations each produced a component saturated at
+exactly one core — Varnish at 100% across a sixteen-fold range of offered
+load, then PostgreSQL at 100% across a sixteen-fold range. A component
+whose consumption does not respond to load is not saturated by the
+workload; it is confined by its allocation, and everything measured
+behind it is measuring that confinement.
+
+---
+
+## 22. Database state must be controlled, not assumed
+
+**Decision.** Origin capacity C is measured at the start of every
+campaign, never carried over. `blks_hit` and `blks_read` are recorded
+with each run.
+
+**Why — the evidence.** Between 2026-08-15 and 2026-08-19 origin capacity
+on the x86 host drifted from 74 to 92 req/s as PostgreSQL's working set
+migrated into `shared_buffers` (blks_hit reaching 99.96%). A repeat of an
+earlier campaign produced **no knee at all**, with hit ratios identical
+to 1% — the cache was behaving the same, the database had become 24%
+faster, and ρ had fallen from 0.98 to 0.75.
+
+That campaign was initially read as a failed run. It is the origin of
+§23.
+
+---
+
+## 23. The central question changed, and why
+
+**From:** *at what fraction of automated traffic does an origin
+collapse?*
+
+**To:** *what does each traffic class cost, and what resource budget does
+it deserve?*
+
+**Three reasons, in order of weight.**
+
+The threshold is not transferable. Across five campaigns the knee
+occurred at α between 0.15 and 0.30 while pool occupancy at the knee
+stayed between 89% and 97%. An operator cannot use someone else's α; they
+can watch their own utilisation.
+
+The second half of the chain is not a discovery. Saturation producing
+non-linear latency growth is Pollaczek–Khinchine. Measuring it carefully
+is worth doing; presenting it as a finding is not.
+
+The question nobody is answering is the next one. Cloudflare shipped
+Search/Agent/Training classification in July 2026 and answers *what kind
+of traffic is this*. Zhang et al. (SoCC 2025) propose better eviction and
+answer *what should the cache keep*. Neither answers *how should capacity
+be divided between the classes you choose to serve* — and Radar's own
+data show the current answer is wrong: the class with a human waiting in
+real time receives a 403 in 34.5% of cases and a valid response in 25%,
+while the batch class succeeds 64% of the time.
+
+**What this preserves.** Everything measured. The mediator intervention
+(§5, findings F/O3) demonstrates the mechanism the argument assumes; the
+resource boundary becomes the condition under which a budget must be
+set; the honeypot supplies the parameters. The apparatus did not change.
+The question it answers did.
+
+---
+
+## 24. Retraction is part of the method, not a failure of it
+
+Four claims have been withdrawn: a scan-versus-LRU inversion described as
+counterintuitive when it is textbook; a working-set figure that was the
+corpus size in PostgreSQL rather than the cached-object footprint; an
+inferred hit ratio contradicted by direct measurement; and every h_A
+value taken before the offset was made deterministic.
+
+Each is recorded in `findings.md` with the evidence that overturned it.
+None is deleted.
+
+The reason is not modesty. A log containing only correct decisions is
+indistinguishable from one written after the results were known, and a
+reviewer who suspects that has no way to check. A log that records what
+was believed, when, and what overturned it can be audited.
+
+The practical rule that follows: **the moment a result is exciting is the
+moment the novelty check is least likely to happen.** Both the
+scan-inversion claim and the working-set error were made within minutes
+of a good measurement. `contribution-boundary.md` exists for this.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
@@ -592,3 +731,12 @@ should be the design of any subsequent mechanistic claim in this project.
   saturation and diverge above it, with served pinned at 74–76 req/s,
   consistent with the independently measured capacity. Cache contention
   strongly supported as the causal mediator. See docs/findings.md §F6.
+- **2026-08-26** — Harness ported to Ampere ARM (6 Neoverse-N1 cores).
+  Four CPU allocations required before one produced gradual saturation
+  rather than a single confined core. Random per-run offset in the
+  traversal profile identified as a lottery over cache overlap; all
+  prior h_A measurements retracted.
+- **2026-08-27** — Composition sweep on ARM: knee at α = 0.25, pool
+  occupancy 89%. Across five campaigns on two architectures α varies
+  0.15–0.30 while occupancy at the knee stays 89–97%. Invariance test
+  passed.
