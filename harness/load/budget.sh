@@ -54,7 +54,20 @@ ALPHA="${ALPHA:-0.20}"
 # 0 = budget disattivato, riferimento. Gli altri valori sono slot
 # concorrenti concessi alla classe a bassa localita', su THREADS totali.
 BUDGETS="${BUDGETS:-0 6 4 3 2 1}"
-BUDGET_WAIT="${BUDGET_WAIT:-0.5}"
+# Attesa zero, e non e' negoziabile.
+#
+# Il semaforo viene acquisito da before_request, che gira gia' su un
+# thread di gunicorn: una richiesta che ATTENDE uno slot tiene occupato
+# quel thread mentre aspetta, quindi il budget aggiunge latenza senza
+# liberare nulla per l'altra classe — l'opposto del suo scopo.
+#
+# Misurato due volte con lo stesso esito, su x86 il 2026-08-23 e su ARM
+# il 2026-08-27: peggioramento monotono al restringersi del budget, fino
+# a 2,5 volte il riferimento. Entrambi i run sono invalidi.
+#
+# Il valore corretto e' gia' in env.*, ma questo script riscrive .env a
+# ogni valore di budget: il default qui deve corrispondere.
+BUDGET_WAIT="${BUDGET_WAIT:-0}"
 REPS="${REPS:-5}"
 # 180 s e' il warm-up validato per la cache da 128m; la dimensione della
 # cache non varia in questo esperimento.
