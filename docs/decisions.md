@@ -692,6 +692,25 @@ of a good measurement. `contribution-boundary.md` exists for this.
 
 ---
 
+## 25. A script that rewrites shared configuration must not carry
+contradicting defaults
+
+`budget.sh` writes BUDGET_LOW and BUDGET_WAIT into `.env` before each
+measurement, so the application picks them up on restart. Its own default
+for BUDGET_WAIT was 0.5s, contradicting the value in `env.*` and silently
+overriding a fix made three days earlier in `app.py`.
+
+Two campaigns ran with the wrong value before anyone noticed, on two
+architectures, both showing the same signature: monotonic degradation as
+the budget tightened, which is what a blocking acquire produces when the
+waiting thread is itself a worker.
+
+The fix is one line. The lesson is that configuration written by a script
+is configuration, and must be reviewed as such — a default buried in a
+runner silently defeated a correction made in the code it runs.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
