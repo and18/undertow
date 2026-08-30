@@ -207,9 +207,11 @@ services:
 
   # ----------------------------------------------------------- split profile --
   varnish-h:
-    build:
-      context: ./varnish
-      dockerfile: Dockerfile.varnish
+    # L'immagine e' gia' costruita dal servizio varnish. Ricostruirla qui
+    # non aggiunge nulla e ha fallito su apt-get: le due istanze del test
+    # di partizionamento devono essere identiche a quella di riferimento,
+    # quindi riusare la stessa immagine e' anche piu' corretto.
+    image: undertow-varnish
     container_name: ut-varnish-h
     profiles: ["split"]
     cpuset: "${CPUSET_VARNISH:-1}"
@@ -223,9 +225,11 @@ services:
     networks: [ut]
 
   varnish-l:
-    build:
-      context: ./varnish
-      dockerfile: Dockerfile.varnish
+    # L'immagine e' gia' costruita dal servizio varnish. Ricostruirla qui
+    # non aggiunge nulla e ha fallito su apt-get: le due istanze del test
+    # di partizionamento devono essere identiche a quella di riferimento,
+    # quindi riusare la stessa immagine e' anche piu' corretto.
+    image: undertow-varnish
     container_name: ut-varnish-l
     profiles: ["split"]
     cpuset: "${CPUSET_VARNISH:-1}"
