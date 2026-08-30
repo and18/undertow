@@ -87,10 +87,6 @@ for r in $FRACTIONS; do
         printf '  rep %s (tentativo %s) ... ' "$rep" "$attempts"
         docker compose --profile split restart varnish-h varnish-l >/dev/null 2>&1; sleep 8
 
-        b=$(curl -gs -G --data-urlencode 'query=sum(ut_requests_total{endpoint="chapter"})' \
-            http://localhost:8428/api/v1/query | jq -r '[.data.result[].value[1]|tonumber]|add // 0')
-        t0=$(date +%s.%N)
-
         for phase in "$WARMUP:w" "$MEASURE:m"; do
             docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$ALPHA" \
                 -e RATE="$LAMBDA" -e DURATION="${phase%%:*}s" -e TARGET=http://router:80 \
@@ -98,11 +94,6 @@ for r in $FRACTIONS; do
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
             [[ "${phase##*:}" == "w" ]] && rm -f "results/w-r$r-$rep.json"
         done
-
-        a=$(curl -gs -G --data-urlencode 'query=sum(ut_requests_total{endpoint="chapter"})' \
-            http://localhost:8428/api/v1/query | jq -r '[.data.result[].value[1]|tonumber]|add // 0')
-        t1=$(date +%s.%N)
-        orps=$(awk -v b="$b" -v a="$a" -v x="$t0" -v y="$t1" 'BEGIN{d=a-b; e=y-x; printf "%.1f", (e>0&&d>=0)?d/e:0}')
 
         f="results/m-r$r-$rep.json"
         if [[ ! -f "$f" ]]; then echo "FALLITO"; sleep 20; continue; fi
@@ -131,6 +122,17 @@ for r in $FRACTIONS; do
               ((.metrics.ut_ok_traversal.values.count//0) - (.metrics.ut_miss_traversal.values.count//0))),
             (.metrics.ut_miss_traversal.values.count//0)
           ]|@tsv' "$j")"
+
+        # Carico all'origine sulla sola fase di misura: lambda*(1-h),
+        # ricavato dai miss di entrambe le classi.
+        #
+        # La versione precedente leggeva il contatore di VictoriaMetrics
+        # fra t0 e t1, cioe' su warmup e misura insieme: la fase a cache
+        # fredda gonfiava il valore in modo diverso per ogni r, un bias
+        # correlato alla variabile indipendente. In piu' l'osservabilita'
+        # non e' fra le dipendenze del profilo split, quindi la query
+        # tornava vuota e il valore era 0,0 senza segnalare nulla.
+        orps=$(awk -v mh="$mh" -v ml="$ml" -v d="$MEASURE" 'BEGIN{printf "%.2f", (mh+ml)/d}')
 
         echo "$r,$rep,$ph,$pl,$hh,$mh,$hl,$ml,$orps,$dropped,$fail_rate,$(date -Is)" >> "$CSV"
         printf 'p99 alta=%s  hit bassa=%s  origine=%s req/s\n' "$ph" "$hl" "$orps"
