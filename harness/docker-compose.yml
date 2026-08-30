@@ -207,36 +207,42 @@ services:
 
   # ----------------------------------------------------------- split profile --
   varnish-h:
-    # L'immagine e' gia' costruita dal servizio varnish. Ricostruirla qui
-    # non aggiunge nulla e ha fallito su apt-get: le due istanze del test
-    # di partizionamento devono essere identiche a quella di riferimento,
-    # quindi riusare la stessa immagine e' anche piu' corretto.
-    image: undertow-varnish
+    image: varnish:7.5
     container_name: ut-varnish-h
     profiles: ["split"]
-    cpuset: "${CPUSET_VARNISH:-1}"
+    cpuset: "${CPUSET_VARNISH:-2}"
     mem_limit: 2g
-    environment:
-      VARNISH_SIZE: "${VARNISH_H_SIZE:-128m}"
-      VARNISH_BACKEND: "app:8000"
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
+      # Working directory distinta per istanza: due varnishd che
+      # condividono la stessa cartella si sovrascrivono a vicenda.
+      - varnishwork-h:/var/lib/varnish
+    command: >
+      varnishd -F -f /etc/varnish/default.vcl
+      -n /var/lib/varnish/ut
+      -a http=:80,HTTP
+      -s malloc,${VARNISH_H_SIZE:-128m}
+      -p thread_pool_min=50 -p thread_pool_max=1000
     depends_on:
       app:
         condition: service_healthy
     networks: [ut]
 
   varnish-l:
-    # L'immagine e' gia' costruita dal servizio varnish. Ricostruirla qui
-    # non aggiunge nulla e ha fallito su apt-get: le due istanze del test
-    # di partizionamento devono essere identiche a quella di riferimento,
-    # quindi riusare la stessa immagine e' anche piu' corretto.
-    image: undertow-varnish
+    image: varnish:7.5
     container_name: ut-varnish-l
     profiles: ["split"]
-    cpuset: "${CPUSET_VARNISH:-1}"
+    cpuset: "${CPUSET_VARNISH:-2}"
     mem_limit: 2g
-    environment:
-      VARNISH_SIZE: "${VARNISH_L_SIZE:-1m}"
-      VARNISH_BACKEND: "app:8000"
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
+      - varnishwork-l:/var/lib/varnish
+    command: >
+      varnishd -F -f /etc/varnish/default.vcl
+      -n /var/lib/varnish/ut
+      -a http=:80,HTTP
+      -s malloc,${VARNISH_L_SIZE:-1m}
+      -p thread_pool_min=50 -p thread_pool_max=1000
     depends_on:
       app:
         condition: service_healthy
@@ -261,6 +267,8 @@ volumes:
   vmdata:
   grafanadata:
   varnishwork:
+  varnishwork-h:
+  varnishwork-l:
 
 networks:
   ut:
