@@ -40,6 +40,7 @@ ALPHA="${ALPHA:-0.25}"
 TOTAL_MB="${TOTAL_MB:-128}"
 FRACTIONS="${FRACTIONS:-shared 0.50 0.75 0.90 1.00}"
 REPS="${REPS:-5}"
+GATE="${GATE:-1}"     # 1 = scarta e ripete i run invalidi; 0 = li registra soltanto
 WARMUP="${WARMUP:-180}"
 MEASURE="${MEASURE:-180}"
 
@@ -78,6 +79,12 @@ for r in $FRACTIONS; do
     docker compose --profile split up -d --force-recreate varnish-h varnish-l router >/dev/null 2>&1
     sleep 12
 
+    for c in varnish-h varnish-l; do
+        want=$([[ $c == varnish-h ]] && echo "$h" || echo "$l")
+        got=$(docker compose --profile split exec -T $c varnishstat -n /var/lib/varnish/ut -1 -f SMA.s0.g_space 2>/dev/null | awk '{print int($2/1048576)}')
+        printf '     %s: spazio=%sMB atteso=%sMB\n' "$c" "$got" "$want"
+    done
+
     rep=1; attempts=0
     while [[ $rep -le $REPS ]]; do
         attempts=$((attempts+1))
@@ -85,7 +92,12 @@ for r in $FRACTIONS; do
             echo "  troppi run invalidi su r=$r, passo oltre"; break
         fi
         printf '  rep %s (tentativo %s) ... ' "$rep" "$attempts"
-        docker compose --profile split restart varnish-h varnish-l >/dev/null 2>&1; sleep 8
+        # Il router riparte insieme alle cache: nginx tiene 64 connessioni
+        # keepalive per upstream e se Varnish riparte senza di lui quelle
+        # restano appese. E' il sospetto principale per la deriva del 30
+        # agosto (0 invalidi nel primo blocco, 5 su 8 nel quarto, stessa
+        # identica configurazione).
+        docker compose --profile split restart varnish-h varnish-l router >/dev/null 2>&1; sleep 10
 
         for phase in "$WARMUP:w" "$MEASURE:m"; do
             docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$ALPHA" \
@@ -104,10 +116,16 @@ for r in $FRACTIONS; do
         dropped=$(jq -r '.metrics.dropped_iterations.values.count // 0' "$j")
         fail_rate=$(jq -r '.metrics.http_req_failed.values.rate // 0' "$j")
         if (( $(awk -v d="$dropped" -v x="$fail_rate" 'BEGIN{print (d>0 || x>0.01)?1:0}') )); then
-            printf 'INVALIDO: scartate=%s errori=%s%% — rifaccio\n' "$dropped" \
+            printf 'sospetto: scartate=%s errori=%s%% ' "$dropped" \
                 "$(awk -v x="$fail_rate" 'BEGIN{printf "%.2f", x*100}')"
-            mv "$j" "$BASE/invalid-r$r-a$attempts.json"
-            sleep 20; continue
+            docker compose --profile split logs --tail 150 router varnish-h app \
+                > "$BASE/diag-r$r-a$attempts.log" 2>&1
+            if [[ "$GATE" == "1" ]]; then
+                echo "— INVALIDO, rifaccio"
+                mv "$j" "$BASE/invalid-r$r-a$attempts.json"
+                sleep 20; continue
+            fi
+            echo "— registrato (GATE=0)"
         fi
 
         # hit_low per differenza: k6 omette dal riepilogo le metriche
