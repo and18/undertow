@@ -205,6 +205,53 @@ services:
       - ./results:/results
     networks: [ut]
 
+  # ----------------------------------------------------------- split profile --
+  varnish-h:
+    build:
+      context: ./varnish
+      dockerfile: Dockerfile.varnish
+    container_name: ut-varnish-h
+    profiles: ["split"]
+    cpuset: "${CPUSET_VARNISH:-1}"
+    mem_limit: 2g
+    environment:
+      VARNISH_SIZE: "${VARNISH_H_SIZE:-128m}"
+      VARNISH_BACKEND: "app:8000"
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [ut]
+
+  varnish-l:
+    build:
+      context: ./varnish
+      dockerfile: Dockerfile.varnish
+    container_name: ut-varnish-l
+    profiles: ["split"]
+    cpuset: "${CPUSET_VARNISH:-1}"
+    mem_limit: 2g
+    environment:
+      VARNISH_SIZE: "${VARNISH_L_SIZE:-1m}"
+      VARNISH_BACKEND: "app:8000"
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [ut]
+
+  router:
+    image: nginx:1.27-alpine
+    container_name: ut-router
+    profiles: ["split"]
+    cpuset: "${CPUSET_VARNISH:-1}"
+    volumes:
+      - ./nginx/router.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      - varnish-h
+      - varnish-l
+    networks: [ut]
+
 volumes:
   pgdata:
   vmdata:

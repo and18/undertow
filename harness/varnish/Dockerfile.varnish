@@ -1,0 +1,19 @@
+# Build Varnish con supporto parametrico per VARNISH_SIZE e VARNISH_BACKEND.
+#
+# Accetta variabili d'ambiente:
+#   VARNISH_SIZE    Dimensione della cache (default: 256m)
+#   VARNISH_BACKEND Backend nell'uri host:port (default: app:8000)
+#
+# Genera default.vcl dal template e avvia varnishd.
+
+FROM varnish:7.5
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY default.vcl.tpl /tmp/default.vcl.tpl
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
