@@ -57,6 +57,22 @@ S3-FIFO (SOSP 2023). The inversion we observed at 512 MB is a direct
 consequence of this and **was mistakenly described internally as a
 finding on 2026-08-16; withdrawn the same day.**
 
+**Utility-based cache partitioning.** Qureshi & Patt, *Utility-Based
+Cache Partitioning*, MICRO 2006. It frames partitioning around marginal
+utility rather than demand; our result challenges the additivity of
+isolated utility curves when one class free-rides on the other's
+residence.
+
+**Scan-resistance is a documented production problem.** Brooker et al.,
+*On-demand Container Loading in AWS Lambda*, arXiv:2305.13162. It places
+the lack of scan-resistance in a production context, not only in cache
+literature.
+
+**A current operational proposal.** Cloudflare, *Why we're rethinking
+cache for the AI era*, 2 April 2026. It explicitly proposes SIEVE/S3FIFO
+and a cache tier routed by activity type; O8 measures the cost of that
+proposal.
+
 **Hit ratio rises with cache size; miss-ratio curves are a standard
 tool.** Mattson stack distances and successors. Our cache-size sweep
 re-measures a textbook relation and is used as instrumentation.
@@ -107,6 +123,13 @@ comparison. To be re-verified before submission.
 licensing disputes), not only misclassification. The data cannot
 distinguish intent. Say so.
 
+The 28-day series crosses a break in classification. In the weekly
+User Action series, 200 responses fall from 56.0% (1 June) to 21.3%
+(24 August), while 403 rises from 19.2% to 52.4%, with the step in the
+week of 20 July. Behavioural change and relabelling cannot be separated
+around Cloudflare's reclassification. The `Undeclared` category, 1.76%,
+is also absent from the table above.
+
 **C2 — Class composition is re-proportioning fast.**
 Radar `timeseries_groups/CRAWL_PURPOSE`, 52 weeks, weekly:
 
@@ -119,11 +142,13 @@ Radar `timeseries_groups/CRAWL_PURPOSE`, 52 weeks, weekly:
 
 *Caveat:* the Mixed decline is partly reclassification, not only traffic
 shift. Cloudflare relabelled categories during this window. Use quarterly
-views and state the discontinuity.
+views and state the discontinuity. The composition also has a step: User
+Action moves from about 2.5% to 5.0–6.7% in the week of 3 August.
 
 **C3 — Nobody revalidates.**
-Radar: 304 responses are 0.53% of all AI bot requests. Honeypot: zero out
-of 153,680. Every crawler re-downloads unchanged content in full.
+Radar: 304 responses are 0.53% of all AI bot requests. Honeypot: one 304
+in approximately 186,000 requests over 17 days to 29 August. Every
+crawler re-downloads unchanged content in full.
 Conditional requests (`If-None-Match`, `If-Modified-Since`) exist
 precisely for this and are essentially unused. Read the Docs reported the
 same qualitatively (73 TB in one month, no ETag support); we have the
@@ -166,7 +191,7 @@ moves the knee from α=0.30 to α=1.00 to absent. At α=0.50, changing only
 cache size takes p99 from 3096 ms to 1 ms.
 
 **C8 — The stability boundary is resource-based, not composition-based
-(F7).** Across four campaigns the knee always occurred at 90–97% thread
+(F7).** Across six campaigns the knee always occurred at 89–97% thread
 pool occupancy, while the α at which that happened varied (0.15, 0.20,
 0.30) as origin capacity drifted 74 → 92 req/s. **There is no universal
 "AI percentage limit"; there is a resource-utilisation boundary.** An
@@ -176,19 +201,25 @@ operator cannot use someone else's α. They can watch their own ρ.
 produced no knee at identical hit ratios. The database had warmed. It is
 recorded as a discovery, not hidden as a failed run.
 
-**C9 — Per-class hit ratios are not invariant under composition (F2).**
-High-locality class falls 0.829 → 0.764 as α goes 0 → 0.5; low-locality
-class *rises* 0.330 → 0.392. Bidirectional, net positive. Consequence: a
-mixture model parameterised with per-class hit ratios measured in
-isolation misestimates the tolerable aggressive-class fraction by 2.3×,
-in the optimistic direction.
+**C9 — A class's hit ratio is not its own property.** Under a shared cache
+the exhaustive class obtains **h = 0.163** while sampling uniformly from
+a corpus larger than the cache: it has no locality, but encounters what
+the human class has made resident. Under a partitioned cache the same
+class obtains **h = 0.000** at every reserved fraction. Measured with a
+validity gate, λ=110, α=0.50, six repetitions on the reference, with 0.4%
+drift across two blocks two hours apart.
 
-*Note:* related to cache interference in the CPU shared-cache literature
-(Intel CAT/RDT, Bubble-Up, Quasar). Search that literature before
-claiming novelty. **Outstanding check.**
+Consequence: utility curves measured in isolation are not additive in a
+mixture. Utility-based cache partitioning (Qureshi & Patt, MICRO 2006)
+would assign zero to the exhaustive class -- its isolated utility is zero
+-- and **would increase total misses**.
+
+*Caveat:* one corpus, one cache size, one popularity distribution. The
+predicted free ride scales as R/N with a logarithmic correction; at
+production scale the prediction is ~5%, derived, not measured.
 
 **C10 — The resource boundary survives a change of architecture.**
-`not found`. Five campaigns across x86 (Ryzen, WSL2, 16 threads, SMT) and
+Five campaigns across x86 (Ryzen, WSL2, 16 threads, SMT) and
 ARM (Ampere Neoverse-N1, 6 cores, no SMT): the composition at which the
 knee occurs varies 0.15–0.30, the pool occupancy at which it occurs stays
 89–97%. Nobody has published a normalised stability boundary for
@@ -200,7 +231,23 @@ architecture-independence.
 
 ## Column 3 — Must still be demonstrated.
 
-**D1 — The scan-resistance trade-off. Sign unknown.** *Highest priority.*
+**C11 — The scan-resistance trade-off is a measured inversion.**
+At λ=110 and α=0.50, shared cache gives high-locality h=0.747 and
+low-locality h=0.163; reserving any tested fraction gives high-locality
+h=0.731–0.800 and low-locality h=0.073–0.000, while origin load rises
+from 59.7 to 65.6–66.9 req/s. The first byte of separation destroys the
+free ride; the high-locality gain saturates before full reservation.
+
+At λ=110–145, partitioning improves high-locality p99 by 7–35% despite
+the extra origin load; at λ=155 it is 21% worse. The trade-off is
+therefore a function of utilisation: scan-resistance buys latency for
+the human class below saturation and removes it near saturation.
+
+*Open caveat:* `hit_low` is non-monotone at saturation (O8f), and the
+free ride's survival at production scale is unmeasured (Q10). A corpus,
+cache size and distribution are held fixed.
+
+**D1 — The scan-resistance trade-off. Sign unknown.** *Superseded by C11.*
 
 Scan-resistant eviction protects the human working set. But the scan
 class free-rides on the shared cache: because it samples uniformly, it
@@ -253,12 +300,15 @@ traffic is **concentrated, not rare**: it goes where people ask
 questions. Volume comes from Radar; behaviour must be generated by
 querying commercial assistants against the site.
 
-**D6 — Is C9 already published under other terminology?** Search the CPU
-shared-cache contention literature before claiming it.
+**D6 — Are isolated utility curves assumed additive in existing cache
+partitioning work?** The question is now whether the additivity assumed
+by utility-based cache partitioning is broken by a class free-riding on
+the other class's residence. This must be framed explicitly, with
+Qureshi & Patt (MICRO 2006) as the comparison point.
 
-**D7 — Re-measure the per-class interaction of O4/F2.** The bidirectional
-decomposition rests on h_A values retracted on 2026-08-26. Re-run with
-the deterministic offset before claiming it.
+**D7 — Re-measure the per-class interaction of O4/F2.** **Closed.** The
+measurement was repeated with a validity gate: shared-cache h=0.163 and
+partitioned h=0.000 for the low-locality class. See C9 and findings O8.
 
 ---
 

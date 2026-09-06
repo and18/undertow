@@ -192,6 +192,10 @@ an independent objection about corpus scale. After the change Varnish
 scaled linearly and cleanly (11% → 20% → 37% → 77% → 154% CPU for
 500 → 8000 req/s) with sub-millisecond p99 and zero failures.
 
+The denominator of 245 MB is the corpus text in PostgreSQL. The effective
+footprint of objects in the cache, measured later, is 438 MB -- see §18.
+Fractions cited here must be reread with that denominator.
+
 ---
 
 ## 6. Virtual users sized by Little's law
@@ -708,6 +712,60 @@ waiting thread is itself a worker.
 The fix is one line. The lesson is that configuration written by a script
 is configuration, and must be reviewed as such — a default buried in a
 runner silently defeated a correction made in the code it runs.
+
+## 26. VU sizing according to Little's law applies only under saturation
+
+**Decision.** `preAllocatedVUs = RATE × 2`, `maxVUs = RATE × 20`, capped
+at 20,000. The virtual-user pool must be sized for the worst regime the
+experiment intends to traverse, not the nominal regime.
+
+**Why -- the evidence.** §6 fixed `maxVUs = RATE × 0.2` with a correct
+argument: by Little's law, at 1 ms response time and 1000 req/s one or
+two connections are needed, not two thousand. At the knee mean latency
+exceeds two seconds and required concurrency is λ·W: with `maxVUs = 2λ`,
+the pool is exhausted exactly at W = 2 s, after which k6 no longer
+measures the system.
+
+On 30 August, nine of twenty-five runs produced p99 values of 4377,
+4380, 4386, 4293, 4341, 4347, 4354, 4439 and 4443 ms. All nine had
+exactly `vus = 440` (the cap), 6,120–7,002 dropped iterations and 18%
+failed requests. The near-constant value was a generator constant, not a
+system property.
+
+**Principle.** §6 says a generator parameter not derived from the load is
+uncontrolled. §20 says unseeded randomness is an unmeasured input. Here:
+**a parameter derived from the nominal regime is uncontrolled in the
+saturated regime**, which is the only regime the experiment is meant to
+observe.
+
+**Operational consequence.** The validity gate in §27 repeats a run with
+dropped iterations and retains its raw output as `invalid-*.json`. With
+`GATE=0`, errors are recorded and not discarded, because beyond
+saturation the errors **are** the signal.
+
+## 27. A check that does not check is worse than no check
+
+**Decision.** `nginx/router.conf` becomes `router.conf.tpl`, and
+`split.sh` resolves the low-locality backend per configuration:
+`varnish-h` for the shared reference and `varnish-l` for partitioned
+runs. The resolved `router.active.conf` is not versioned. Each block
+checks with `varnishstat` that allocated space matches the expected value
+and prints it.
+
+**Why -- the evidence.** The router always routed by user agent, without
+a switch. With `r=shared`, the script changed only the sizes of the two
+instances, so both classes still went to separate caches. The shared
+reference never existed; campaign `split-20260830-123521` compared two
+partitions.
+
+The symptom was visible and read backwards: `hit_high` was 0.8272 across
+five configurations, identical to the fourth decimal place and to α=0.
+An invariant variable must first be shown to have varied in the mechanism,
+not merely in its parameters.
+
+**Corollary.** Every campaign includes the reference twice, at the start
+and end. If the blocks differ, the campaign is invalid. On 30–31 August
+the blocks produced 59.85 and 59.61 req/s, a 0.39% difference.
 
 ---
 

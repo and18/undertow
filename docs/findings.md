@@ -299,6 +299,79 @@ If varying `BACKLOG` moves the plateau while leaving the knee position
 unchanged, this separates **where** the system breaks from **how badly**.
 Arithmetic, not evidence.
 
+## O8. The cost of scan-resistance, and its inversion
+
+ARM host, α = 0.50, total cache 128 MB, 45 valid measurements with the
+validity gate active, 3 repetitions per point. The shared reference was
+repeated at the start and end of the campaign: 59.85 versus 59.61 req/s,
+**0.39% drift over two hours**.
+
+### O8a. The free ride exists and is 16%
+
+Under a shared cache the low-locality class obtains **h = 0.163**, while
+sampling uniformly from a 438 MB corpus against a 128 MB cache. It has no
+locality: it encounters what the high-locality class made resident. Under
+any partition it obtains **h = 0.000**.
+
+This directly replaces the 28% estimate written at the top of `split.sh`,
+which came from h_A values retracted on 26 August.
+
+### O8b. The cost is a step, not a curve
+
+| reserved fraction | high hit | low hit | origin (req/s) |
+|---|---:|---:|---:|
+| shared | 0.747 | **0.163** | **59.7** |
+| 0.50 | 0.731 | 0.073 | 65.8 |
+| 0.75 | 0.787 | 0.000 | 66.9 |
+| 0.90 | 0.800 | 0.000 | 65.6 |
+| 1.00 | 0.800 | 0.000 | 66.2 |
+
+The first byte of separation costs the full price: origin load rises
+**10.6%** at every reserved fraction, while high-locality hit ratio
+saturates at 0.800. The 0.50 partition is strictly dominated by sharing.
+
+### O8c. The benefit reverses at saturation
+
+| λ | shared p99 high | r=1.00 p99 high | shared origin | r=1.00 origin |
+|---:|---:|---:|---:|---:|
+| 110 | 141.4 | **132.0** | 60.3 | 65.9 |
+| 125 | 365.7 | **259.9** | 66.3 | 74.6 |
+| 135 | 494.8 | **321.0** | 68.7 | 80.1 |
+| 145 | 2243.0 | **1498.8** | 82.0 | 85.4 |
+| 155 | **2438.5** | 2958.0 | 83.8 | 86.1 |
+
+Through λ = 145 partitioning improves high-locality p99 by 7–35%, despite
+the extra origin load. At λ = 155 it is 21% worse. Partitioning reduces
+the protected class's miss exposure from 0.253 to 0.200, but increases
+the queue all requests traverse; as ρ approaches 1, the queue term wins.
+
+The defensible form is: *scan-resistance buys latency for the human class
+at low utilisation and removes it at high utilisation, exactly when
+protection is needed.*
+
+### O8d. Capacity is visible in the pin
+
+Origin load calculated as λ(1 − h) agrees with measured load within 1%
+through λ = 135 and diverges by 3–6% at λ = 145 and 155, with served load
+fixed at **about 86 req/s**. The divergence above a constant threshold is
+the signature of saturation and gives C without a dedicated campaign.
+
+### O8e. Where it breaks is not who pays
+
+At λ = 135, the partitioned run is at ρ = 0.93 with p99 321 ms; the
+shared run is at ρ = 0.80 with p99 495 ms. Utilisation predicts when the
+origin queue explodes, not how strongly a class feels it: that also
+depends on its miss exposure. Both configurations break between ρ = 0.90
+and 0.95.
+
+### O8f. Open anomaly
+
+Shared-cache `hit_low` is non-monotone in λ: 0.161, 0.203, 0.239, **0.108**,
+0.117. The leading hypothesis is that, as ρ approaches 1, origin capacity
+starves long-tail insertions, which are the insertions that create the
+free ride. This is a hypothesis from a partial window and does not enter
+the paper until measured separately.
+
 ---
 
 # Part 3 — Operator behaviour (honeypot)
@@ -438,15 +511,19 @@ If honouring `Retry-After` restores throughput, the budget's 3% cost is
 temporal rather than real and the conflict between classes is entirely
 apparent. *Under test.*
 
-**Q2 — Does the boundary hold at other pool sizes?** All six campaigns
-used `THREADS=8`. With 4 and 12, rates scaled to hold expected occupancy
-constant, the knee should fall at the same occupancy. *Under test.*
+**Q2 — Does the boundary hold at other pool sizes?** **Closed.** The
+29 August poolfix campaign varied the pool at fixed volume across 3, 4, 8
+and 12. The knee appeared each time and throughput matched to three
+figures. The pool is not the resource that saturates; it is the queue in
+front of that resource.
 
-**Q3 — Is the unstable band real or platform variance?** *Under test.*
+**Q3 — Is the unstable band real or platform variance?** **Closed in
+favour of platform variance.** See the 30 August retraction below: part
+of the band was the load-generator ceiling.
 
-**Q4 — Per-class hit ratio interaction.** The bidirectional
-decomposition previously reported rests on h_A values retracted on 08-26.
-*Under re-measurement.*
+**Q4 — Per-class hit ratio interaction.** **Closed.** See O8a: the
+low-locality class gets h=0.163 from shared residence and h=0.000 under
+partitioning.
 
 **Q5 — Does the shape survive a different bottleneck?** PostgreSQL CPU
 throughout. Constraining the connection pool below the thread pool, or
@@ -463,11 +540,21 @@ is unattributed. See H8.
 stationary arrival rates. H1 shows real load is impulsive: a system whose
 mean utilisation sits below the knee may spend a full day above it.
 
+**Q9 — Why does `hit_low` halve at saturation?** See O8f. The leading
+hypothesis is throttled insertion of long-tail objects at the origin;
+measure it separately before treating it as a result.
+
+**Q10 — Does the free ride survive at scale?** The model predicts R/N with
+a logarithmic correction: about 5.6% for one million pages with ten
+thousand resident, versus 16.3% measured on 16,954 pages. If it vanishes
+at production scale, the partitioning cost vanishes with it and O8b is a
+caveat rather than a result.
+
 ---
 
 # Corrections and retractions
 
-Nothing is deleted. Ten entries; the pattern is visible and is the reason
+Nothing is deleted. Fourteen entries; the pattern is visible and is the reason
 `contribution-boundary.md` exists.
 
 - **08-12.** All measurements at `VARNISH_SIZE=2m` discarded: Varnish was
@@ -510,6 +597,20 @@ Nothing is deleted. Ten entries; the pattern is visible and is the reason
   **withdrawn**. It returned on 08-24 with 775 requests. The correct
   reading is H1: operators arrive in exhaustive bursts and the
   composition rotates.
+- **08-30.** "A metastable band exists: the same configuration produces
+  two distinct latency regimes." **Withdrawn.** Nine high-regime runs all
+  had `vus` at exactly 2λ, 6,120–7,002 dropped iterations and 18% errors;
+  the ~4.4 s plateau was generator exhaustion. See `decisions.md` §26.
+- **08-30.** Campaign `split-20260830-123521` is **null**: the router
+  separated classes even in `shared` mode, so the reference did not exist.
+  See `decisions.md` §27.
+- **08-30.** "Cache contention between classes does not exist" is
+  **withdrawn**. `hit_high` stayed at 0.827 because the high-locality
+  class had a private cache; with a valid reference it is 0.800 private
+  versus 0.747 shared.
+- **08-31.** The pre-measurement prediction that the protected setup would
+  collapse before sharing, at λ ≈ 134 versus 146, **failed**. It ignored
+  exposure and modelled only the queue term. O8c is the corrected account.
 
 **The pattern.** Four of these are the same error: an elegant explanation
 built on a partial window, formed within minutes of an interesting

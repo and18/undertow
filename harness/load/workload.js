@@ -53,6 +53,14 @@ const DURATION = __ENV.DURATION || '300s';
 const ENDPOINT = __ENV.ENDPOINT || 'chapter';
 const SEED     = parseInt(__ENV.SEED || '42');
 
+// Sfasamento della traversata, in iterazioni. Warm-up e misura sono due
+// invocazioni k6 separate, quindi iterationInTest riparte da zero e la
+// misura ripercorrerebbe la sequenza appena percorsa dal warm-up: ogni
+// richiesta sarebbe una seconda visita a un oggetto inserito esattamente
+// WARMUP secondi prima, e l'hit ratio misurato sarebbe la curva di
+// sopravvivenza della cache invece del passaggio gratuito.
+const TRAV_SKIP = parseInt(__ENV.TRAV_SKIP || '0');
+
 const TERMS = (__ENV.TERMS ||
   'nurse,window,trial,servant,kiss,garden,letter,prayer,horse,silence'
 ).split(',');
@@ -180,7 +188,7 @@ function zipfRank(N) {
 // e va riportato per ogni punto, perche' e' un limite di scala del
 // testbed e non una proprieta' del modello.
 function traversalIndex(data) {
-  return permute(data.offset + exec.scenario.iterationInTest, data.total);
+  return permute(data.offset + TRAV_SKIP + exec.scenario.iterationInTest, data.total);
 }
 
 // -------------------------------------------------------------------------

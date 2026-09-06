@@ -125,6 +125,11 @@ time out at every rate. Experiments run on the cacheable chapter
 endpoint, which is also the right one for the thesis. Declare it as a
 limitation.
 
+The k6 pool is sized for the saturated regime: `preAllocatedVUs = RATE ×
+2`, `maxVUs = RATE × 20`, capped at 20,000. The pool must be sized for the
+worst regime, not the nominal one; a run with dropped iterations measures
+the generator rather than the system.
+
 ### 3. Model parameters — h_H, h_A and C on *this* machine
 
 ```bash
@@ -160,6 +165,17 @@ gives λ = 220 req/s, with baseline utilisation u₀ = 0.51. Observed knee:
 
 Check before running: **λ must stay well under the generator ceiling from
 step 1.**
+
+## Split profile and reference control
+
+The `split` profile resolves `router.conf.tpl` to `router.active.conf` in
+`split.sh`. The `low-locality` class is routed by user agent matching
+`~*lowloc`: to `varnish-h` for the shared reference and to `varnish-l` for
+partitioned configurations. The two Varnish sizes come from `.env`; the
+resolved router file is not versioned. Both paths remain behind nginx.
+
+The shared reference must run twice per campaign, at the beginning and at
+the end, to detect drift. A mismatch invalidates the campaign.
 
 ---
 

@@ -100,11 +100,15 @@ for r in $FRACTIONS; do
         docker compose --profile split restart varnish-h varnish-l router >/dev/null 2>&1; sleep 10
 
         for phase in "$WARMUP:w" "$MEASURE:m"; do
+            dur="${phase%%:*}"; tag="${phase##*:}"
+            skip=0
+            [[ "$tag" == "m" ]] && skip=$(awk -v w="$WARMUP" -v l="$LAMBDA" -v a="$ALPHA" \
+                'BEGIN{printf "%d", w*l*a}')
             docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$ALPHA" \
-                -e RATE="$LAMBDA" -e DURATION="${phase%%:*}s" -e TARGET=http://router:80 \
-                -e OUTFILE="${phase##*:}-r$r-$rep" \
+                -e RATE="$LAMBDA" -e DURATION="${dur}s" -e TARGET=http://router:80 \
+                -e TRAV_SKIP="$skip" -e OUTFILE="$tag-r$r-$rep" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
-            [[ "${phase##*:}" == "w" ]] && rm -f "results/w-r$r-$rep.json"
+            [[ "$tag" == "w" ]] && rm -f "results/w-r$r-$rep.json"
         done
 
         f="results/m-r$r-$rep.json"
