@@ -145,6 +145,7 @@ def main():
     })
     total = bad = 0
     site_urls = Counter()
+    served = set()   # URL che almeno una volta hanno dato 200
 
     for path in files:
         with openf(path) as fh:
@@ -168,6 +169,8 @@ def main():
                 site_urls[uri] += 1
                 st = str(r.get(F["status"]) or "0")
                 d["status"][st] += 1
+                if st == "200":
+                    served.add(uri)
                 if F["conn"]:
                     d["conns"].add((r.get(F["ip"]), r.get(F["conn"])))
                 if F["connreq"]:
@@ -204,7 +207,7 @@ def main():
                     d["first"] = t if d["first"] is None else min(d["first"], t)
                     d["last"] = t if d["last"] is None else max(d["last"], t)
 
-    known200 = {u for u, _ in site_urls.items()}
+    known200 = served
     rows = []
     for name, d in sorted(op.items(), key=lambda kv: -kv[1]["req"]):
         uniq = len(d["urls"])
@@ -217,7 +220,8 @@ def main():
             "connections": conns or 0,
             "req_per_conn": round(d["req"] / conns, 1) if conns else None,
             "max_req_one_conn": d["connreq_max"],
-            "coverage_pct": round(100 * uniq / a.pages, 2),
+            "coverage_pct": round(100 * len([u for u in d["urls"] if u in served]) / a.pages, 2),
+            "bogus_urls": len([u for u in d["urls"] if u not in served]),
             "gini": round(gini(list(d["urls"].values())), 3),
             "ips": len(d["ips"]), "slash24": len(d["nets"]),
             "http2_pct": round(100 * sum(v for k, v in d["proto"].items() if "2" in k) / d["req"], 1) if d["req"] else 0,
@@ -239,12 +243,17 @@ def main():
     hdr = ["operator", "class", "requests", "unique_urls", "req_per_url", "req_per_conn",
            "max_req_one_conn", "coverage_pct", "gini", "ips", "slash24", "http2_pct",
            "pct_200", "pct_404", "n_304", "conditional_req", "signed_req",
-           "peak_over_mean", "active_days", "MB", "rt_p50", "rt_p95"]
+           "bogus_urls", "peak_over_mean", "active_days", "MB"]
     w = {h: max(len(h), *(len(str(r[h])) for r in rows)) for h in hdr}
     print("\n=== OPERATORI ===")
     print("  ".join(h.ljust(w[h]) for h in hdr))
     for r in rows:
         print("  ".join(str(r[h]).ljust(w[h]) for h in hdr))
+
+    print("\n=== CODICI DI RISPOSTA PER OPERATORE ===")
+    for name, d in sorted(op.items(), key=lambda kv: -kv[1]["req"]):
+        parts = "  ".join(f"{k}:{100*v/d['req']:.1f}%" for k, v in d["status"].most_common(7))
+        print(f"{name:20s} {parts}")
 
     print("\n=== SINTESI ===")
     tot304 = sum(r["n_304"] for r in rows)
