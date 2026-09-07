@@ -10,17 +10,18 @@ from collections import defaultdict, Counter
 from datetime import datetime
 
 CANDIDATES = {
-    "ts":     ["time_iso8601", "time", "timestamp", "ts", "time_local"],
+    "ts":     ["time_iso8601", "timestamp", "time_local", "time", "ts", "t"],
     "ua":     ["http_user_agent", "user_agent", "ua", "agent"],
-    "uri":    ["request_uri", "uri", "path", "request"],
-    "status": ["status", "code"],
+    "uri":    ["request_uri", "uri", "path", "request", "u"],
+    "status": ["status", "code", "s"],
     "ip":     ["remote_addr", "client_ip", "ip"],
     "conn":   ["connection", "conn", "connection_id"],
-    "connreq":["connection_requests", "conn_requests", "connection_req"],
-    "bytes":  ["body_bytes_sent", "bytes_sent", "bytes"],
+    "connreq":["connection_requests", "conn_requests", "connection_req", "conn_req"],
+    "bytes":  ["body_bytes_sent", "bytes_sent", "bytes", "b"],
     "proto":  ["server_protocol", "protocol", "http_version"],
-    "sigagent":["http_signature_agent", "signature_agent"],
-    "siginput":["http_signature_input", "signature_input"],
+    "sigagent":["http_signature_agent", "signature_agent", "sig_agent"],
+    "rtime":  ["request_time", "rt"],
+    "siginput":["http_signature_input", "signature_input", "sig_input"],
     "inm":    ["http_if_none_match", "if_none_match"],
     "ims":    ["http_if_modified_since", "if_modified_since"],
     "ref":    ["http_referer", "referer"],
@@ -104,6 +105,13 @@ def gini(counts):
     return (2 * cum) / (n * sum(v)) - (n + 1) / n
 
 
+def pct(v, q):
+    if not v:
+        return 0.0
+    z = sorted(v)
+    return round(z[min(len(z) - 1, int(q * len(z)))], 4)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pattern")
@@ -133,7 +141,7 @@ def main():
         "req": 0, "urls": Counter(), "conns": set(), "connreq_max": 0,
         "status": Counter(), "bytes": 0, "ips": set(), "nets": set(),
         "proto": Counter(), "daily": Counter(), "cond": 0, "signed": 0,
-        "first": None, "last": None, "cls": None, "ref": 0,
+        "first": None, "last": None, "cls": None, "ref": 0, "rt": [],
     })
     total = bad = 0
     site_urls = Counter()
@@ -185,6 +193,11 @@ def main():
                     d["signed"] += 1
                 if F["ref"] and r.get(F["ref"]) not in (None, "-", ""):
                     d["ref"] += 1
+                if F["rtime"]:
+                    try:
+                        d["rt"].append(float(r.get(F["rtime"]) or 0))
+                    except Exception:
+                        pass
                 t = parse_ts(r.get(F["ts"])) if F["ts"] else None
                 if t:
                     d["daily"][t.strftime("%Y-%m-%d")] += 1
@@ -215,6 +228,7 @@ def main():
             "signed_req": d["signed"],
             "referer_pct": round(100 * d["ref"] / d["req"], 1),
             "MB": round(d["bytes"] / 1048576, 1),
+            "rt_p50": pct(d["rt"], 0.50), "rt_p95": pct(d["rt"], 0.95),
             "active_days": len(daily),
             "peak_day": max(daily) if daily else 0,
             "peak_over_mean": round(max(daily) / (sum(daily) / len(daily)), 1) if daily else 0,
@@ -225,7 +239,7 @@ def main():
     hdr = ["operator", "class", "requests", "unique_urls", "req_per_url", "req_per_conn",
            "max_req_one_conn", "coverage_pct", "gini", "ips", "slash24", "http2_pct",
            "pct_200", "pct_404", "n_304", "conditional_req", "signed_req",
-           "peak_over_mean", "active_days", "MB"]
+           "peak_over_mean", "active_days", "MB", "rt_p50", "rt_p95"]
     w = {h: max(len(h), *(len(str(r[h])) for r in rows)) for h in hdr}
     print("\n=== OPERATORI ===")
     print("  ".join(h.ljust(w[h]) for h in hdr))
