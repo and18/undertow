@@ -132,6 +132,10 @@ export function setup() {
     total += b.n_chapters;
     cum.push(total);
   }
+  const g = (a, b) => { while (b) { [a, b] = [b, a % b]; } return a; };
+  if (g(TRAV_MUL % total, total) !== 1) {
+    throw new Error(`TRAV_MUL non coprimo con ${total}: la traversata non copre il corpus`);
+  }
   return {
     ids: ids, cum: cum, total: total,
     // Offset deterministico, dal seed dell'esperimento.
@@ -157,6 +161,18 @@ function locate(data, idx) {
 // Il moltiplicatore e' primo, quindi la mappa e' biiettiva su [0, N).
 function permute(rank, N) {
   return (rank * 2654435761 + SEED) % N;
+}
+
+// Moltiplicatore distinto da quello di permute(). Con lo stesso, l'argomento
+// della traversata E' il rango di popolarita': lo scanner percorre il corpus
+// in ordine di popolarita' decrescente, e hit_bassa dipende da quale finestra
+// di ranghi la misura attraversa — cioe' da TRAV_SKIP, cioe' da WARMUP.
+// Firma del 6 settembre, blocco B: 0,254 / 0,267 / 0,159 a warm-up 120/300/600
+// con configurazione altrimenti identica.
+const TRAV_MUL = 2246822519;
+
+function permuteTrav(i, N) {
+  return ((i % N) * (TRAV_MUL % N) + SEED * 7919) % N;
 }
 
 // Zipf(1) per trasformata inversa. Per alpha=1 la CDF del rango r vale
@@ -188,7 +204,7 @@ function zipfRank(N) {
 // e va riportato per ogni punto, perche' e' un limite di scala del
 // testbed e non una proprieta' del modello.
 function traversalIndex(data) {
-  return permute(data.offset + TRAV_SKIP + exec.scenario.iterationInTest, data.total);
+  return permuteTrav(data.offset + TRAV_SKIP + exec.scenario.iterationInTest, data.total);
 }
 
 // -------------------------------------------------------------------------
