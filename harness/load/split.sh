@@ -104,6 +104,9 @@ for r in $FRACTIONS; do
             skip=0
             [[ "$tag" == "m" ]] && skip=$(awk -v w="$WARMUP" -v l="$LAMBDA" -v a="$ALPHA" \
                 'BEGIN{printf "%d", w*l*a}')
+            # Forzatura per l'esperimento del 7 settembre: isola l'effetto
+            # della finestra di ranghi attraversata dall'effetto del warm-up.
+            [[ "$tag" == "m" && -n "${TRAV_SKIP_FORCE:-}" ]] && skip="$TRAV_SKIP_FORCE"
             docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$ALPHA" \
                 -e RATE="$LAMBDA" -e DURATION="${dur}s" -e TARGET=http://router:80 \
                 -e TRAV_SKIP="$skip" -e OUTFILE="$tag-r$r-$rep" \
