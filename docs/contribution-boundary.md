@@ -3,341 +3,336 @@
 The one page to keep in front of you during every experiment. It exists
 to prevent spending weeks measuring something already published.
 
-Rule: no experiment is started unless it maps to a row in the third
-column. If a result lands in the first column, it is cited, never
-claimed.
+Rule: no experiment is started unless it maps to a row in Column 3. If a
+result lands in Column 1, it is cited, never claimed.
+
+Last novelty audit: **2026-09-08**, systematic, against SoCC, IMC, NSDI,
+OSDI, SOSP, ATC, MICRO proceedings and the Cloudflare, Fastly, Akamai,
+Vercel and Bunny engineering blogs.
 
 ---
 
 ## The thesis
 
-> Web infrastructure classifies automated traffic by **identity** and
-> decides by identity. But the classes have opposite resource footprints
-> and opposite urgency: training crawling is high-volume with nobody
-> waiting; agentic retrieval is low-volume with a person waiting in real
-> time. The measurable consequence is that the web refuses most of the
-> urgent traffic and serves most of the traffic that could wait. A policy
-> organised around **cost and urgency** rather than identity requires
-> knowing what each class actually costs — which nobody has measured.
+> Overload control and resource isolation as published assume
+> **cooperative clients inside a trust boundary**: they declare their
+> class, hold credits, or attach tokens. Automated web traffic is the
+> first population where none of that holds — the client cannot be
+> modified, its declared identity is forgeable, a third of it is
+> unclassifiable, and the only return channel is an HTTP status code.
+> In that regime the class must be **inferred from behaviour** and the
+> policy must be based on **measured cost**, which requires knowing what
+> each class actually costs.
 
 Position relative to prior work:
 
 | layer | question | who answered it |
 |---|---|---|
 | classification | *what kind of traffic is this?* | Cloudflare (Search/Agent/Training, July 2026) |
-| cache policy | *what should the cache keep?* | Zhang et al., SoCC 2025 |
-| **resource allocation** | **what should each class cost, and get?** | **open** |
+| cache policy | *what should the cache keep?* | Zhang et al., SoCC '25 |
+| isolation among cooperating tenants | *who gets which share?* | Pisces, Memshare, UCP |
+| overload control for cooperating clients | *whose request do I drop?* | DAGOR, Breakwater, Rajomon |
+| **cost and admission for uncooperative external clients** | **what does each class cost, and what does it deserve?** | **open** |
 
 Competing on classification would be futile: Cloudflare has global
-telemetry, operator verification, and behavioural signals. Their taxonomy
-is taken as **input**, not as a problem to re-solve.
+telemetry and operator verification. Their taxonomy is **input**.
 
 ---
 
 ## Column 1 — Not ours. Cite, never claim.
 
-**AI/scan traffic has low locality and degrades cache efficiency.**
-Zhang, Cai, Wildani, Klimovic, *Rethinking Web Cache Design for the AI
-Era*, SoCC 2025, doi:10.1145/3772052.3772255. Measured: Varnish miss
-ratio 17.3% → 32.2% at 25% AI traffic, → 51.8% at 100%.
+**AI/scan traffic degrades cache efficiency.** Zhang, Cai, Wildani,
+Klimovic, *Rethinking Web Cache Design for the AI Era*, SoCC '25,
+doi:10.1145/3772052.3772255. Varnish miss ratio 17,3% → 32,2% at 25% AI
+traffic, → 51,8% at 100%. Prototype on Wikimedia architecture, Locust
+generator, enwiki dump 2025-05-20. **Note: two of four authors are
+Cloudflare employees and the work is hosted on research.cloudflare.com.
+The April 2026 Cloudflare blog is that company communicating its own
+paper, not an independent adoption.** 0 citations as of January 2026.
 
 **Cache degradation increases backend pressure.** Same paper, stated
-explicitly (§3.1): bypassing AI traffic to the backend *"increases
-pressure on application servers, storage systems, and databases"*.
-Qualitative, not measured — see Column 3.
+explicitly, qualitative and not measured. This is the sentence our O8
+quantifies.
 
-**Differentiated cache treatment for human and AI traffic is needed.**
-Same paper: distinct tiers, tailored admission and eviction. The flag is
-planted; we do not get to plant it again.
+**Separate cache tiers and deferral for AI traffic.** Cloudflare, *Why
+we're rethinking cache for the AI era*, 2 April 2026. Proposes
+SIEVE/S3FIFO, a deeper cache tier routed by activity type, and —
+verbatim — serving AI requests from deep tiers *"or even delayed using
+queue-based admission or rate-limiters to prevent backend overload"*,
+opening *"the opportunity to defer bulk scraping when infrastructure is
+under load"*. **The deferral idea is theirs, published before our
+measurement. We quantify it; we did not originate it.**
 
-**Scan workloads are pathological for LRU below the working set and
-benign above it.** ARC (Megiddo & Modha, FAST 2003), LIRS (Jiang & Zhang,
-SIGMETRICS 2002), 2Q (Johnson & Shasha, VLDB 1994), SIEVE (NSDI 2024),
-S3-FIFO (SOSP 2023). The inversion we observed at 512 MB is a direct
-consequence of this and **was mistakenly described internally as a
-finding on 2026-08-16; withdrawn the same day.**
-
-**Utility-based cache partitioning.** Qureshi & Patt, *Utility-Based
-Cache Partitioning*, MICRO 2006. It frames partitioning around marginal
-utility rather than demand; our result challenges the additivity of
-isolated utility curves when one class free-rides on the other's
-residence.
+**Scan workloads are pathological for LRU below the working set.** ARC
+(FAST '03), LIRS (SIGMETRICS '02), 2Q (VLDB '94), SIEVE (NSDI '24),
+S3-FIFO (SOSP '23).
 
 **Scan-resistance is a documented production problem.** Brooker et al.,
-*On-demand Container Loading in AWS Lambda*, arXiv:2305.13162. It places
-the lack of scan-resistance in a production context, not only in cache
-literature.
+*On-demand Container Loading in AWS Lambda*, arXiv:2305.13162.
 
-**A current operational proposal.** Cloudflare, *Why we're rethinking
-cache for the AI era*, 2 April 2026. It explicitly proposes SIEVE/S3FIFO
-and a cache tier routed by activity type; O8 measures the cost of that
-proposal.
+**Utility-based cache partitioning.** Qureshi & Patt, MICRO 2006,
+doi:10.1109/MICRO.2006.49. Partitions by marginal utility from miss-ratio
+curves measured **in isolation**. Our O8d falsifies that additivity
+assumption empirically.
 
-**Hit ratio rises with cache size; miss-ratio curves are a standard
-tool.** Mattson stack distances and successors. Our cache-size sweep
-re-measures a textbook relation and is used as instrumentation.
+**Shared beats partitioned in aggregate, and it costs backend load.**
+Cidon, Rushton, Rumble, Stutsman, *Memshare*, USENIX ATC '17,
+arXiv:1610.08129. Verbatim: a shared policy gives superior overall hit
+rate *"at the expense of a 1% drop in application 3's hit rate. This
+would result in 43% higher database load"*. **The closest prior work to
+O8c and it must be cited as the foundation.** Differences: their classes
+are ordinary applications that both benefit from cache, ours has zero
+intrinsic locality; they *infer* database load from hit ratio, we measure
+origin req/s; they have no scaling law and no sign flip.
 
-**Queueing delay grows sharply as utilisation approaches capacity.**
-Pollaczek–Khinchine; Little. Any non-linear latency growth near
-saturation is expected. A measured threshold in a specific setting is a
-data point, not a discovery.
+**Free riding in shared caches is a named problem.** Pu, Li, Zaharia,
+Ghodsi, Stoica, *FairRide*, NSDI '16. Formalises free-riding as a
+**fairness** problem with an impossibility triangle. The term is theirs.
 
-**Traffic classification into Search / Agent / Training.** Cloudflare,
-shipped July 2026, defaults changing 15 September 2026.
+**Performance isolation trades against utilisation.** Pisces (OSDI '12),
+Cliffhanger (NSDI '16), RobinHood (OSDI '18), Cake, IOFlow, SQLVM,
+A-Cache, Intel CAT/RDT, NVIDIA MIG, KPart (HPCA '18). *"Static
+partitioning leads to under-utilization of cache resources"* is the
+standard opening sentence of this literature. **Generalising our result
+to "shared resource contention" moves it into this field, not away from
+it.**
 
-**Automated traffic exceeds human traffic.** Cloudflare Radar: 57.5% of
-HTML requests. Note the denominator — HTML requests, not all requests,
-not bytes, on a network covering roughly a fifth of the web.
+**Overload control with priorities and deadlines.** DAGOR (WeChat 2018),
+Breakwater (OSDI '20), Rajomon (NSDI '25), TopFull (SIGCOMM '24), SEDA
+(SOSP '01), Cinnamon (Meta), Persephone (SOSP '21), plus priority-based
+admission control for web servers from the early 2000s. **All assume
+cooperative clients**: credits, tokens, or caller-declared priority.
 
-**Scanning for exposed AI infrastructure** (`/v1/models`, MCP
-transports). SANS ISC diary 33150; Knostic, July 2025. Our honeypot
-observations are independent confirmation only.
+**Queueing delay grows sharply near capacity.** Kingman (1961),
+doi:10.1017/S0305004100036094; Pollaczek–Khinchine; Little. Any
+non-linear latency growth near saturation is expected.
+
+**Crawler compliance with robots.txt is partial and measured.** Kim,
+Bock, Luo, Liswood, Wenger, *Scrapers Selectively Respect robots.txt
+Directives*, IMC '25, doi:10.1145/3730567.3764471, arXiv:2505.21733. 130
+bots, 40 days, ~3,9M requests, 36 sites; mean compliance 0,397; SEO
+0,704; AI assistants 0,665. **Does not measure 503/429/Retry-After
+compliance.**
+
+**Robots.txt and NoAI efficacy.** Liu et al., *Somesite I Used To Crawl*,
+IMC '25, arXiv:2411.15091.
+
+**Operator reports of crawler load.** Wikimedia Diff, 1 April 2025 —
+verbatim, *"at least 65% of this resource-consuming traffic we get for
+the website is coming from bots, a disproportionate amount given the
+overall pageviews from bots are about 35% of the total"*. Read the Docs,
+73 TB in one month. SourceHut, GNOME, Fedora.
+
+**Automated traffic exceeds human traffic.** Cloudflare: 32% of network
+traffic (April 2026 blog) or >57% of HTML requests (Radar). **Two
+different denominators; always state which.**
+
+**Crawl-to-refer ratios.** Cloudflare Radar Q1 2026: ~1 276:1 for GPTBot,
+~23 951:1 for ClaudeBot. Crawling is extraction, not discovery.
+
+**Scanning for exposed AI infrastructure.** SANS ISC diary 33150;
+Knostic. Our H8 observations are independent confirmation only.
 
 ---
 
 ## Column 2 — Ours. Measured, defensible, with stated limits.
 
-**C1 — The web refuses the wrong traffic.**
-Source: Cloudflare Radar API, `/radar/ai/bots/summary/RESPONSE_STATUS`
-filtered by `crawlPurpose`, 28 days to 2026-08-22.
+**C1 — The web refuses the wrong traffic, and the series has a break.**
+Radar, weekly: User Action 200 OK from 56,0% (1 June) to 21,3% (24
+August); 403 from 19,2% to 52,4%; step in the week of 20 July. See
+findings G1.
+*Status:* the data are Cloudflare's, public and queryable. The
+**framing** — that this is a misallocation, plus the identification of
+the break — is ours.
+*Caveats:* 403 may express publisher policy, not misclassification; and
+the composition series has its own step in the week of 3 August, inside
+Cloudflare's reclassification window. **Behavioural change and
+relabelling cannot be separated.** Re-verify before submission.
 
-| | Training | Search | User Action |
-|---|---|---|---|
-| 200 | 63.7% | 53.9% | **25.0%** |
-| 403 | 17.6% | 19.0% | **34.5%** |
-| 404 | 5.5% | 10.3% | 18.6% |
-| 429 | 2.6% | 4.1% | 6.7% |
-| refused | 25.7% | 33.4% | **59.8%** |
+**C2 — Class composition is re-proportioning.** User Action +130%,
+Search +91%, Training +8% year on year. Same reclassification caveat.
 
-The class with a human waiting in real time is blocked at twice the rate
-of the batch class and succeeds one time in four. This is a direct
-consequence of identity-based policy: the agent is caught in the net
-built for the crawler.
+**C3 — Nobody revalidates.** Radar 0,53% globally; honeypot 23 of
+378 747 (0,0061%), of which 22 from a single operator.
+*Caveat:* the honeypot log does not capture `If-None-Match` /
+`If-Modified-Since`; the claim rests on response codes and is an
+inference until the log format is extended.
 
-*Status:* the data are Cloudflare's, public and freely queryable. The
-**framing** — that this is a misallocation, and why — is ours. Anyone
-could have run this query; nobody appears to have published the
-comparison. To be re-verified before submission.
+**C4 — Verifiable identity predicts protocol conformance, not transport
+cost.** The only Web Bot Auth signer on the honeypot is also the only
+operator that revalidates (22 of 23 conditional responses) **and** opens
+one TCP connection per request. **There is no such thing as "the cost";
+an admission policy must declare which cost it optimises.**
+*Caveat:* one site, one signing operator. A counterexample to "identity
+predicts cost", not a characterisation.
+*Relevance:* IETF working groups are building identity-based admission
+now, without this data.
 
-*Caveat:* 403 may also reflect deliberate publisher policy (paywalls,
-licensing disputes), not only misclassification. The data cannot
-distinguish intent. Say so.
-
-The 28-day series crosses a break in classification. In the weekly
-User Action series, 200 responses fall from 56.0% (1 June) to 21.3%
-(24 August), while 403 rises from 19.2% to 52.4%, with the step in the
-week of 20 July. Behavioural change and relabelling cannot be separated
-around Cloudflare's reclassification. The `Undeclared` category, 1.76%,
-is also absent from the table above.
-
-**C2 — Class composition is re-proportioning fast.**
-Radar `timeseries_groups/CRAWL_PURPOSE`, 52 weeks, weekly:
-
-| class | Aug 2025 | Aug 2026 | change |
-|---|---|---|---|
-| User Action | 2.20% | 5.06% | **+130%** |
-| Search | 9.03% | 17.24% | **+91%** |
-| Training | 36.42% | 39.35% | +8% |
-| Mixed Purpose | 51.68% | 36.67% | −29% |
-
-*Caveat:* the Mixed decline is partly reclassification, not only traffic
-shift. Cloudflare relabelled categories during this window. Use quarterly
-views and state the discontinuity. The composition also has a step: User
-Action moves from about 2.5% to 5.0–6.7% in the week of 3 August.
-
-**C3 — Nobody revalidates.**
-Radar: 304 responses are 0.53% of all AI bot requests. Honeypot: one 304
-in approximately 186,000 requests over 17 days to 29 August. Every
-crawler re-downloads unchanged content in full.
-Conditional requests (`If-None-Match`, `If-Modified-Since`) exist
-precisely for this and are essentially unused. Read the Docs reported the
-same qualitatively (73 TB in one month, no ETag support); we have the
+**C5 — Requests per TCP connection, per named operator.** GPTBot 24,0
+over 26 days; Google-CloudVertex 10,3; Googlebot 5,2; SemrushBot,
+AhrefsBot, DotBot, Meta, Amazonbot, Applebot all 1,0. Not found in prior
 measurement.
+*Caveats:* nginx `$connection` is a per-worker serial, so reuse is
+overcounted; and `keepalive_requests` = 1000 truncates the distribution,
+making every figure a lower bound. The earlier 686 figure is superseded.
 
-**C4 — Identity does not predict cost.**
-Honeypot: AhrefsBot is the only operator sending Web Bot Auth signature
-headers — cryptographically identified under the emerging IETF scheme —
-and opens exactly 1.0 requests per TCP connection. GPTBot, unsigned,
-reuses connections 686 times. A policy that admits the signed and rejects
-the unsigned admits the expensive and rejects the cheap.
+**C6 — Selective versus exhaustive crawling, quantified by Gini.**
+Googlebot 27,3% coverage, Gini 0,38; SERanking 0,001, AhrefsBot 0,003,
+GPTBot 0,072. Gini is computable from any access log.
 
-*Caveat:* one site, one signing operator, seven days. This establishes
-the existence of a counterexample, not a statistical claim.
+**C7 — Cache contention is the causal mediator.** Intervention on the
+mediator, not correlation: cache capacity 128/256/512 MB moves the knee
+from α=0,30 to α=1,00 to absent; at α=0,50 cache size alone takes p99
+from 3096 ms to 1 ms.
+*Caveat:* taken on x86 before the measurement protocol was fixed. Due
+for re-measurement; effect size is far larger than any known artefact.
 
-**C5 — Requests per TCP connection, per named operator.**
-Not found in any prior measurement. GPTBot 686; Meta-ExternalAgent,
-AhrefsBot, SemrushBot, Amazonbot all exactly 1.0; Googlebot 2.8. Meta
-runs HTTP/2 and opens a fresh connection per request, which defeats the
-protocol's purpose.
+**C8 — The stability boundary is resource-based, not
+composition-based.** Six campaigns, two architectures: knee at α from
+0,15 to 0,30, occupancy at the knee always 0,89–0,97. **No universal AI
+percentage; a utilisation boundary an operator already monitors.**
+*Refinement:* ρ predicts when the origin queue explodes, not how much a
+given class suffers — that also depends on the class's miss fraction.
+*Risk:* a referee may call it Kingman applied. Mitigation: the empirical
+invariance across architectures and the miss-fraction corollary are the
+contribution, not the queueing theory.
 
-*Caveat:* nginx `$connection` is per-worker; the key used is (ip,
-connection), so distinct connections are underestimated and
-requests-per-connection overestimated. The direction of the error is
-known: 1.0 is a floor no collision can produce spuriously.
+**C9 — A class's hit ratio is not its own property.** Under a shared
+cache the exhaustive class obtains a non-zero hit ratio while sampling
+uniformly; under a private cache of any size it obtains 0,000. **Its
+utility is created by the other class's residency.**
+*Foundation to cite:* FairRide (the term), Memshare (the direction).
+*What is ours:* the measurement for a class with zero intrinsic
+locality, and the scaling law.
 
-**C6 — Selective versus exhaustive crawling, quantified.**
-Googlebot: 17.3% site coverage, Gini 0.18. GPTBot, AhrefsBot, Amazonbot:
-~100% coverage, Gini **0.00** — perfectly uniform, every page once.
-Search crawling is constrained by expected per-page value; training
-crawling is not. Gini is the discriminant.
+**C10 — The free ride scales with the cache-to-corpus ratio.** 0,048 at
+7% to 0,804 at 88%. **Bounds the practical importance of C11: on a
+production site the free ride is small.** Reporting this is what makes
+the work honest rather than alarmist.
 
-*Caveat:* Googlebot's low coverage may reflect crawl budget on a
-one-week-old domain with no backlinks, not policy. Distinguishable only
-by continued collection.
+**C11 — The cost of partitioning changes sign with scale.** −3,8% at
+32 MB, +5,8% at 128 MB, +321% at 384 MB, same total capacity. Explained
+by a decomposition whose second term goes negative at large cache:
+partitioning stops helping the protected class because in shared mode
+the exhaustive class was loading the corpus for it. **The free ride runs
+both ways.**
+*Foundation to cite:* Memshare.
+*Caveats:* one corpus, one popularity distribution, α=0,25, residual
+warm-up dependence of ±8% (findings O8f). **Does not refute Cloudflare's
+proposal**, which adds a deeper tier rather than splitting fixed
+capacity. What it establishes is a condition of validity nobody has
+written down.
 
-**C7 — Cache contention is the causal mediator (F6).**
-Intervention, not correlation: varying cache capacity 128/256/512 MB
-moves the knee from α=0.30 to α=1.00 to absent. At α=0.50, changing only
-cache size takes p99 from 3096 ms to 1 ms.
+**C12 — A private cache is worth less than a smaller shared one.** At
+384 MB the exhaustive class with 96 MB reserved obtains 0,028; with
+32 MB **shared** it obtained 0,048. Directly falsifies the additivity of
+isolated utility curves assumed by UCP.
+**Operational form: give the exhaustive class zero, or additional
+capacity. Never a slice of what you already have.**
 
-**C8 — The stability boundary is resource-based, not composition-based
-(F7).** Across six campaigns the knee always occurred at 89–97% thread
-pool occupancy, while the α at which that happened varied (0.15, 0.20,
-0.30) as origin capacity drifted 74 → 92 req/s. **There is no universal
-"AI percentage limit"; there is a resource-utilisation boundary.** An
-operator cannot use someone else's α. They can watch their own ρ.
+**C13 — A per-class budget restores the interactive class.** Deferral,
+not refusal: interactive p99 5× better at 3% of total system work,
+interactive throughput unchanged, two deferrals on the interactive class
+across 148 000 requests.
+*Status:* the mechanism is Netflix 2018 and Cloudflare April 2026. **The
+measurement is ours.** Frame as quantification, never as invention.
+*Existential caveat:* rests on the crawler retrying. See D2.
 
-*How this was found:* by accident, when a repeat of an earlier campaign
-produced no knee at identical hit ratios. The database had warmed. It is
-recorded as a discovery, not hidden as a failed run.
+**C14 — Crawling load is an event, not an average.** Peak-to-mean up to
+15,8× per operator; each arrives once, covers the site in a day, leaves.
+A site whose mean utilisation sits below the boundary can spend a full
+day above it.
 
-**C9 — A class's hit ratio is not its own property.** Under a shared cache
-the exhaustive class obtains **h = 0.163** while sampling uniformly from
-a corpus larger than the cache: it has no locality, but encounters what
-the human class has made resident. Under a partitioned cache the same
-class obtains **h = 0.000** at every reserved fraction. Measured with a
-validity gate, λ=110, α=0.50, six repetitions on the reference, with 0.4%
-drift across two blocks two hours apart.
-
-Consequence: utility curves measured in isolation are not additive in a
-mixture. Utility-based cache partitioning (Qureshi & Patt, MICRO 2006)
-would assign zero to the exhaustive class -- its isolated utility is zero
--- and **would increase total misses**.
-
-*Caveat:* one corpus, one cache size, one popularity distribution. The
-predicted free ride scales as R/N with a logarithmic correction; at
-production scale the prediction is ~5%, derived, not measured.
-
-**C10 — The resource boundary survives a change of architecture.**
-Five campaigns across x86 (Ryzen, WSL2, 16 threads, SMT) and
-ARM (Ampere Neoverse-N1, 6 cores, no SMT): the composition at which the
-knee occurs varies 0.15–0.30, the pool occupancy at which it occurs stays
-89–97%. Nobody has published a normalised stability boundary for
-composition-driven origin saturation, nor demonstrated its
-architecture-independence.
-*Caveat:* two architectures, one pool size, one bottleneck type. Q4 open.
+**C15 — A third of honeypot traffic presents as a browser and is
+hostile.** 130 100 requests, 0,0% with a referer, top paths `/.env`,
+`/.git/config`, `/wp-admin/install.php`. **Vulnerability scanning
+wearing a browser user agent — not unclassified browsing.** Must be
+separated from the traffic classes under study rather than reported as
+an open gap.
 
 ---
 
 ## Column 3 — Must still be demonstrated.
 
-**C11 — The scan-resistance trade-off is a measured inversion.**
-At λ=110 and α=0.50, shared cache gives high-locality h=0.747 and
-low-locality h=0.163; reserving any tested fraction gives high-locality
-h=0.731–0.800 and low-locality h=0.073–0.000, while origin load rises
-from 59.7 to 65.6–66.9 req/s. The first byte of separation destroys the
-free ride; the high-locality gain saturates before full reservation.
+**D1 — There is no agentic class in the testbed.** *Highest priority.*
+The thesis concerns a class with a person waiting; the testbed has
+humans and crawlers. Build a third profile — few pages, correlated, no
+client cache, latency-sensitive — calibrated on H6 and H9, and re-run
+C13 with three classes.
 
-At λ=110–145, partitioning improves high-locality p99 by 7–35% despite
-the extra origin load; at λ=155 it is 21% worse. The trade-off is
-therefore a function of utilisation: scan-resistance buys latency for
-the human class below saturation and removes it near saturation.
+**D2 — Do real crawlers honour Retry-After?** The existential risk to
+C13, and **not measured by anyone**: Kim et al. cover robots.txt and
+crawl-delay, not 503/429. Testable on the honeypot, one operator at a
+time. Both outcomes are contributions: if they return, the conflict
+between classes is apparent rather than real; if they do not, deferral
+is unimplementable until clients change, which is a protocol
+specification.
 
-*Open caveat:* `hit_low` is non-monotone at saturation (O8f), and the
-free ride's survival at production scale is unmeasured (Q10). A corpus,
-cache size and distribution are held fixed.
+**D3 — Comparison of policies on one bench.** No policy / identity-based
+blocking / static budget / urgency-based scheduling, same load, same
+capacity. **This is where the work stops measuring and starts
+proposing.**
 
-**D1 — The scan-resistance trade-off. Sign unknown.** *Superseded by C11.*
+**D4 — Generality.** Does the shape survive a different bottleneck —
+connection pool, I/O-bound database, downstream service? All six
+campaigns used PostgreSQL CPU.
 
-Scan-resistant eviction protects the human working set. But the scan
-class free-rides on the shared cache: because it samples uniformly, it
-hits whatever is resident regardless of *which* objects those are —
-measured h_L ≈ S/W. Partitioning removes that free ride, and all of it
-goes to the origin.
+**D5 — Agentic behaviour is not modelled from data.** Volume from Radar;
+behaviour must be generated by querying commercial assistants against
+the site.
+*Note:* the earlier claim that agentic traffic is under-represented by a
+factor of 28 was withdrawn on 08-28.
 
-Computed on measured data at α=0.15, moving from shared LRU to full
-reservation for the human class:
+**D6 — Status-code histogram for the honeypot.** Blocks H9, where six
+independent operators converge on 66–69,5% of 404s and a third of
+responses are unaccounted for.
 
-    human gain     221 req/s × 0.022  =  +4.9 req/s saved
-    scan loss       39 req/s × 0.345  = -13.5 req/s added
-    net                                  +8.6 req/s
+**D7 — Re-measure C7 under the current protocol.**
 
-Origin load 68.4 → 77.0. With C ≈ 88, utilisation moves 0.78 → 0.88:
-**from safe to the edge of the knee.**
-
-But substituting the harmonic model for h_H instead of the measured value
-reverses the sign (68.4 → 66.8). The model error exceeds the effect.
-**The sign cannot be predicted; it must be measured.** That is exactly
-what makes the experiment worth running.
-
-Three outcomes, all publishable:
-- *paradox exists* → Zhang's proposal solves a cache problem and creates
-  an origin problem; admission control is a required complement
-- *paradox absent* → partitioning improves both; Zhang is right and
-  extended
-- *interior optimum* → a Pareto frontier and a quantified policy choice.
-  Richest outcome.
-
-**D2 — Optimal reserve fraction.** If a trade-off exists, vary the
-reserved share r and locate the optimum for total origin load, which will
-differ from the optimum for human latency.
-
-**D3 — Origin-side per-class admission control.** Cache partitioning is
-insufficient: the exhaustive stream reaches the origin regardless. Give
-each class a bounded thread/connection budget and measure whether the
-interactive class recovers while the batch class barely notices. The
-prediction is asymmetric — the crawler was never thread-limited, it was
-limited by the contention it created. If it holds, the conflict is
-apparent and nobody needs blocking.
-
-**D4 — Generality.** Does the shape survive different pool sizes and a
-different bottleneck (DB CPU vs connection pool vs downstream service)?
-Normalised curves should collapse onto one.
-
-**D5 — Realistic agent workload.** The honeypot sees agentic traffic at
-0.18% of AI traffic against 5.06% globally — a factor of 28. Agentic
-traffic is **concentrated, not rare**: it goes where people ask
-questions. Volume comes from Radar; behaviour must be generated by
-querying commercial assistants against the site.
-
-**D6 — Are isolated utility curves assumed additive in existing cache
-partitioning work?** The question is now whether the additivity assumed
-by utility-based cache partitioning is broken by a class free-riding on
-the other class's residence. This must be framed explicitly, with
-Qureshi & Patt (MICRO 2006) as the comparison point.
-
-**D7 — Re-measure the per-class interaction of O4/F2.** **Closed.** The
-measurement was repeated with a validity gate: shared-cache h=0.163 and
-partitioned h=0.000 for the low-locality class. See C9 and findings O8.
+**D8 — Raise `keepalive_requests` and add conditional-request headers to
+the honeypot log**, so C3 and C5 stop being lower bounds.
 
 ---
 
 ## Discipline
 
-- Every claim in Column 2 carries its caveat in the paper. The caveats
-  are not weaknesses; unstated, they become referee objections.
-- "To our knowledge" on every novelty claim. A novelty search is never
-  complete.
-- Radar figures are re-verified before submission — the API is live and
+- Every Column 2 claim carries its caveat in the paper. Unstated, they
+  become referee objections.
+- "To our knowledge" on every novelty claim.
+- Radar figures re-verified before submission; the API is live and
   Cloudflare reclassifies.
-- Absolute numbers from the testbed (α thresholds, req/s capacities) are
-  properties of one machine. Only normalised relations are claimed to
-  transfer.
-- Nothing is deleted from this document. Withdrawn claims move to the
-  record below.
+- Absolute numbers from the testbed are properties of one machine. Only
+  normalised relations are claimed to transfer.
+- **Generalising a wobbling result to make it more important almost
+  always makes it less novel.** Novelty lives in specificity. The general
+  principle has usually been written by someone; the specific case
+  measured well, rarely.
+- Nothing is deleted. Withdrawn claims move to the record below.
 
 ## Withdrawn
 
 - **2026-08-16** — "The α=1 inversion at large cache is counterintuitive
-  and unreported." It is textbook scan-vs-LRU behaviour and the reason
-  scan-resistant policies exist.
-- **2026-08-16** — "Cache larger than the working set." The 245 MB figure
-  was corpus text in PostgreSQL, not cached-object footprint, which was
-  later measured at 438 MB. Cache sizes are now stated as configured
-  capacity.
+  and unreported." Textbook scan-vs-LRU behaviour.
+- **2026-08-16** — "Cache larger than the working set." 245 MB was
+  corpus text in PostgreSQL, not cached-object footprint (438 MB).
 - **2026-08-19** — The inferred in-mixture low-locality hit ratio of
-  ≈0.13. Direct per-class measurement gives 0.33–0.39 and the effect runs
-  opposite to the inference.
-- **2026-08-21** — "The web cannot distinguish human from agent traffic."
-  Cloudflare shipped exactly that capability in July 2026. The defensible
-  claim is that knowing the class is not enough without knowing its cost.
+  ≈0,13, and its 2026-08-21 replacement of 0,33–0,39. **Both rest on
+  h_low measurements retracted on 08-26 and superseded on 09-06.** The
+  value that stands is in findings O8b.
+- **2026-08-21** — "The web cannot distinguish human from agent
+  traffic." Cloudflare shipped exactly that in July 2026.
+- **2026-08-28** — "Agentic traffic is concentrated, not rare — a factor
+  of 28–40 under-representation." Measured before the site was indexed.
+- **2026-08-30** — "Resource allocation for traffic classes is an open
+  question nobody has addressed." Cloudflare proposed queue-based
+  admission and deferral for bulk scraping in the April 2026 blog. What
+  remains ours is the measurement, not the idea.
+- **2026-08-30** — "The signed operator is the one that behaves worst."
+  It is also the only one that revalidates. Superseded by C4.
+- **2026-09-06** — "GPTBot reuses connections 686 times." An artefact of
+  a seven-day window; 24,0 over 26 days. Superseded by C5.
+- **2026-09-07** — "Generalising from AI traffic to resource competition
+  between traffic classes would make the contribution more durable."
+  **Rejected after audit:** that framing is the standard opening of
+  twenty-five years of performance-isolation literature. Generalising
+  removes the novelty rather than increasing it.

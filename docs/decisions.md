@@ -713,6 +713,8 @@ The fix is one line. The lesson is that configuration written by a script
 is configuration, and must be reviewed as such — a default buried in a
 runner silently defeated a correction made in the code it runs.
 
+---
+
 ## 26. VU sizing according to Little's law applies only under saturation
 
 **Decision.** `preAllocatedVUs = RATE × 2`, `maxVUs = RATE × 20`, capped
@@ -743,6 +745,8 @@ dropped iterations and retains its raw output as `invalid-*.json`. With
 `GATE=0`, errors are recorded and not discarded, because beyond
 saturation the errors **are** the signal.
 
+---
+
 ## 27. A check that does not check is worse than no check
 
 **Decision.** `nginx/router.conf` becomes `router.conf.tpl`, and
@@ -766,6 +770,113 @@ not merely in its parameters.
 **Corollary.** Every campaign includes the reference twice, at the start
 and end. If the blocks differ, the campaign is invalid. On 30–31 August
 the blocks produced 59.85 and 59.61 req/s, a 0.39% difference.
+
+---
+
+## 28. La durata della misura non si sceglie: si deriva dalla copertura del corpus
+ 
+**Decisione.** `MEASURE` è fissato in modo che la classe a bassa località
+attraversi **tutto** il corpus almeno una volta:
+ 
+    MEASURE ≥ N_oggetti / (λ · α)
+ 
+Sul banco attuale, con 16 954 capitoli, λ=110 e α=0,25, sono 617 s;
+il protocollo usa **620 s**, con `WARMUP=300`. Nessuna misura di hit
+ratio per classe è valida con una durata inferiore.
+ 
+**Perché — l'evidenza.** Il 6 settembre `hit_bassa` variava da 0,285 a
+0,172 al variare del solo warm-up, con configurazione altrimenti
+identica e ripetizioni interne concordi allo 0,5%. Un parametro che non
+dovrebbe entrare nel risultato lo spostava del 50%.
+ 
+Due cause sovrapposte, entrambe di campionamento.
+ 
+La prima: warm-up e misura sono **due invocazioni k6 separate**, quindi
+`exec.scenario.iterationInTest` ripartiva da zero e la misura
+ripercorreva la stessa sequenza appena percorsa. Ogni richiesta della
+classe esaustiva era una seconda visita a un oggetto inserito
+esattamente `WARMUP` secondi prima: `hit_bassa` misurava la **curva di
+sopravvivenza della cache**, non il passaggio gratuito. Firma: 0,163 con
+warm-up 180 s e 0,089 con 300 s a 128 MB, con il salto a 0,572 su 256 MB
+proprio dove il tempo di residenza attraversa la durata del warm-up.
+Corretto con `TRAV_SKIP`, che fa riprendere la traversata da dove il
+warm-up l'ha lasciata.
+ 
+La seconda, rimasta dopo la prima correzione: con `MEASURE=180` la
+classe esaustiva emetteva 4 950 richieste su 16 954 oggetti, cioè
+**campionava il 29% del corpus**. E il corpus è a coda pesante — mediana
+9,5 KB, media 15,0 KB, deviazione standard 32,4 KB, massimo 1,9 MB, con
+la deviazione doppia della media. Finestre diverse contengono oggetti di
+stazza diversa ed esercitano pressioni diverse sulla cache. Un'escursione
+del ±25% fra campioni al 29% non è un bug: è errore di campionamento con
+un campione troppo piccolo.
+ 
+Coprendo tutto il corpus l'escursione è scesa da 1,50× a 1,17×.
+ 
+**Perché era invisibile.** L'ordine di traversata è deterministico dal
+seed — correzione di §20, giusta e necessaria. Ma un bias deterministico
+resta un bias: renderlo riproducibile l'ha reso invisibile. Tre
+ripetizioni davano 0,161 / 0,163 / 0,162 e sembravano una misura solida.
+**La riproducibilità non è accuratezza.**
+ 
+**Una diagnosi intermedia, sbagliata e registrata.** Il 7 settembre è
+stato ipotizzato che la causa fosse la correlazione fra l'ordine di
+traversata e il rango di popolarità, dato che le due classi usavano la
+stessa permutazione moltiplicativa. L'ipotesi tornava con i numeri. È
+stata falsificata cambiando il moltiplicatore della classe esaustiva
+(`permuteTrav`): l'effetto è rimasto identico. La modifica è stata
+mantenuta perché la correlazione era comunque un difetto di disegno, ma
+non era la causa.
+ 
+**Il principio generale, ora enunciato quattro volte in questo log.**
+§6: un parametro del generatore non derivato dal carico è una variabile
+incontrollata. §20: la casualità non seminata è un input non misurato.
+§26: un parametro derivato dal regime nominale è incontrollato nel
+regime saturo. Qui: **una durata di misura scelta a mano è una
+dimensione di campionamento non dichiarata.**
+ 
+**Residuo dichiarato.** Anche a copertura piena `hit_bassa` dipende
+ancora dal warm-up per ±8% (0,204 / 0,198 / 0,174 a 120 / 300 / 600 s),
+in modo monotono e con ripetizioni interne allo 0,5%. È probabilmente
+una proprietà reale del sistema — la cache ha memoria dello stato
+precedente — non un artefatto. Il protocollo fissa il warm-up a 300 s e
+il residuo è dichiarato come limite. **Il criterio per fermarsi non è
+che il rumore sia zero: è che sia più piccolo dell'effetto da misurare.**
+Gli effetti in gioco vanno da −3,8% a +321%.
+ 
+---
+ 
+## 29. Il protocollo di misura è fisso e ogni campagna lo dichiara
+ 
+**Decisione.** Da 2026-09-07, ogni misura sul banco usa: `WARMUP=300`,
+`MEASURE=620`, cancello di validità per run, riferimento condiviso
+ripetuto a inizio e fine campagna, verifica con `varnishstat` che lo
+spazio allocato coincida con quello atteso, e ogni parametro scritto nel
+CSV insieme al risultato.
+ 
+**Perché.** Cinque campagne sono state buttate per parametri non
+dichiarati o non verificati: dimensione della cache non applicata,
+riferimento inesistente, tetto dei virtual user, offset casuale, durata
+di misura arbitraria. Il costo cumulativo è dell'ordine di quaranta ore
+di macchina e otto giorni di calendario.
+ 
+**Il cancello, e quando va spento.** Un run con iterazioni scartate o
+tasso di errore sopra l'1% viene **ripetuto**, non mediato, e il suo
+output grezzo conservato come `invalid-*.json`. Ma con `GATE=0` gli
+errori vengono registrati invece che scartati: oltre la saturazione gli
+errori **sono** il segnale, e il cancello butterebbe proprio i punti che
+dimostrano il collasso. La scelta va dichiarata per campagna.
+ 
+**Il controllo di deriva.** Il riferimento compare due volte, all'inizio
+e alla fine. Se i due blocchi non coincidono entro il 4%, la campagna è
+invalida e lo si sa **prima** di interpretarla. Sulle campagne del 7-8
+settembre lo scarto osservato è stato sotto l'1%.
+ 
+**Regola generale che ne discende.** Prima di interpretare
+un'invarianza, dimostrare che la variabile indipendente è stata
+effettivamente variata. Una grandezza che non si muove di una cifra su
+cinque configurazioni non è quasi mai un fenomeno fisico: è una
+variabile che non è stata variata. Vedi §27.
 
 ---
 
