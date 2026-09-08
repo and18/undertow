@@ -63,7 +63,11 @@ const SEED     = parseInt(__ENV.SEED || '42');
 // BETA e' la quota agentica, ALPHA quella esaustiva, il resto e' Zipf.
 // Il ritmo TOTALE resta costante, come per ALPHA.
 const BETA          = parseFloat(__ENV.BETA || '0');
-const AGENT_SCOPE   = parseFloat(__ENV.AGENT_SCOPE || '0.05');
+// 0,02 e non 0,05: la sessione espande ogni base in AGENT_SESSION
+// capitoli contigui, quindi la copertura effettiva e' il triplo dello
+// scope. A 0,05 il collaudo ha dato 11,6% contro il 2,1-6,1% misurato
+// sugli operatori agentici reali (findings H6).
+const AGENT_SCOPE   = parseFloat(__ENV.AGENT_SCOPE || '0.02');
 const AGENT_SESSION = parseInt(__ENV.AGENT_SESSION || '3');
 const AGENT_SKEW    = parseFloat(__ENV.AGENT_SKEW || '0.6');
 
