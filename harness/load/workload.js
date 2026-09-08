@@ -53,6 +53,24 @@ const DURATION = __ENV.DURATION || '300s';
 const ENDPOINT = __ENV.ENDPOINT || 'chapter';
 const SEED     = parseInt(__ENV.SEED || '42');
 
+// Terza classe: agentica. Un agente che risponde a una persona in tempo
+// reale non e' ne' un umano che naviga ne' un crawler che scandisce.
+// Calibrata sull'honeypot (findings H6, H9): gli operatori agentici
+// reali coprono il 2,1-6,1% del sito con Gini 0,38-0,42 e chiedono ogni
+// URL 2,1-3,7 volte. Quindi: insieme ristretto di argomenti, popolarita'
+// moderatamente concentrata, sessioni corte su capitoli contigui.
+//
+// BETA e' la quota agentica, ALPHA quella esaustiva, il resto e' Zipf.
+// Il ritmo TOTALE resta costante, come per ALPHA.
+const BETA          = parseFloat(__ENV.BETA || '0');
+const AGENT_SCOPE   = parseFloat(__ENV.AGENT_SCOPE || '0.05');
+const AGENT_SESSION = parseInt(__ENV.AGENT_SESSION || '3');
+const AGENT_SKEW    = parseFloat(__ENV.AGENT_SKEW || '0.6');
+
+if (ALPHA + BETA > 1.0000001) {
+  throw new Error(`ALPHA(${ALPHA}) + BETA(${BETA}) supera 1`);
+}
+
 // Sfasamento della traversata, in iterazioni. Warm-up e misura sono due
 // invocazioni k6 separate, quindi iterationInTest riparte da zero e la
 // misura ripercorrerebbe la sequenza appena percorsa dal warm-up: ogni
@@ -91,6 +109,30 @@ const RETRY_MAX = parseInt(__ENV.RETRY_MAX || '0');
 const RETRY_CAP = parseFloat(__ENV.RETRY_CAP || '5');   // secondi
 const latZipf  = new Trend('ut_lat_zipf', true);
 const latTrav  = new Trend('ut_lat_traversal', true);
+const hitAgent  = new Counter('ut_hit_agent');
+const missAgent = new Counter('ut_miss_agent');
+const okAgent   = new Counter('ut_ok_agent');
+const shedAgent = new Counter('ut_shed_agent');
+const latAgent  = new Trend('ut_lat_agent', true);
+
+// Stato di sessione, per VU. In k6 le variabili di modulo sono locali al
+// VU, quindi ogni VU porta avanti la propria sessione fra iterazioni.
+let agSession = null;
+
+// Zipf(AGENT_SKEW) su un sottoinsieme del corpus, per trasformata
+// inversa. Per s<1 vale CDF(r) = (r/N)^(1-s), quindi r = N*u^(1/(1-s)).
+// Con s=0,6 l'esponente e' 2,5. Base della sessione = quel rango mappato
+// a un capitolo; i successivi sono contigui, cioe' lo stesso libro.
+function agenticIndex(data) {
+  if (agSession === null || agSession.left <= 0) {
+    const scope = Math.max(1, Math.floor(data.total * AGENT_SCOPE));
+    const r = Math.min(scope - 1,
+      Math.floor(scope * Math.pow(Math.random(), 1 / (1 - AGENT_SKEW))));
+    agSession = { base: permute(r, data.total), left: AGENT_SESSION, k: 0 };
+  }
+  agSession.left--;
+  return (agSession.base + agSession.k++) % data.total;
+}
 
 export const options = {
   scenarios: {
@@ -210,28 +252,37 @@ function traversalIndex(data) {
 // -------------------------------------------------------------------------
 
 export default function (data) {
-  const agentic = MODEL === 'traversal' ||
-                  (MODEL === 'mix' && Math.random() < ALPHA);
+  // Un solo sorteggio per la ripartizione a tre vie: due sorteggi
+  // indipendenti introdurrebbero correlazione fra le classi.
+  const u = Math.random();
+  const cls = MODEL === 'traversal' ? 'trav'
+            : MODEL === 'agent'     ? 'agent'
+            : MODEL === 'zipf'      ? 'zipf'
+            : u < ALPHA             ? 'trav'
+            : u < ALPHA + BETA      ? 'agent'
+            :                         'zipf';
+  const agentic = cls === 'trav';
 
   let url;
   if (ENDPOINT === 'search') {
     url = `${TARGET}/search?q=${TERMS[Math.floor(Math.random() * TERMS.length)]}`;
   } else {
-    const idx = agentic
-      ? traversalIndex(data)
-      : permute(zipfRank(data.total), data.total);
+    const idx = cls === 'trav'  ? traversalIndex(data)
+              : cls === 'agent' ? agenticIndex(data)
+              :                   permute(zipfRank(data.total), data.total);
     const loc = locate(data, idx);
     url = `${TARGET}/book/${loc.book}/ch/${loc.n}`;
   }
 
-  const headers = {
-    'User-Agent': agentic ? 'undertow-lowloc/1.0' : 'undertow-highloc/1.0',
-  };
-  if (!agentic) headers['Accept-Language'] = 'en-GB,en;q=0.9';
+  const UA = { trav: 'undertow-lowloc/1.0',
+               agent: 'undertow-agent/1.0',
+               zipf: 'undertow-highloc/1.0' };
+  const headers = { 'User-Agent': UA[cls] };
+  if (cls !== 'trav') headers['Accept-Language'] = 'en-GB,en;q=0.9';
 
   let res = http.get(url, {
     headers: headers,
-    tags: { profile: agentic ? 'agent' : 'human' },
+    tags: { profile: cls },
   });
 
   // Solo la classe batch riprova, e solo sul 503 del budget.
@@ -253,7 +304,15 @@ export default function (data) {
   check(res, { 'status 200': (r) => r.status === 200 });
 
   const hit = res.headers['X-Cache'] === 'HIT';
-  if (agentic) {
+  if (cls === 'agent') {
+    // La classe agentica non riprova: c'e' una persona che aspetta.
+    if (res.status === 503) shedAgent.add(1);
+    else if (res.status === 200) {
+      okAgent.add(1);
+      if (hit) hitAgent.add(1); else missAgent.add(1);
+    }
+    latAgent.add(res.timings.duration);
+  } else if (agentic) {
     if (res.status === 503) {
       // Ancora rinviata dopo l'ultimo tentativo: questa e' persa davvero.
       if (attempts >= RETRY_MAX) abandonedTrav.add(1);
