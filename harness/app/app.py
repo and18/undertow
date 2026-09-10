@@ -31,7 +31,13 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest,
 )
 
-CACHE_TTL = int(os.environ.get("CACHE_TTL", "3600"))
+# OBJECT_TTL, se impostato, ha precedenza: e' la variabile
+# dell'esperimento sulla scadenza. Il corpus Gutenberg non cambia mai,
+# quindi con un TTL lungo un oggetto vive finche' non viene sfrattato e
+# misuriamo il limite superiore del riuso. Su un sito reale la vita
+# utile e' min(residenza, TTL), e la classe con l'intervallo di ritorno
+# piu' lungo e' la prima a perdere il beneficio.
+CACHE_TTL = int(os.environ.get("OBJECT_TTL") or os.environ.get("CACHE_TTL") or 3600)
 DB_POOL_MIN = int(os.environ.get("DB_POOL_MIN", "2"))
 DB_POOL_MAX = int(os.environ.get("DB_POOL_MAX", "16"))
 
