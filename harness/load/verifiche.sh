@@ -33,7 +33,7 @@ done
 run "B  endogeneita' della classe agentica" LAMBDA=110 REPS=2 GATE=0 \
     POINTS="0.25:0.02 0.25:0.05 0.25:0.10 0.25:0.15 0.25:0.20 0.25:0.30"
 
-for P in 4 24; do
+for P in 4 12; do
   run "C  pool DB=${P}" DB_POOL_MAX=$P LAMBDA=160 REPS=2 GATE=0 \
       POINTS="0.00:0.05 0.30:0.05 0.40:0.05"
 done
