@@ -300,7 +300,18 @@ def chapter(book_id, n):
         "  JOIN books b ON b.id = c.book_id "
         "WHERE l.src_book = %s AND l.src_n = %s",
         (row["title"], book_id, n))
-    return cacheable(row and jsonify(row))
+    resp = cacheable(row and jsonify(row))
+    # TTL come variabile d'esperimento. Il corpus Gutenberg non cambia mai,
+    # quindi senza questo un oggetto in cache vive finche' non viene
+    # sfrattato: misuriamo il limite superiore del riuso. Su un sito reale
+    # la vita utile e' min(residenza, TTL), e la classe con l'intervallo di
+    # ritorno piu' lungo e' la prima a perdere il beneficio.
+    ttl = int(os.environ.get("OBJECT_TTL", "0"))
+    if ttl > 0:
+        resp.headers["Cache-Control"] = f"public, max-age={ttl}"
+    else:
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
 
 
 @app.get("/search")

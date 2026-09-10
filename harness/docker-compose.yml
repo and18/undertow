@@ -74,6 +74,7 @@ services:
       PGUSER: undertow
       PGPASSWORD: undertow
       CACHE_TTL: "${CACHE_TTL:-3600}"
+      OBJECT_TTL: "${OBJECT_TTL:-0}"
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
