@@ -20,6 +20,10 @@ LAMBDA="${LAMBDA:-110}"
 TOTAL_MB="${TOTAL_MB:-128}"
 REPS="${REPS:-2}"
 WARMUP="${WARMUP:-300}"
+# GATE=0 registra i run con errori invece di scartarli: oltre la
+# saturazione gli errori SONO il segnale, e il cancello butterebbe
+# proprio i punti che dimostrano il collasso.
+GATE="${GATE:-1}"
 CORPUS="${CORPUS:-16954}"
 POINTS="${POINTS:-0.00:0.05 0.10:0.05 0.20:0.05 0.30:0.05 0.40:0.05 0.25:0.02 0.25:0.10 0.25:0.20 0.00:0.05}"
 
@@ -70,8 +74,12 @@ for pt in $POINTS; do
         dr=$(jq -r '.metrics.dropped_iterations.values.count // 0' "$j")
         fr=$(jq -r '.metrics.http_req_failed.values.rate // 0' "$j")
         if (( $(awk -v d="$dr" -v x="$fr" 'BEGIN{print (d>0 || x>0.01)?1:0}') )); then
-            printf 'INVALIDO scartate=%s errori=%.2f%%\n' "$dr" "$(awk -v x="$fr" 'BEGIN{print x*100}')"
-            mv "$j" "$BASE/invalid-a$A-b$B-$att.json"; sleep 15; continue
+            printf 'sospetto: scartate=%s errori=%.2f%% ' "$dr" "$(awk -v x="$fr" 'BEGIN{print x*100}')"
+            if [[ "$GATE" == "1" ]]; then
+                echo "— INVALIDO, rifaccio"
+                mv "$j" "$BASE/invalid-a$A-b$B-$att.json"; sleep 15; continue
+            fi
+            echo "— registrato (GATE=0)"
         fi
 
         read -r pz pa pt_ hz ha ht orps <<<"$(jq -r --arg m "$M" '
