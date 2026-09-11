@@ -17,6 +17,9 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 LAMBDA="${LAMBDA:-110}"
+# MODEL=zipf|agent|traversal isola una classe: e' la calibrazione che
+# farebbe un controllore a costo esogeno.
+MODEL="${MODEL:-mix}"
 TOTAL_MB="${TOTAL_MB:-128}"
 REPS="${REPS:-2}"
 WARMUP="${WARMUP:-300}"
@@ -60,7 +63,7 @@ for pt in $POINTS; do
             d="${ph%%:*}"; t="${ph##*:}"
             sk=0
             [[ "$t" == "m" ]] && sk=$(awk -v w="$WARMUP" -v l="$LAMBDA" -v a="$A" 'BEGIN{printf "%d", w*l*a}')
-            docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$A" -e BETA="$B" \
+            docker compose --profile load run --rm -T -e MODEL="$MODEL" -e ALPHA="$A" -e BETA="$B" \
                 -e RATE="$LAMBDA" -e DURATION="${d}s" -e TARGET=http://varnish:80 \
                 -e TRAV_SKIP="$sk" -e OUTFILE="$t-a$A-b$B-$rep" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
