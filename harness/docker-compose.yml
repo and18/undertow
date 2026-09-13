@@ -74,10 +74,6 @@ services:
       PGUSER: undertow
       PGPASSWORD: undertow
       CACHE_TTL: "${CACHE_TTL:-3600}"
-      # Il semaforo e' creato all'importazione del modulo: cambiare
-      # questi valori richiede di RICREARE il container, non riavviarlo.
-      BUDGET_LOW: "${BUDGET_LOW:-0}"
-      BUDGET_WAIT: "${BUDGET_WAIT:-0}"
       OBJECT_TTL: "${OBJECT_TTL:-0}"
     healthcheck:
       test: ["CMD", "python", "-c",
