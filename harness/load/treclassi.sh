@@ -40,7 +40,10 @@ if grep -q '^VARNISH_SIZE=' .env 2>/dev/null; then
 else
     echo "VARNISH_SIZE=${TOTAL_MB}m" >> .env
 fi
-docker compose up -d --force-recreate varnish >/dev/null 2>&1; sleep 12
+# app ricreata insieme a varnish: BUDGET_LOW e BUDGET_WAIT sono letti
+# una sola volta all'avvio del processo.
+docker compose up -d --force-recreate varnish app >/dev/null 2>&1; sleep 15
+printf "    budget=%s wait=%s\n" "${BUDGET_LOW:-0}" "${BUDGET_WAIT:-0}"
 
 cleanup() { docker compose down >/dev/null 2>&1; }
 trap cleanup EXIT
