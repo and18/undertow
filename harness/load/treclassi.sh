@@ -53,6 +53,13 @@ for pt in $POINTS; do
     # copertura del corpus per la classe esaustiva
     M=$(awk -v c="$CORPUS" -v l="$LAMBDA" -v a="$A" \
         'BEGIN{ if (a<=0) {print 620} else {m=c/(l*a); print (m<620)?620:int(m+1)} }')
+    # MEASURE_FORCE serve all'esperimento sulla durata: l'hit ratio di una
+    # classe con insieme di lavoro piccolo cresce finche' quell'insieme non
+    # e' carico, quindi una misura troppo corta lo sottostima. A beta basso
+    # la classe agentica passa sul proprio insieme 1,4 volte in 620 s; a
+    # beta alto 20 volte. Se l'endogeneita' e' un effetto di durata, si
+    # vede allungando la misura a quota fissa.
+    [[ -n "${MEASURE_FORCE:-}" ]] && M="$MEASURE_FORCE"
     printf '\n\033[1m==> alpha=%s beta=%s  measure=%ss\033[0m  (%s)\n' "$A" "$B" "$M" "$(date +%H:%M)"
 
     rep=1; att=0
