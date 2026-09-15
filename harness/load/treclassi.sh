@@ -42,6 +42,12 @@ else
 fi
 # app ricreata insieme a varnish: BUDGET_LOW e BUDGET_WAIT sono letti
 # una sola volta all'avvio del processo.
+# L'osservabilita' va tirata su esplicitamente: il "down" di fine
+# campagna la spegne e il profilo non la include. Senza, non esiste
+# nessuna misura di CPU o di occupazione del pool, e "origin rps"
+# conta i miss, non il lavoro. Un miss di 9 KB e uno di 1,9 MB
+# contano uguale, e le classi non chiedono oggetti della stessa taglia.
+docker compose up -d vm node-exporter db-exporter varnish-exporter >/dev/null 2>&1
 docker compose up -d --force-recreate varnish app >/dev/null 2>&1; sleep 15
 printf "    budget=%s wait=%s\n" "${BUDGET_LOW:-0}" "${BUDGET_WAIT:-0}"
 
