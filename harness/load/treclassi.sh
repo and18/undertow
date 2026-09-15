@@ -17,6 +17,9 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 LAMBDA="${LAMBDA:-110}"
+# MODEL=zipf|agent|traversal isola una classe: e' la calibrazione che
+# farebbe un controllore a costo esogeno.
+MODEL="${MODEL:-mix}"
 TOTAL_MB="${TOTAL_MB:-128}"
 REPS="${REPS:-2}"
 WARMUP="${WARMUP:-300}"
@@ -37,7 +40,16 @@ if grep -q '^VARNISH_SIZE=' .env 2>/dev/null; then
 else
     echo "VARNISH_SIZE=${TOTAL_MB}m" >> .env
 fi
-docker compose up -d --force-recreate varnish >/dev/null 2>&1; sleep 12
+# app ricreata insieme a varnish: BUDGET_LOW e BUDGET_WAIT sono letti
+# una sola volta all'avvio del processo.
+# L'osservabilita' va tirata su esplicitamente: il "down" di fine
+# campagna la spegne e il profilo non la include. Senza, non esiste
+# nessuna misura di CPU o di occupazione del pool, e "origin rps"
+# conta i miss, non il lavoro. Un miss di 9 KB e uno di 1,9 MB
+# contano uguale, e le classi non chiedono oggetti della stessa taglia.
+docker compose up -d victoriametrics node-exporter db-exporter varnish-exporter >/dev/null 2>&1
+docker compose up -d --force-recreate varnish app >/dev/null 2>&1; sleep 15
+printf "    budget=%s wait=%s\n" "${BUDGET_LOW:-0}" "${BUDGET_WAIT:-0}"
 
 cleanup() { docker compose down >/dev/null 2>&1; }
 trap cleanup EXIT
@@ -47,6 +59,13 @@ for pt in $POINTS; do
     # copertura del corpus per la classe esaustiva
     M=$(awk -v c="$CORPUS" -v l="$LAMBDA" -v a="$A" \
         'BEGIN{ if (a<=0) {print 620} else {m=c/(l*a); print (m<620)?620:int(m+1)} }')
+    # MEASURE_FORCE serve all'esperimento sulla durata: l'hit ratio di una
+    # classe con insieme di lavoro piccolo cresce finche' quell'insieme non
+    # e' carico, quindi una misura troppo corta lo sottostima. A beta basso
+    # la classe agentica passa sul proprio insieme 1,4 volte in 620 s; a
+    # beta alto 20 volte. Se l'endogeneita' e' un effetto di durata, si
+    # vede allungando la misura a quota fissa.
+    [[ -n "${MEASURE_FORCE:-}" ]] && M="$MEASURE_FORCE"
     printf '\n\033[1m==> alpha=%s beta=%s  measure=%ss\033[0m  (%s)\n' "$A" "$B" "$M" "$(date +%H:%M)"
 
     rep=1; att=0
@@ -60,7 +79,7 @@ for pt in $POINTS; do
             d="${ph%%:*}"; t="${ph##*:}"
             sk=0
             [[ "$t" == "m" ]] && sk=$(awk -v w="$WARMUP" -v l="$LAMBDA" -v a="$A" 'BEGIN{printf "%d", w*l*a}')
-            docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA="$A" -e BETA="$B" \
+            docker compose --profile load run --rm -T -e MODEL="$MODEL" -e ALPHA="$A" -e BETA="$B" \
                 -e RATE="$LAMBDA" -e DURATION="${d}s" -e TARGET=http://varnish:80 \
                 -e TRAV_SKIP="$sk" -e OUTFILE="$t-a$A-b$B-$rep" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
