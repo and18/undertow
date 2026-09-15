@@ -22,7 +22,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 run() {
     printf '\n\033[1m######## %s ########\033[0m  %s\n' "$1" "$(date +%H:%M)"
     shift
-    LAMBDA="$1" REPS="$4" GATE=0 WARMUP=300 POINTS="$2:$3" bash treclassi.sh
+    LAMBDA="$1" REPS="$4" GATE=0 WARMUP=300 MEASURE_FORCE="${MF:-620}" \
+        POINTS="$2:$3" bash treclassi.sh
 }
 
 # A - agente, umano 55 + crawler 28 fissi, 5 ripetizioni
@@ -32,6 +33,7 @@ run "A agenti=24" 107  0.2617 0.2243 5
 run "A agenti=36" 119  0.2353 0.3025 5
 
 # B - crawler, umano 55 + agente 12 fissi
+export MF=1211
 run "B crawler=0"   67  0.0000 0.1791 3
 run "B crawler=14"  81  0.1728 0.1481 3
 run "B crawler=28"  95  0.2947 0.1263 3
