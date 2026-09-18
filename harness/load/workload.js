@@ -118,6 +118,13 @@ const missAgent = new Counter('ut_miss_agent');
 const okAgent   = new Counter('ut_ok_agent');
 const shedAgent = new Counter('ut_shed_agent');
 const latAgent  = new Trend('ut_lat_agent', true);
+// Con BLOCK_CLASSES attivo una richiesta rifiutata torna 403, che oggi
+// non incrementa ne' ok ne' miss: senza questi contatori l'hit ratio
+// di una classe bloccata risulterebbe 1,000 perche' solo gli hit
+// producono ancora un 200.
+const blkZipf  = new Counter('ut_blk_zipf');
+const blkAgent = new Counter('ut_blk_agent');
+const blkTrav  = new Counter('ut_blk_traversal');
 
 // Stato di sessione, per VU. In k6 le variabili di modulo sono locali al
 // VU, quindi ogni VU porta avanti la propria sessione fra iterazioni.
@@ -310,6 +317,7 @@ export default function (data) {
   const hit = res.headers['X-Cache'] === 'HIT';
   if (cls === 'agent') {
     // La classe agentica non riprova: c'e' una persona che aspetta.
+    if (res.status === 403) blkAgent.add(1);
     if (res.status === 503) shedAgent.add(1);
     else if (res.status === 200) {
       okAgent.add(1);
@@ -317,7 +325,9 @@ export default function (data) {
     }
     latAgent.add(res.timings.duration);
   } else if (agentic) {
-    if (res.status === 503) {
+    if (res.status === 403) {
+      blkTrav.add(1);
+    } else if (res.status === 503) {
       // Ancora rinviata dopo l'ultimo tentativo: questa e' persa davvero.
       if (attempts >= RETRY_MAX) abandonedTrav.add(1);
       if (RETRY_MAX === 0) shedTrav.add(1);
@@ -327,7 +337,8 @@ export default function (data) {
     }
     latTrav.add(res.timings.duration);
   } else {
-    if (res.status === 503) shedZipf.add(1);
+    if (res.status === 403) blkZipf.add(1);
+    else if (res.status === 503) shedZipf.add(1);
     else if (res.status === 200) {
       okZipf.add(1);
       if (hit) hitZipf.add(1); else missZipf.add(1);
