@@ -59,6 +59,25 @@ BUDGET_LOW = int(os.environ.get("BUDGET_LOW", "0"))
 # interattiva ne restano garantiti THREADS meno BUDGET_LOW.
 BUDGET_WAIT = float(os.environ.get("BUDGET_WAIT", "0"))
 
+# Ammissione per identita': le classi elencate qui ricevono 403 PRIMA
+# di qualunque lavoro — nessuna query, nessuno slot di pool, nessun
+# oggetto inserito in cache. E' la politica che l'industria sta
+# adottando (Cloudflare, default del 15 settembre 2026), portata
+# all'origine invece che al bordo.
+#
+# Vuoto = nessun blocco, cioe' il comportamento preesistente. I nomi
+# sono quelli che l'applicazione assegna a request._cls, non gli user
+# agent: vanno letti da ut_requests_inflight_class prima di usarli.
+#
+# LIMITE DA DICHIARARE: il blocco e' all'origine, quindi una richiesta
+# della classe bloccata che trova l'oggetto in cache viene comunque
+# servita da Varnish. Sul carico all'origine l'effetto e' identico a
+# un blocco al bordo (un hit non raggiunge l'origine in nessun caso);
+# differisce solo su quante richieste il client vede soddisfatte.
+BLOCK_CLASSES = {c.strip() for c in
+                 os.environ.get("BLOCK_CLASSES", "").split(",")
+                 if c.strip()}
+
 _low_sem = (threading.BoundedSemaphore(BUDGET_LOW)
             if BUDGET_LOW > 0 else None)
 
@@ -85,6 +104,8 @@ INFLIGHT = Gauge("ut_requests_inflight", "Richieste in elaborazione")
 INFLIGHT_CLS = Gauge("ut_requests_inflight_class", "In volo per classe", ["cls"])
 BUDGET_ADMITTED = Counter("ut_budget_admitted_total", "Amesse", ["cls"])
 BUDGET_SHED = Counter("ut_budget_shed_total", "Rifiutate per budget", ["cls"])
+BLOCKED = Counter("ut_blocked_total", "Richieste rifiutate per classe",
+                  ["cls"])
 BUDGET_WAITED = Histogram("ut_budget_wait_seconds", "Attesa per uno slot",
                           buckets=(.001, .01, .05, .1, .25, .5, 1, 2))
 DBWAIT = Histogram("ut_db_pool_wait_seconds", "Attesa per una connessione DB",
@@ -164,7 +185,17 @@ def query(sql, args=(), one=False):
 def request_class():
     """Classifica la richiesta per il banco prova."""
     ua = request.headers.get("User-Agent", "")
-    return "low" if "lowloc" in ua else "high"
+    # Tre classi, non due. Il profilo agentico esiste in workload.js dal
+    # 9 settembre, ma l'applicazione non lo distingueva: finiva in "high"
+    # insieme al traffico umano, quindi non era ne' osservabile ne'
+    # governabile separatamente. Serve per la politica che blocca
+    # training e agent lasciando passare search, cioe' il default
+    # Cloudflare dal 15 settembre 2026.
+    if "lowloc" in ua:
+        return "low"
+    if "undertow-agent" in ua:
+        return "agent"
+    return "high"
 
 
 @app.before_request
@@ -174,6 +205,12 @@ def _start():
     request._slot = False
     INFLIGHT.inc()
     INFLIGHT_CLS.labels(request._cls).inc()
+
+    # Prima del semaforo e prima di ogni query: una richiesta bloccata
+    # non deve consumare lavoro all'origine.
+    if request._cls in BLOCK_CLASSES:
+        BLOCKED.labels(request._cls).inc()
+        abort(403)
 
     if _low_sem is not None and request._cls == "low":
         t = time.perf_counter()
@@ -203,6 +240,11 @@ def _end(resp):
     LAT.labels(ep, cacheable).observe(time.perf_counter() - request._t0)
     REQ.labels(ep, str(resp.status_code), cacheable).inc()
     return resp
+
+
+@app.errorhandler(403)
+def _blocked(e):
+    return uncacheable(jsonify(error="class blocked")), 403
 
 
 @app.errorhandler(503)
