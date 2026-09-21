@@ -32,6 +32,7 @@ POINTS="${POINTS:-0.00:0.05 0.10:0.05 0.20:0.05 0.30:0.05 0.40:0.05 0.25:0.02 0.
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BASE="results/tre-$STAMP"; mkdir -p "$BASE"
+{ env | sort; git rev-parse --short HEAD; } > "$BASE/env.txt" 2>&1
 CSV="$BASE/points.csv"
 echo "alpha,beta,rep,measure,p99_zipf,p99_agent,p99_trav,h_zipf,h_agent,h_trav,origin_rps,dropped,fail,ts" > "$CSV"
 
@@ -82,6 +83,7 @@ for pt in $POINTS; do
             docker compose --profile load run --rm -T -e MODEL="$MODEL" -e ALPHA="$A" -e BETA="$B" \
                 -e RATE="$LAMBDA" -e DURATION="${d}s" -e TARGET=http://varnish:80 \
                 -e TRAV_SKIP="$sk" -e OUTFILE="$t-a$A-b$B-$rep" \
+                -e AGENT_MUL="${AGENT_MUL:-2654435761}" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
             [[ "$t" == "w" ]] && rm -f "results/w-a$A-b$B-$rep.json"
         done
