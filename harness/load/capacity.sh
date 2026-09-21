@@ -16,7 +16,7 @@
 # NON LANCIA NESSUNA CAMPAGNA. Dura ~4 minuti.
 #
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."   # docker-compose.yml sta in harness/
 WARM="${WARM:-180}"; RATE="${RATE:-200}"; N_CORPUS="${N_CORPUS:-16954}"
 
 echo "=== 1. riempimento della cache: traversata uniforme ${WARM}s a ${RATE} req/s"

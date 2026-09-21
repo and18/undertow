@@ -81,9 +81,15 @@ def classify(ua):
     if any(k in u for k in ("mozilla","safari","chrome","firefox")):     return "browser"
     return "unknown"
 
-pagenum = lambda p: (lambda m: int(m[-1]) if m else None)(re.findall(r"(\d+)", p or ""))
+def bookchap(p):
+    """(libro, capitolo) da /book/33118-slug/chapter-008.html; None se non e' un capitolo."""
+    m = re.search(r"/book/(\d+)[^/]*/chapter-0*(\d+)", p or "")
+    if m: return (m.group(1), int(m.group(2)))
+    n = re.findall(r"(\d+)", p or "")
+    return (None, int(n[-1])) if n else None
 
 clients   = defaultdict(lambda: {"urls": Counter(), "cls": Counter(), "n": 0})
+signed    = defaultdict(Counter)
 conns     = defaultdict(list)
 conn_meta = {}
 total = skipped = 0
@@ -92,12 +98,13 @@ tmin = tmax = None
 print(f"lettura di {A.path} ...", file=sys.stderr)
 for r in lines(A.path):
     total += 1
-    path = field(r, "request_uri", "uri", "path", "request", "url")
-    ip   = field(r, "remote_addr", "client_ip", "ip", "addr")
-    ua   = field(r, "http_user_agent", "user_agent", "ua", "agent") or ""
-    cid  = field(r, "connection", "conn_id", "connection_id", "tcp_conn")
-    cnum = field(r, "connection_requests", "conn_req", "req_num")
-    ts   = field(r, "time_iso8601", "time", "timestamp", "@timestamp")
+    path = field(r, "u", "request_uri", "uri", "path", "request", "url")
+    ip   = field(r, "ip", "remote_addr", "client_ip", "addr")
+    ua   = field(r, "ua", "http_user_agent", "user_agent", "agent") or ""
+    cid  = field(r, "conn", "connection", "conn_id", "connection_id", "tcp_conn")
+    cnum = field(r, "conn_req", "connection_requests", "req_num")
+    ts   = field(r, "t", "time_iso8601", "time", "timestamp", "@timestamp")
+    sig  = field(r, "sig_agent") or field(r, "sig_input")
     if not path or not ip: skipped += 1; continue
     if isinstance(path, str) and " " in path:           # "GET /x HTTP/1.1"
         parts = path.split()
@@ -109,6 +116,7 @@ for r in lines(A.path):
     clients[c]["urls"][path] += 1
     clients[c]["cls"][classify(ua)] += 1
     clients[c]["n"] += 1
+    signed[classify(ua)][bool(sig)] += 1
     if cid is not None:
         k = (c, str(cid))
         conns[k].append((int(cnum) if str(cnum).isdigit() else len(conns[k]), path))
@@ -182,13 +190,14 @@ if conns:
     adj = defaultdict(lambda: [0, 0, 0])
     for k, v in conns.items():
         if len(v) < 2: continue
-        seq = [pagenum(p) for _, p in sorted(v)]
+        seq = [bookchap(p) for _, p in sorted(v)]
         a = r = t = 0
         for x, y in zip(seq, seq[1:]):
             if x is None or y is None: continue
             t += 1
-            if abs(y-x) == 1: a += 1
-            if y == x: r += 1
+            if x[0] == y[0]:                      # stesso libro
+                if abs(y[1]-x[1]) == 1: a += 1
+                if y[1] == x[1]:        r += 1
         if t:
             s = adj[conn_meta[k]]; s[0] += a; s[1] += r; s[2] += t
     for cl in CLS:
@@ -204,6 +213,20 @@ for d in clients.values():
 S = sum(tot.values()) or 1
 for cl in CLS:
     if tot.get(cl): print(f"{cl:12s} {tot[cl]:10,d} richieste  {100*tot[cl]/S:5.1f}%")
+
+print(f"\n--- 6. RICHIESTE FIRMATE  (Web Bot Auth, campi sig_agent / sig_input)")
+tt = sum(sum(c.values()) for c in signed.values())
+if tt:
+    print(f"{'classe':12s} {'firmate':>10s} {'totali':>10s} {'quota':>7s}")
+    for cl in CLS:
+        c = signed.get(cl)
+        if not c: continue
+        n = sum(c.values())
+        print(f"{cl:12s} {c[True]:10,d} {n:10,d} {100*c[True]/n:6.2f}%")
+    tot_s = sum(c[True] for c in signed.values())
+    print(f"{'TOTALE':12s} {tot_s:10,d} {tt:10,d} {100*tot_s/tt:6.2f}%")
+    print("    dato reale sull'adozione di webbotauth: utile in Related Work,")
+    print("    non sostiene nessun claim sul costo")
 
 print(f"\n{'='*66}")
 print("  Questo output giustifica o smentisce i parametri del generatore.")
