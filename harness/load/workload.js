@@ -71,6 +71,18 @@ const AGENT_SCOPE   = parseFloat(__ENV.AGENT_SCOPE || '0.02');
 const AGENT_SESSION = parseInt(__ENV.AGENT_SESSION || '3');
 const AGENT_SKEW    = parseFloat(__ENV.AGENT_SKEW || '0.6');
 
+// Moltiplicatore della permutazione per la classe agentica. Il default
+// e' lo stesso della classe umana, quindi riproduce i run fino al 19
+// settembre 2026. Con un valore diverso l'insieme di lavoro agentico
+// cade in una regione del corpus scorrelata dal rango di popolarita'
+// umano, e la sovrapposizione fra le due classi passa da "per
+// costruzione" a "incidentale".
+//
+// Deve essere dispari e coprimo con la dimensione del corpus
+// (16954 = 2 x 7^2 x 173), altrimenti la mappa non e' una permutazione.
+// Valore separato verificato: 3266489917.
+const AGENT_MUL     = parseInt(__ENV.AGENT_MUL || '2654435761');
+
 if (ALPHA + BETA > 1.0000001) {
   throw new Error(`ALPHA(${ALPHA}) + BETA(${BETA}) supera 1`);
 }
@@ -139,7 +151,7 @@ function agenticIndex(data) {
     const scope = Math.max(1, Math.floor(data.total * AGENT_SCOPE));
     const r = Math.min(scope - 1,
       Math.floor(scope * Math.pow(Math.random(), 1 / (1 - AGENT_SKEW))));
-    agSession = { base: permute(r, data.total), left: AGENT_SESSION, k: 0 };
+    agSession = { base: permuteAgent(r, data.total), left: AGENT_SESSION, k: 0 };
   }
   agSession.left--;
   return (agSession.base + agSession.k++) % data.total;
@@ -212,6 +224,11 @@ function locate(data, idx) {
 // Permutazione moltiplicativa deterministica: mappa il rango di
 // popolarita' su un indice di capitolo senza memorizzare una tabella.
 // Il moltiplicatore e' primo, quindi la mappa e' biiettiva su [0, N).
+// Permutazione della sola classe agentica: vedi AGENT_MUL.
+function permuteAgent(rank, N) {
+  return (rank * AGENT_MUL + SEED) % N;
+}
+
 function permute(rank, N) {
   return (rank * 2654435761 + SEED) % N;
 }
