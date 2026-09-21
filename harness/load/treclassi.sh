@@ -84,6 +84,9 @@ for pt in $POINTS; do
                 -e RATE="$LAMBDA" -e DURATION="${d}s" -e TARGET=http://varnish:80 \
                 -e TRAV_SKIP="$sk" -e OUTFILE="$t-a$A-b$B-$rep" \
                 -e AGENT_MUL="${AGENT_MUL:-2654435761}" \
+                -e AGENT_SCOPE="${AGENT_SCOPE:-0.02}" \
+                -e AGENT_SESSION="${AGENT_SESSION:-3}" \
+                -e AGENT_SKEW="${AGENT_SKEW:-0.6}" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
             [[ "$t" == "w" ]] && rm -f "results/w-a$A-b$B-$rep.json"
         done
