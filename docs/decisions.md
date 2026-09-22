@@ -880,6 +880,130 @@ variabile che non è stata variata. Vedi §27.
 
 ---
 
+## 30. La capienza della cache si misura, non si deriva (chiude §18)
+
+**Decisione.** La capienza della cache e' letta da `varnish_main_n_object`
+con la cache piena, e riportata in **oggetti**, non in byte di corpus.
+
+**Perche' — l'evidenza.** §18 chiedeva che l'impronta effettiva fosse
+misurata invece che derivata, e la richiesta e' rimasta aperta per tre
+settimane. Nel frattempo e' stata derivata comunque, e sbagliata: dividendo
+128 MB per 192,4 KB si ottengono 681 oggetti, e su quel numero era stata
+costruita un'intera spiegazione meccanicistica.
+
+I 192,4 KB venivano da `classcost.py` e sono i **byte di lavoro a
+PostgreSQL per richiesta** — corpo del capitolo, righe di indice, byte dei
+capitoli correlati. Non sono la dimensione dell'oggetto HTTP che Varnish
+memorizza. Due grandezze diverse, confuse da una divisione.
+
+Misura diretta, 22 settembre 2026, cache satura (134 196 368 byte occupati,
+21 360 liberi):
+
+| grandezza | valore |
+|---|---|
+| oggetti in cache | **5 274** |
+| oggetto medio | **24,8 KB** |
+| frazione del corpus residente | **31,1%** di 16 954 |
+
+La stima era sbagliata di **7,75 volte**, e con essa il rapporto fra
+l'insieme di lavoro agentico e la capienza: 0,19× invece di 1,49×.
+
+**Principio, ora enunciato cinque volte in questo log.** §6: un parametro
+del generatore non derivato dal carico e' incontrollato. §20: la casualita'
+non seminata e' un input non misurato. §26: un parametro derivato dal
+regime nominale e' incontrollato nel regime saturo. §28: una durata scelta
+a mano e' una dimensione di campionamento non dichiarata. Qui: **un numero
+derivato per divisione e' un'assunzione travestita da misura, finche' non
+si verifica cosa misura il divisore.**
+
+---
+
+## 31. Ogni parametro del generatore deve raggiungere il generatore
+
+**Decisione.** `treclassi.sh` inoltra a k6 tutti i parametri della classe
+agentica — `AGENT_MUL`, `AGENT_SCOPE`, `AGENT_SESSION`, `AGENT_SKEW` —
+con i default letti da `workload.js`. Ogni directory di run scrive
+`env.txt` con l'ambiente completo e l'hash del commit. Trenta secondi dopo
+ogni lancio si verifica che la variabile manipolata compaia in `env.txt`.
+
+**Perche' — l'evidenza.** L'invocazione di k6 inoltrava solo `MODEL`,
+`ALPHA`, `BETA`, `RATE`, `DURATION`, `TARGET`, `TRAV_SKIP` e `OUTFILE`.
+Qualunque altra variabile impostata dal driver restava fuori dal container.
+La campagna di separazione working-set del 20 settembre e' girata con
+`AGENT_MUL` al default, cioe' con la stessa permutazione della classe
+umana, **rieseguendo per quattro ore la configurazione del 14 settembre**.
+
+Il no-op e' rimasto invisibile ventiquattro ore perche' le directory di run
+non registravano la propria configurazione. Conseguenza collaterale: per
+tutti i run precedenti al 21 settembre la configurazione **non e'
+recuperabile**, e per lo sweep di capienza del 10-11 settembre la dimensione
+nominale della cache e' definitivamente persa. Quei punti restano
+ordinabili solo per hit ratio umano osservato, ed e' il motivo per cui la
+figura corrispondente resta in appendice.
+
+**Corollario di §27** — un controllo che non controlla e' peggio di nessun
+controllo: **un parametro che non viene registrato non e' stato
+controllato, anche quando lo si e' impostato.**
+
+---
+
+## 32. La domanda centrale si e' stretta ancora (amend §23)
+
+**Da:** *cosa costa ciascuna classe di traffico, e quale budget di risorse
+merita?*
+
+**A:** *il costo per richiesta di una classe e' abbastanza stabile, al
+variare della composizione e dello stato condiviso, da poter essere
+trattato come una proprieta' della classe?*
+
+**Perche'.** La domanda di §23 presupponeva che «il costo di una classe»
+fosse una grandezza. Lo sweep di `AGENT_SCOPE` mostra che non lo e': a
+parita' di classe, volumi, cache e corpus, cambiando solo l'ampiezza
+dell'insieme di lavoro, il costo marginale agentico passa da
+−0,0477 ± 0,0054 a +0,4383 ± 0,0055 richieste all'origine per
+richiesta. La domanda precedente chiedeva quale valore assegnare a una
+variabile che cambia segno.
+
+**Cosa conserva.** Tutto il misurato. La frontiera lavoro/latenza resta la
+conseguenza decisionale; il costo marginale resta la grandezza; il
+confronto fra classi resta il risultato. Cambia che non cerchiamo piu' *il*
+costo di una classe, ma le condizioni sotto cui un costo fisso e' adeguato.
+
+**Cosa NON rivendichiamo, e va scritto qui perche' e' la tentazione
+principale.** Il modello che spiega il fenomeno — l'approssimazione a
+tempo caratteristico — non e' nostro: Fagin 1977 per l'origine, Che et al.
+2002 per la riscoperta e il nome, Fricker, Robert e Roberts 2012 per la
+formalizzazione. Si adatta a tre dei nostri quattro punti con zero
+parametri liberi, ed e' esattamente questo a renderlo credibile. Il
+contributo non e' il modello: e' quale classe stia in quale regime, la
+quantificazione della sovrapposizione come bias di misura, e il criterio
+che ne discende.
+
+---
+
+## 33. Il conteggio delle ritrattazioni (amend §24)
+
+§24 ne registrava quattro. Sono **dieci**. Le sei nuove, tutte fra il 19 e
+il 22 settembre 2026, sono in `docs/retractions.md` con la storia completa:
+il rinvio che dominerebbe il blocco; il traffico agentico che ridurrebbe il
+lavoro all'origine; la separazione working-set che avrebbe falsificato la
+critica; il confine di residenza a 681 oggetti; la dominanza di Pareto di B
+su C; la previsione quantitativa del tempo caratteristico.
+
+**Tutte e sei erano interpretazioni, nessuna era una misura.** Nessun dato
+misurato e' mai stato smentito in questo progetto: sono cadute le
+spiegazioni appoggiate sopra i dati. E tutte e sei sono state trovate prima
+della pubblicazione, da controlli decisi da noi.
+
+Tre delle sei hanno la stessa origine, ed e' la regola che §24 non aveva
+ancora: **non ragionare sull'esito di un controllo prima di averlo
+eseguito.** §24 dice che il momento in cui un risultato e' entusiasmante e'
+quello in cui il controllo di novita' e' meno probabile. Questo e' il suo
+gemello: il momento in cui un meccanismo e' elegante e' quello in cui la
+verifica del meccanismo e' meno probabile.
+
+---
+
 ## Changelog
 
 - **2026-08-11** — Project scoped. Honeypot domain registered.
@@ -928,3 +1052,24 @@ variabile che non è stata variata. Vedi §27.
   occupancy 89%. Across five campaigns on two architectures α varies
   0.15–0.30 while occupancy at the knee stays 89–97%. Invariance test
   passed.
+
+- **2026-09-19/20** — Campagna di politiche al ginocchio, otto punti.
+  Blocco e rinvio giacciono su un'unica curva convessa a pendenza monotona:
+  la tesi che il rinvio domini il blocco e' ritirata. CPU PostgreSQL lineare
+  in origin_rps, R² = 0,998.
+- **2026-09-20** — Campagna di separazione working-set: **no-op**.
+  `AGENT_MUL` non inoltrato a k6. Quattro ore perse, difetto invisibile
+  perche' i run non registravano la configurazione. Vedi §31.
+- **2026-09-21** — Capienza della cache misurata: 5 274 oggetti, oggetto
+  medio 24,8 KB. La stima precedente era sbagliata di 7,75×. Vedi §30.
+  Separazione working-set eseguita davvero: la sovrapposizione fra insiemi
+  di lavoro vale 0,061 di hit ratio agentico e 0,71 req/s all'origine.
+- **2026-09-21/22** — Sweep di `AGENT_SCOPE` a 0,02 / 0,06 / 0,20. Il costo
+  marginale agentico passa da −0,048 a +0,438 richieste all'origine per
+  richiesta. Previsione pre-registrata sul tempo caratteristico: fallita
+  sul criterio quantitativo, confermata su direzione e ordinamento.
+  Fase sperimentale chiusa.
+- **2026-09-22** — Congelamento dell'evidenza: 72 run classificati in
+  `docs/registry.csv`, sei ritrattazioni in `docs/retractions.md`,
+  mappa dei claim in `docs/claims.md`. Letteratura verificata su fonti
+  primarie. Vedi §32 e §33.
