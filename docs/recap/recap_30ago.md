@@ -1,3 +1,7 @@
+> **DOCUMENTO SUPERATO — 22 September 2026.** Non usare i numeri contenuti qui: sei
+> affermazioni sono state ritirate (vedi `docs/retractions.md`). La fonte di
+> verita e `docs/claims.md`. Questo file sara riscritto nella fase di scrittura.
+
 # Undertow — stato del progetto al 30 agosto 2026
 
 Documento autosufficiente. Chi legge non sa nulla del progetto e deve

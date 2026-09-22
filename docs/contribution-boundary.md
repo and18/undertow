@@ -1,3 +1,7 @@
+> **DOCUMENTO SUPERATO — 22 September 2026.** Non usare i numeri contenuti qui: sei
+> affermazioni sono state ritirate (vedi `docs/retractions.md`). La fonte di
+> verita e `docs/claims.md`. Questo file sara riscritto nella fase di scrittura.
+
 # Contribution boundary
 
 The one page to keep in front of you during every experiment. It exists

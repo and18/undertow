@@ -1,3 +1,7 @@
+> **DOCUMENTO SUPERATO — 22 September 2026.** Non usare i numeri contenuti qui: sei
+> affermazioni sono state ritirate (vedi `docs/retractions.md`). La fonte di
+> verita e `docs/claims.md`. Questo file sara riscritto nella fase di scrittura.
+
 # The argument
 
 The one document that states what this project claims. Everything else
