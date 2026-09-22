@@ -1,0 +1,7 @@
+FIG-01 — marginal origin cost versus working-set size
+claim     A1 (MISURATO); refs C2, C3
+data      data/derived/fig01_marginal_vs_workingset.csv
+runs      tre-20260921-150237 -162248 -214946 -230947
+          tre-20260922-002958 -015010
+variants  paper (4.80in), paper-acm (3.33in), editorial (6.20in)
+rebuild   python3 analysis/fig_01_marginal_vs_workingset.py
