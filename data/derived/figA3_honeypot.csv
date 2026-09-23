@@ -1,0 +1,8 @@
+quantity,value,unit,note
+agent_ws_median,4,objects,31 agent clients; distinct objects per 143 s window
+agent_ws_mean,240,objects,31 agent clients
+agent_ws_p90,670,objects,31 agent clients
+agent_ws_max,678,objects,31 agent clients
+testbed_ws,693,objects,scope 0.02 at 12 req/s; distinct objects per 143 s window
+contiguity_observed,4.3,percent,agent sessions with 3 contiguous chapters; 1929 sessions
+contiguity_generator,100,percent,assumed by the generator
