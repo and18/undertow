@@ -86,6 +86,6 @@ def run(figures):
         "Undertow figure QA\n"
         "checks: vector (no raster), TrueType-embedded house font only, exact page width;\n"
         "glyph / margin / text-overlap guards ran at render time.\n\n"
-        + "\n".join(report) + "\n")
+        + "\n".join(report) + "\n", encoding="utf-8")
     if failures:
         raise SystemExit("QA failed:\n  " + "\n  ".join(failures))

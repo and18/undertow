@@ -453,5 +453,5 @@ def data_file(name):
 
 def read_csv(name):
     import csv
-    with open(data_file(name), newline="") as f:
+    with open(data_file(name), newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))

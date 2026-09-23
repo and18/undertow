@@ -3,7 +3,7 @@ FIG-A2 — The pre-registered characteristic-time prediction got the direction r
 and the size wrong.
 
 CLAIMS    B3 (RESPINTO): quantitative prediction failed (criterion 3).
-          B4 (INTERPRETATIVO): ordering and direction hold (4.09 > 1.63 > 1.16).
+          B4 (INTERPRETATIVO): ordering and direction hold (4.05 > 1.63 > 1.16).
 DATA      data/derived/figA2_elasticity_model.csv
 SOURCES   docs/PREREGISTRAZIONE-scopesweep.md (written before the runs, unmodified);
           docs/RISULTATO-scopesweep.md (post-hoc computation, labelled as such).

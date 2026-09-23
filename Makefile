@@ -1,3 +1,4 @@
+# On Windows without make, run: python analysis/build_figures.py
 PY ?= python3
 
 .PHONY: figures clean-figures

@@ -1,8 +1,8 @@
 """
 FIG-A1 — Human latency rises with the agentic working set; the human hit ratio barely moves.
 
-CLAIM     B5 (SOSTENUTO): p99 75.9 -> 113.0 ms (t = 26.1), human hit 1.06x, origin
-          35.8 -> 52.7 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
+CLAIM     B5 (SOSTENUTO): p99 76.1 -> 113.0 ms (t = 36), human miss 1.06x, origin
+          36.8 -> 52.7 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
           the figure does not name one.
 DATA      data/derived/figA1_human_externality.csv (agentic share 30%)
 RUNS      as FIG-01.
@@ -34,14 +34,27 @@ EDITORIAL = dict(
     source="Source: Undertow testbed, mean of 5 runs per point, whiskers ± 1 SE.",
 )
 
-CAPTION = (
-    "Effect of the agentic working set on the human class, at 30% agentic share with "
-    "volumes and cache fixed. (a) Human p99 latency rises from 75.9 to 113.0 ms "
-    "(+37.1 ± 1.4 ms, t = 26.1). (b) The human hit ratio changes by a factor of 1.06 "
-    "(miss ratio 0.232 to 0.247). (c) Origin load rises from 35.8 to 52.7 req/s. Mean of 5 "
-    "runs; whiskers ± 1 SE, smaller than the markers where not visible. The upstream "
-    "channel through which origin load reaches human latency was not measured."
-)
+def _caption():
+    """Every number in the caption is computed from the CSV the figure draws."""
+    import math
+    r = S.read_csv(DATA[0])
+    p0, p2 = float(r[0]["human_p99_ms"]), float(r[-1]["human_p99_ms"])
+    d = p2 - p0
+    se = math.hypot(float(r[0]["human_p99_se"]), float(r[-1]["human_p99_se"]))
+    m0, m2 = 1 - float(r[0]["human_hit"]), 1 - float(r[-1]["human_hit"])
+    return (
+        "Effect of the agentic working set on the human class, at 30% agentic share with "
+        f"volumes and cache fixed. (a) Human p99 latency rises from {S.num(p0, 1)} to "
+        f"{S.num(p2, 1)} ms ({S.num(d, 1, sign=True)} \u00b1 {S.num(se, 1)} ms, "
+        f"t = {S.num(d / se, 1)}). (b) The human miss ratio changes by a factor of "
+        f"{S.num(m2 / m0, 2)} ({S.num(m0, 3)} to {S.num(m2, 3)}). (c) Origin load rises from "
+        f"{S.num(float(r[0]['origin_rps']), 1)} to {S.num(float(r[-1]['origin_rps']), 1)} "
+        "req/s. Mean of 5 runs; whiskers \u00b1 1 SE, smaller than the markers where not "
+        "visible. The upstream channel through which origin load reaches human latency was "
+        "not measured.")
+
+
+CAPTION = _caption()
 
 PANELS = [("a", "Human p99 latency", "ms", "human_p99_ms", "human_p99_se", C.human,
            (0, 130), [0, 40, 80, 120], 1),

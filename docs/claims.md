@@ -1,5 +1,5 @@
 # claims.md — mappa claim / stato / evidenza
-**Versione 2, 22 settembre 2026.** Sostituisce la v1. Ogni frase del paper deve
+**Versione 3, 23 settembre 2026.** Sostituisce la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 
 **Stati.** `MISURATO` = differenza diretta con ripetizioni ed errore standard ·
@@ -7,6 +7,8 @@ appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 con i dati, non verificato come previsione · `SFIDATO` = assunzione altrui che i nostri
 dati mettono in discussione · `NON SOSTENUTO` = i dati non bastano ·
 `RESPINTO` = testato e fallito · `RITIRATO` = affermato da noi e poi smentito.
+
+**Cambiato dalla v2 (correzioni numeriche, nessun claim nuovo).** Il punto a scope 0,02 di A1 e B5 usava i valori di origine e p99 dei run a **mappatura condivisa** del 20 set invece di quelli separati del 21 set (`tre-20260921-150237`/`-162248`, `AGENT_MUL=3266489917`, verificato sui `points.csv` il 23 set). Ricalcolato dalle 5 ripetizioni: A1 da −0,0477 a **−0,0353 ± 0,0053** (t = −6,7, il segno regge); B5 da 75,9 a **76,1 ms** e origine da 35,8 a **36,8 req/s**; A2 **4,05×** invece di 4,09× (4,09 era il rapporto di valori gia' arrotondati, 0,180/0,044; 4,05 e' il rapporto delle medie); A8 mescolava un miss umano condiviso (0,223) con uno separato (0,232) ed e' ricalcolata. Coerenza verificata: il marginale di A1 a scope 0,02 coincide ora con la scomposizione contabile di B2 (−0,846 / 24 req/s).
 
 **Cambiato dalla v1:** A4 chiusa con le barre d'errore · A2 ristretta da Zhang et al. ·
 **A7 nuova**, che chiude il caveat «avete variato il volume di una sola classe» ·
@@ -19,12 +21,12 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
-| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0477 ± 0,0054 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20, mappatura separata, 5 rip. per punto | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
-| A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,09×**, esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
+| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20, mappatura separata, 5 rip. per punto | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
+| A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,05×** (miss 0,180 → 0,044), esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
 | | *nota di posizionamento* | | Zhang et al. SoCC '25 variano gia' la composizione (0-100% AI) misurando l'**hit ratio**; il nostro apporto e' il **costo marginale all'origine** e il confronto fra tre classi | |
 | **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,959 ± 0,009 · 0,998 ± 0,010 · 0,985 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
 | | *perche' conta* | | **Chiude il caveat di A2.** L'asimmetria non e' un artefatto dell'aver variato il volume di una sola classe: entrambe sono state variate sul proprio volume, con metodologia identica, e si comportano in modo opposto | |
-| **A8** | A parita' di richiesta aggiunta, la classe **esaustiva** degrada l'hit ratio umano **4,0 volte piu'** della classe agentica: 1,50 contro 0,37 millesimi di miss umano per richiesta | **MISURATO** | serie crawler (miss umano 0,173 → 0,236 su +42 rps) contro separazione (0,223 → 0,232 su +24 rps) | — |
+| **A8** | A parita' di richiesta aggiunta, la classe **esaustiva** degrada il miss umano **molto piu'** della classe agentica: **1,50** millesimi di miss umano per richiesta esaustiva contro **0,20** per richiesta agentica (mappatura separata; ~0 sotto mappatura condivisa) | **MISURATO la direzione**; il fattore (~7×) non e' appaiato: serie diverse per mappatura e finestra | serie crawler 16 set (miss umano 0,173 → 0,236 su +42 rps, condivisa, 1211 s) contro separazione 21 set (0,227 → 0,232 su +24 rps) | un fattore invertito su serie appaiate |
 | A3 | La sovrapposizione fra l'insieme di lavoro di una classe e la testa popolare di un'altra fa apparire quella classe piu' economica: **+0,714 e +1,012 req/s** all'origine, **t = 5,74 e 7,74**, rimuovendola | **MISURATO** | condivisa contro separata, stessi α e β | ripetizione senza differenza |
 | | *nota di posizionamento* | | Zhang et al. fissano l'overlap al 10-20% **senza variarlo**; FairRide tratta il free-riding come **equita'**, non come bias di misura | |
 | **A4** | Al ginocchio, bloccare la classe agentica oltre a quella esaustiva serve **2 807 ± 185 richieste in meno** (t = 15,19) con una differenza di p99 umano di **+0,03 ± 0,73 ms**, IC 95% **[−1,99, +2,05] che contiene lo zero** | **MISURATO** | politiche B e C a λ = 185, 3 rip. | barre d'errore che rendano significativa la differenza di latenza |
@@ -38,8 +40,8 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | B1 | Il comportamento dipende dall'interazione fra volume della classe, ampiezza del suo insieme di lavoro e capienza della cache — non dall'etichetta. Catena: **pattern di accesso → geometria dell'insieme → interazione con lo stato condiviso → costo marginale** | **SOSTENUTO** | A1, A2 e A7 congiunti | una classe con stesso volume e stesso insieme che si comporta diversamente |
 | B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine dominante e' l'**auto-localita' delle agentiche gia' presenti** (−1,632 su −0,889 totali) | **MISURATO** | scomposizione contabile, chiude a 0% e 5% | scomposizione che non chiude |
 | B3 | L'approssimazione del tempo caratteristico — **Fagin 1977** (origine), **Che et al. 2002** (riscoperta e nome), **Fricker, Robert, Roberts 2012** (formalizzazione) — **predice quantitativamente** l'elasticita' | **RESPINTO** | pre-registrazione 21 set: previsti 3,1 e 1,4, osservati 1,63 e 1,16; criterio 3 fallito | — |
-| B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,09 > 1,63 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
-| B5 | La degradazione del p99 umano al crescere dello scope (**75,9 → 113,0 ms, t = 26,1**) e' carico all'origine, non spostamento di cache: hit umano 1,06×, origine da 35,8 a 52,7 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |
+| B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,05 > 1,63 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
+| B5 | La degradazione del p99 umano al crescere dello scope (**76,1 → 113,0 ms, +36,9 ± 1,0 ms, t = 36**) e' carico all'origine, non spostamento di cache: miss umano 1,06×, origine da 36,8 a 52,7 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |
 | B6 | Il canale preciso della contesa a monte (Varnish, connessioni, pool di thread) | **NON SOSTENUTO** | inferito per esclusione; coda per stadio mai misurata | — |
 
 ## C. Claim di validita' e taratura
@@ -58,7 +60,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 
 | # | claim | stato | evidenza | nota |
 |---|---|---|---|---|
-| D1 | Una politica che sa solo «questo e' traffico agentico» non possiede necessariamente informazione sufficiente a stimarne l'impatto marginale | **SFIDATO** | A1: stessa etichetta, marginale da −0,048 a +0,438 | **claim centrale del paper** |
+| D1 | Una politica che sa solo «questo e' traffico agentico» non possiede necessariamente informazione sufficiente a stimarne l'impatto marginale | **SFIDATO** | A1: stessa etichetta, marginale da −0,035 a +0,438 | **claim centrale del paper** |
 | D2 | La classificazione resta necessaria e utile: al ginocchio il blocco per identita' della classe esaustiva e' sulla frontiera | **MISURATO** | politica B | impedisce la lettura «la classificazione fallisce» |
 | D3 | Durante la transizione la classificazione puo' essere necessaria ma **non e' necessariamente sufficiente** | **SOSTENUTO** | D1 + D2 | formulazione da usare, non piu' forte |
 | D4 | L'infrastruttura dovrebbe poter osservare o derivare l'**ampiezza dell'insieme di lavoro** di una classe | **IMPLICAZIONE** | A1 | la piu' sostenuta |

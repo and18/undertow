@@ -1,14 +1,14 @@
 figure     FIG-A1_human-externality
 claims     B5 (SOSTENUTO); B6 not supported, not drawn
 data
-           data/derived/figA1_human_externality.csv  sha256:37af9891582eef32
+           data/derived/figA1_human_externality.csv  sha256:f3ff9f211c5f6801
 runs
            tre-20260921-162248
            tre-20260921-230947
            tre-20260922-015010
-script     analysis/fig_a1_human_externality.py  sha256:47efb8db15365f5e
-style      analysis/figure_style.py  sha256:e6b4b46088cf4598
+script     analysis/fig_a1_human_externality.py  sha256:791438666e287507
+style      analysis/figure_style.py  sha256:683f528f4975002d
 targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
 toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3
-commit     92c7955
+commit     2cfbc40
 rebuild    make figures

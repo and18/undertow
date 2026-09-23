@@ -11,7 +11,7 @@ DESIGN PASS
             the other two classes' by 2-3%; and when the exhaustive class varies its
             OWN volume, its marginal cost stays flat.
   Encoding  a: slope chart on a log axis, so equal slopes mean equal ratios and the
-            4.09x reads as a steep line against two flat ones.
+            4.05x reads as a steep line against two flat ones.
             b: dots with whiskers on a linear axis from zero, so "flat near 1" is
             seen honestly.
   Dominant  the steep agentic line.
@@ -43,8 +43,8 @@ CAPTION = (
     "Sensitivity of per-request cost to traffic composition, by class. (a) Miss ratio of "
     "each class at 13% and 30% agentic share of load (log scale); only the agentic volume "
     "changes (12 to 36 req/s), human and exhaustive volumes are fixed at 55 and 28 req/s, "
-    "working sets are separated; labels give the ratio between the two miss ratios. Mean of "
-    "5 runs. (b) Marginal origin requests per added exhaustive request as the exhaustive "
+    "working sets are separated; labels give the ratio between the two mean miss ratios. "
+    "Mean of 5 runs; whiskers \u00b1 1 SE, smaller than the markers. (b) Marginal origin requests per added exhaustive request as the exhaustive "
     "volume rises from 0 to 42 req/s with the human and agentic volumes fixed; its miss "
     "ratio changes by 1.09× over the range. This is a secondary series (16 Sep 2026: "
     "shared mapping, 1,211 s measurement window, 3 runs) and is not paired with the primary "
@@ -73,14 +73,16 @@ def _panel_a(cv, sp, x, y, w, h, rows):
     for cls in order:
         r = next(r for r in rows if r["class"] == cls)
         a, b = float(r["miss_share13"]), float(r["miss_share30"])
+        ratio = max(a, b) / min(a, b)             # ratio of the means, not of rounded values
         lw = 2.1 if cls == "agentic" else 1.2
         f.ax.plot([0, 1], [a, b], color=S.CLASS[cls], lw=lw, zorder=4,
                   solid_capstyle="round")
+        f.whisker(0, a, float(r["se13"])); f.whisker(1, b, float(r["se30"]))
         f.dot(0, a, S.CLASS[cls]); f.dot(1, b, S.CLASS[cls])
         # direct label: name + ratio, then the two values
         f.label(1, b, LABEL[cls], T.key, dx=8, dy=3.2, va="bottom")
         nm_w = S.text_w(LABEL[cls] + " ", T.key)
-        f.label(1, b, f"{r['excursion']}×", T.value, dx=8 + nm_w / PT, dy=3.2,
+        f.label(1, b, f"{S.num(ratio, 2)}×", T.value, dx=8 + nm_w / PT, dy=3.2,
                 va="bottom", weight=SEMIBOLD)
         f.label(1, b, f"{S.num(a, 3)} → {S.num(b, 3)}", T.sub, dx=8, dy=1.2,
                 va="top", color=C.ink_faint)

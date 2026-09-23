@@ -9,7 +9,8 @@ For each figure module and each target (paper 4.80 in, narrow 3.33 in, editorial
     <STEM>.provenance.txt   claims, data files with sha256, runs, toolchain
 Then it runs the QA pass (figure_qa.py) and writes figures/_qa/.
 
-Output directories are deleted first: nothing stale can survive a build.
+figures/ is deleted first: nothing stale can survive a build. All text files are
+written as UTF-8, so the build behaves the same on Linux, macOS and Windows.
 A figure whose data file is missing is reported and makes the build exit non-zero;
 all the others are still built.
 """
@@ -54,7 +55,7 @@ def git_rev():
 def write_sidecars(mod):
     d = OUT / "paper"
     d.mkdir(parents=True, exist_ok=True)
-    (d / f"{mod.STEM}.caption.txt").write_text(mod.CAPTION.strip() + "\n")
+    (d / f"{mod.STEM}.caption.txt").write_text(mod.CAPTION.strip() + "\n", encoding="utf-8")
     lines = [f"figure     {mod.STEM}",
              f"claims     {mod.CLAIMS}",
              "data"]
@@ -70,12 +71,11 @@ def write_sidecars(mod):
               f"{matplotlib.__version__} · font {S.FONT}",
               f"commit     {git_rev()}",
               "rebuild    make figures"]
-    (d / f"{mod.STEM}.provenance.txt").write_text("\n".join(lines) + "\n")
+    (d / f"{mod.STEM}.provenance.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main():
-    for sub in list(S.VARIANTS) + ["_qa"]:
-        shutil.rmtree(OUT / sub, ignore_errors=True)
+    shutil.rmtree(OUT, ignore_errors=True)      # nothing stale survives, old targets included
     missing, built = [], []
     for name in FIGURES:
         mod = importlib.import_module(name)
