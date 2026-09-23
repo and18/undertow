@@ -1,0 +1,19 @@
+figure     FIG-03_work-latency-frontier
+claims     A6 (MISURATO); A4 (MISURATO)
+data
+           data/derived/fig03_frontier.csv  sha256:35b8077e1989ebfd
+runs
+           tre-20260919-072040
+           tre-20260919-080920
+           tre-20260919-085754
+           tre-20260919-094627
+           tre-20260919-103501
+           tre-20260920-061512
+           tre-20260920-070346
+           tre-20260920-075220
+script     analysis/fig_03_frontier.py  sha256:e89a4b00a8faaaf2
+style      analysis/figure_style.py  sha256:e6b4b46088cf4598
+targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
+toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3
+commit     92c7955
+rebuild    make figures
