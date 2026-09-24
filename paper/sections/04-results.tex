@@ -28,8 +28,8 @@ The marginal cost is the change in origin req/s divided by the change in the con
 offered rate of the class (\cref{sec:method}).
 
 Consecutive points are well separated (Welch $t = 22.99$ and $t = 32.13$).\claim{A1}
-The negative value at the smallest scope lies well below zero ($t = -6.7$), so its sign
-is not noise.\claim{A1}
+The negative value at the smallest scope is distinguishable from zero
+($t = -6.7$).\claim{A1}
 
 This is a marginal cost between 12 and 36 req/s, not the net effect of the class.
 At the smallest scope, the net effect of adding the agentic class from 0 to 36 req/s is
@@ -38,16 +38,20 @@ A negative marginal cost therefore does not mean that agentic traffic lowers tot
 work in this configuration.\claim{A9}
 
 By working-set width alone, the smallest scope is closest to the agentic clients of our
-public honeypot: it touches about 693 distinct objects in a 143 s
+public honeypot: at 12 agentic req/s it touches about 693 distinct objects in a 143 s
 window, against a 90th percentile of 670 for honeypot agentic clients
 (Appendix, \cref{fig:a-honeypot}).\claim{C3}
+It is not close on contiguity: our generator draws sessions of three contiguous chapters,
+while 4.3\% of the sessions of honeypot agentic clients are contiguous
+(\cref{sec:limitations}).\claim{C5}
 
 \Cref{sec:r-accounting} asks where this change of sign comes from, term by term.\claim{B2}
 \undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus working set}{fig:sign}
 
 \subsection{Where the change comes from}\label{sec:r-accounting}
 % \claim{B2}: in 12->36 the largest term is the agentic requests already present (-1.632);
-%   terms add up to the measurement within 0% and 5%. Arithmetic, not mechanism.
+%   sum and measurement differ by 0.3% (0->12) and about 5% (12->36), from
+%   fig05_accounting.csv. Arithmetic, not mechanism.
 To see which requests carry the change of sign, we split the measured change in origin
 work at the smallest scope into four terms (\cref{fig:accounting}).\claim{B2}
 The terms are the new agentic requests, the agentic requests already present, the human
@@ -58,11 +62,11 @@ We do this for two steps of agentic load, from 0 to 12 and from 12 to 36 req/s, 
 human and exhaustive classes fixed at 55 and 28 req/s.\claim{B2}\claim{A1}
 The 0 req/s point comes from a run on a different day.\claim{A9}
 
-In the step from 12 to 36 req/s, the largest term is the agentic requests already
-present: $-1.632$ origin req/s.\claim{B2}
+In the step from 12 to 36 req/s, the largest term is the change on the 12 agentic req/s
+already present: $-1.632$ origin req/s.\claim{B2}
 The four terms sum to $-0.889$ origin req/s, against a measured change of
 $-0.846$.\claim{B2}
-The sum and the measurement differ by about 5\% in this step, and by 0\% in the step
+The sum and the measurement differ by about 5\% in this step, and by 0.3\% in the step
 from 0 to 12 req/s.\claim{B2}
 This measured change is the same one that gives the marginal cost at the smallest scope
 in \cref{sec:r-sign}, so the decomposition and the marginal agree.\claim{B2}\claim{A1}
@@ -71,28 +75,35 @@ The decomposition is accounting.
 It states which terms make up the measured change and how large each one is.\claim{B2}
 It does not state why a term takes the value it has.
 The step from 0 to 12 req/s is shown next to the step from 12 to 36 req/s so that the
-second is not read alone: from 0 to 36 req/s, the net change in origin work is still
-$+0.392 \pm 0.158$ req/s (\cref{sec:r-sign}).\claim{A9}
+second is not read alone: from 0 to 36 req/s, the net change in origin work is
+$+0.392 \pm 0.158$ req/s, not a saving (\cref{sec:r-sign}).\claim{A9}
 \undertowfig{FIG-05_accounting-decomposition}{Accounting decomposition of the change in origin work}{fig:accounting}
 
 \subsection{Composition moves one class, not the others}\label{sec:r-asymmetry}
-% \claim{A2}: agentic 4.05x, exhaustive 1.03x, human 1.02x (13% -> 30% agentic share).
+% \claim{A2}: agentic 4.05x, exhaustive 1.03x, human 1.02x (13% -> 30% agentic share) at
+%   scope 0.02; agentic 1.62x and 1.16x at 0.06 and 0.20 (tools/class_miss_by_scope.py).
 %   Say explicitly that only the agentic volume moved (UNDERTOW-CONTESTO §4.2).
 % \claim{A7}: exhaustive own-volume marginal flat (~0.98: 0.961 +/- 0.009, 0.997 +/- 0.010,
 %   0.979 +/- 0.004, divisor = configured alpha*lambda, claims v3),
-%   elasticity 1.09x — secondary series: shared mapping, 1,211 s window. Closes the
+%   miss ratio 1.09x between 14 and 42 req/s (no exhaustive traffic at 0) — secondary
+%   series: shared mapping, 1,211 s window. Closes the
 %   "you varied only one class" objection.
 % Position against Zhang et al.: they vary composition and measure hit ratio; we measure
 %   marginal origin cost and compare three classes.
 When only the agentic volume grows, the per-request cost of the agentic class changes
 strongly and that of the other two classes barely changes.\claim{A2}
-In this experiment the agentic volume moves from 12 to 36 req/s; the human and
-exhaustive volumes stay at 55 and 28 req/s, working sets are mapped separately, and each
-point is the mean of 5 runs.\claim{A2}\claim{A1}
-The agentic miss ratio falls from 0.180 to 0.044, a factor of 4.05
-(\cref{fig:asymmetry}a).\claim{A2}
-Over the same step, the exhaustive miss ratio changes by a factor of 1.03 and the human
-miss ratio by 1.02.\claim{A2}
+Here the cost per request of a class is its miss ratio, the share of its requests that
+reaches the origin (\cref{sec:method}).\claim{A2}
+The runs are those of \cref{sec:r-sign}: only the agentic volume moves, from 12 to
+36 req/s, while the human and exhaustive volumes stay fixed.\claim{A2}\claim{A1}
+
+At the smallest scope, the agentic miss ratio falls from 0.1796 to 0.0444, a factor of
+4.05 computed from the unrounded means (\cref{fig:asymmetry}a).\claim{A2}
+Over the same step, the exhaustive miss ratio falls by a factor of 1.03 and the human
+miss ratio rises by a factor of 1.02.\claim{A2}
+The agentic factor depends on the scope: at 0.06 and 0.20 it drops to 1.62 and
+1.16.\claim{A2}
+At those scopes the human and exhaustive factors stay between 1.02 and 1.06.\claim{A2}
 
 This design varies the volume of one class only.
 A class whose own volume is never changed could look insensitive for that reason alone.
@@ -101,7 +112,9 @@ human and agentic volumes fixed (\cref{fig:asymmetry}b).\claim{A7}
 The marginal cost of the exhaustive class is flat at about 0.98 origin requests per added
 request: $0.961 \pm 0.009$, $0.997 \pm 0.010$ and $0.979 \pm 0.004$ over the three
 steps.\claim{A7}
-Its miss ratio changes by a factor of 1.09 over the whole range.\claim{A7}
+Between 14 and 42 req/s its miss ratio rises from 0.791 to 0.861, a factor of
+1.09; at 0 req/s there is no exhaustive traffic and so no exhaustive miss
+ratio.\claim{A7}
 
 This is a secondary series.
 It comes from a campaign of 16 September 2026 with shared mapping, a measurement window
@@ -109,8 +122,9 @@ of 1,211 s instead of 620 s, and 3 runs per point, so it is not paired with the 
 design.\claim{A7}
 The agentic volume is fixed at 12 req/s at all four points, and the only manipulated
 variable is the exhaustive volume.\claim{A7}
-Both classes have thus been varied on their own volume, and they behave in opposite
-ways.\claim{A7}
+Varied on its own volume, the exhaustive class stays almost flat.\claim{A7}
+The two series differ in mapping and window, so we compare the shape of their response,
+not its size.\claim{A7}
 
 Zhang et al.~\cite{zhang2025} already vary traffic composition and measure the cache hit
 ratio; what we add is the marginal origin cost and its comparison across three coexisting
@@ -129,7 +143,9 @@ In the shared mapping, the agentic working set is drawn with the same permutatio
 human one, so it coincides with the human popular head.\claim{A3}
 In the separated mapping, a different permutation removes most of this
 overlap.\claim{A3}
-Nothing else changes between the two mappings.\claim{A3}
+The two mappings were measured on different days: the shared runs on 20 September
+2026, before full configurations were recorded, and the separated runs on 21 September,
+as for the 0 req/s point of \cref{sec:r-sign}.\claim{A3}
 
 Removing the overlap raises origin work by $+0.714$ req/s at 12 agentic req/s
 ($t = 5.74$) and by $+1.012$ req/s at 36 agentic req/s ($t = 7.74$)
@@ -148,8 +164,8 @@ experiment that is easy to leave implicit: whether the working sets of different
 are drawn from the same popularity ranking.\claim{A3}
 For this reason the primary design of this paper uses the separated
 mapping.\claim{A1}
-Series measured under the shared mapping are reported as secondary and labelled as such,
-as in \cref{sec:r-asymmetry}.\claim{A7}
+Outside this comparison, series measured under the shared mapping are reported as
+secondary and labelled as such, as in \cref{sec:r-asymmetry}.\claim{A7}
 \undertowfig{FIG-04_overlap-confounder}{Effect of working-set overlap on measured origin work}{fig:overlap}
 
 \subsection{Consequence for admission policies}\label{sec:r-frontier}

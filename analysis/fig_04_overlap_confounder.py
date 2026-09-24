@@ -3,7 +3,8 @@ FIG-04 — Sharing the popular head with human traffic makes the agentic class l
 
 CLAIM     A3 (MISURATO).
 DATA      data/derived/fig04_overlap.csv
-RUNS      shared mapping: tre-20260920-* (AGENT_MUL default, overlap 100% by construction)
+RUNS      shared mapping: tre-20260920-114026 / -130038 of 20 Sep (AGENT_MUL not passed to
+          k6, so the default permutation: overlap 100% by construction; before env.txt)
           separated mapping: tre-20260921-150237 / -162248 (AGENT_MUL=3266489917, 2.1%)
 
 DESIGN PASS
@@ -24,7 +25,8 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-04_overlap-confounder"
 CLAIMS = "A3 (MISURATO)"
 DATA = ["fig04_overlap.csv"]
-RUNS = ["tre-20260920-* (shared mapping)", "tre-20260921-150237", "tre-20260921-162248"]
+RUNS = ["tre-20260920-114026", "tre-20260920-130038", "tre-20260921-150237",
+        "tre-20260921-162248"]
 
 EDITORIAL = dict(
     headline="Sharing the popular head with human traffic\nmakes the agentic class look cheaper",
@@ -42,7 +44,8 @@ CAPTION = (
     "the overlap to 2.1% and that share of human traffic to 10.6%. Removing the overlap "
     "raises origin work by +0.714 req/s (t = 5.74) at 12 agentic req/s and +1.012 req/s "
     "(t = 7.74) at 36, and lowers the agentic hit ratio from 0.881 to 0.820 and from 0.973 "
-    "to 0.956. Mean of 5 runs; whiskers ± 1 SE. The overlap is a bias of the "
+    "to 0.956. Mean of 5 runs; whiskers ± 1 SE. The shared runs are of 20 Sep 2026, the "
+    "separated runs of 21 Sep. The overlap is a bias of the "
     "experimental characterisation of a class's cost, not a property of the class."
 )
 

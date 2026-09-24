@@ -64,10 +64,9 @@ che quella congelata regga.
 
 - Chiusi il 24 settembre: FIG-06 (C1 da `tools/cpu_validation.py`), A7 (divisore α·λ
   configurato, 0 / 13,9968 / 27,9965 / 41,9977), C2 (5 263 ± 8 oggetti da
-  `tools/cache_capacity.py`).
-- B3, B4, B5: i CSV di FIG-A1 e FIG-A2, ora generati da script, cambiano valori stampati
-  (elasticita' a scope 0,06: 1,62 invece di 1,63; p99 umano +37,0 invece di +36,9 ms,
-  t 37,3; origine 52,6 invece di 52,7). Da decidere se aggiornare righe e didascalie.
+  `tools/cache_capacity.py`), B3/B4/B5 (valori dalle medie: elasticita' 1,62 a scope
+  0,06, p99 umano +37,0 ± 1,0 ms con t = 37,3, origine 52,6; claims v3.2), C3 (finestra
+  di 143 s tenuta, nota nella riga).
 - Capitolo 5: GPTBot 217 (decisions §17) contro 20,4 (§5.3.3); denominatori della cache
   245 MB / 438 MB; tabella 5.3.2 non confrontabile con la nuova analisi.
 - `docs/thesis.md`, `findings.md`, `contribution-boundary.md`: narrativa superata, da spostare

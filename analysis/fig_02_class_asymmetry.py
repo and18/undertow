@@ -3,7 +3,8 @@ FIG-02 — Composition moves the agentic class's cost per request; the others ba
 
 CLAIMS    A2 (MISURATO) panel a · A7 (MISURATO, secondary series) panel b.
 DATA      data/derived/fig02a_miss_by_class.csv, fig02b_exhaustive_marginal.csv
-RUNS      a: tre-20260921-150237/-162248 (separated mapping, 5 reps)
+RUNS      a: tre-20260921-150237/-162248 (separated mapping, scope 0.02, 5 reps);
+             data from tools/class_miss_by_scope.py
           b: crawler series of 16 Sep 2026 (shared mapping, 1211 s window, 3 reps)
 
 DESIGN PASS
@@ -43,10 +44,12 @@ CAPTION = (
     "Sensitivity of per-request cost to traffic composition, by class. (a) Miss ratio of "
     "each class at 13% and 30% agentic share of load (log scale); only the agentic volume "
     "changes (12 to 36 req/s), human and exhaustive volumes are fixed at 55 and 28 req/s, "
-    "working sets are separated; labels give the ratio between the two mean miss ratios. "
+    "working sets are separated, smallest agentic working set (scope 0.02); labels give "
+    "the ratio between the two mean miss ratios, computed from the unrounded means. "
     "Mean of 5 runs; whiskers \u00b1 1 SE, smaller than the markers. (b) Marginal origin requests per added exhaustive request as the exhaustive "
     "volume rises from 0 to 42 req/s with the human and agentic volumes fixed; its miss "
-    "ratio changes by 1.09× over the range. This is a secondary series (16 Sep 2026: "
+    "ratio changes by 1.09× between 14 and 42 req/s (at 0 req/s there is no exhaustive "
+    "traffic). This is a secondary series (16 Sep 2026: "
     "shared mapping, 1,211 s measurement window, 3 runs) and is not paired with the primary "
     "design. Whiskers: ± 1 SE."
 )
@@ -73,7 +76,7 @@ def _panel_a(cv, sp, x, y, w, h, rows):
     for cls in order:
         r = next(r for r in rows if r["class"] == cls)
         a, b = float(r["miss_share13"]), float(r["miss_share30"])
-        ratio = max(a, b) / min(a, b)             # ratio of the means, not of rounded values
+        ratio = float(r["fold"])   # from the unrounded means (tools/class_miss_by_scope.py)
         lw = 2.1 if cls == "agentic" else 1.2
         f.ax.plot([0, 1], [a, b], color=S.CLASS[cls], lw=lw, zorder=4,
                   solid_capstyle="round")
@@ -84,7 +87,7 @@ def _panel_a(cv, sp, x, y, w, h, rows):
         nm_w = S.text_w(LABEL[cls] + " ", T.key)
         f.label(1, b, f"{S.num(ratio, 2)}×", T.value, dx=8 + nm_w / PT, dy=3.2,
                 va="bottom", weight=SEMIBOLD)
-        f.label(1, b, f"{S.num(a, 3)} → {S.num(b, 3)}", T.sub, dx=8, dy=1.2,
+        f.label(1, b, f"{S.num(a, 4)} → {S.num(b, 4)}", T.sub, dx=8, dy=1.2,
                 va="top", color=C.ink_faint)
     return f
 

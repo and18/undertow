@@ -1,6 +1,21 @@
 # claims.md — mappa claim / stato / evidenza
-**Versione 3.2, 24 settembre 2026.** Sostituisce la v3.1, la v3 e la v2. Ogni frase del paper deve
+**Versione 3.3, 24 settembre 2026.** Sostituisce la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
+
+**Cambiato il 24 settembre (v3.3, revisione di Results).** (1) **A2 per scope**: i fattori
+di miss 13% → 30% per classe sono calcolati dalle medie non arrotondate ai tre scope
+(`tools/class_miss_by_scope.py`, `data/derived/class_miss_by_scope.csv`, che genera anche
+`fig02a_miss_by_class.csv`, prima scritto a mano, con valori identici). Agentica 4,05× /
+1,62× / 1,16× (coincide con l'elasticita' di B3/B4), esaustiva 1,03× / 1,02× / 1,03×
+(in calo), umana 1,02× / 1,04× / 1,06× (in salita); miss agentico a scope 0,02 scritto
+come 0,1796 → 0,0444. FIG-02 a legge il fattore dal CSV invece di ricalcolarlo da valori
+a 4 decimali. (2) **A7**: l'1,09× e' il rapporto dei miss esaustivi fra 14 e 42 req/s
+(0,791 → 0,861); a 0 req/s il miss esaustivo non esiste. (3) **A3**: i run a mappatura
+condivisa sono `tre-20260920-114026` / `-130038` (20 set, INVALIDA come separazione per
+il difetto AGENT_MUL, quindi mappatura condivisa di fatto; registry aggiornato), quelli a
+mappatura separata sono del 21 set: giorni diversi. (4) **B2**: la chiusura del passo
+0 → 12 e' 0,3%, non 0%. (5) **A1**: aggiunto t = −6,7 contro zero. (6) Tabella E:
+«circa 7,7×»; la riga sul risparmio rimanda ad A9. Nessuno stato cambia.
 
 **Cambiato il 24 settembre (v3.2, B3/B4/B5 dalle medie).** I CSV di FIG-A1 e FIG-A2, ora
 generati da `tools/figA_data.py`, ricalcolano i valori dalle medie delle ripetizioni (regola
@@ -88,14 +103,14 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
-| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20 (1 017 / 3 051 / 10 170 oggetti, 0,19× / 0,58× / 1,93× la capienza C2), mappatura separata, 5 rip. per punto; agentica 12 → 36 req/s, umana 55 ed esaustiva 28 fisse; **t di Welch fra scope consecutivi 22,99 e 32,13**; `tre-20260921-150237`/`-162248`, `tre-20260921-214946`/`-230947`, `tre-20260922-002958`/`-015010`; `tools/scope_ttest.py` | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
+| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20 (1 017 / 3 051 / 10 170 oggetti, 0,19× / 0,58× / 1,93× la capienza C2), mappatura separata, 5 rip. per punto; agentica 12 → 36 req/s, umana 55 ed esaustiva 28 fisse; **t di Welch fra scope consecutivi 22,99 e 32,13**; punto a scope 0,02 distinguibile da zero, **t = −6,7**; `tre-20260921-150237`/`-162248`, `tre-20260921-214946`/`-230947`, `tre-20260922-002958`/`-015010`; `tools/scope_ttest.py` | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
 | A9 | A scope 0,02 il netto dell'aggiunta della classe agentica da 0 a 36 req/s **non e' un risparmio**: **+0,392 ± 0,158** req/s all'origine, IC 95% **[+0,02, +0,76]** (t di Welch = 2,48, df = 7,35) | **MISURATO** | `tre-20260920-102015` (β = 0) e `tre-20260921-162248` (β·λ = 36), 5 rip. ciascuno, **run di giorni diversi (20 e 21 set)**; λ ricostruito dai conteggi per classe nei JSON di k6 del run a β = 0 (umana 54,92, esaustiva 28,08, λ = 83,00 req/s), perche' il run e' anteriore a `env.txt`; `tools/net_agentic.py` | netto significativamente negativo in ripetizione |
-| A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,05×** (miss 0,180 → 0,044), esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
+| A2 | Nel banco, la sensibilita' del costo per richiesta (miss ratio della classe) al **proprio** volume differisce fortemente fra classi coesistenti, e per l'agentica dipende dallo scope. A scope 0,02: agentica **4,05×** (miss **0,1796 → 0,0444**), esaustiva 1,03× (in calo), umana 1,02× (in salita). A scope 0,06: agentica **1,62×** (0,3758 → 0,2314), esaustiva 1,02×, umana 1,04×. A scope 0,20: agentica **1,16×** (0,5464 → 0,4704), esaustiva 1,03×, umana 1,06×. Tutti i fattori sono rapporti delle medie non arrotondate | **MISURATO** | sweep AGENT_SCOPE, i sei run di A1, mappatura separata, 5 rip.; agentica 12 → 36 req/s, umana ed esaustiva fisse; `tools/class_miss_by_scope.py`, `data/derived/class_miss_by_scope.csv` | rapporti simili fra le tre classi in ripetizione |
 | | *nota di posizionamento* | | Zhang et al. SoCC '25 variano gia' la composizione (0-100% AI) misurando l'**hit ratio**; il nostro apporto e' il **costo marginale all'origine** e il confronto fra tre classi | |
-| **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
+| **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004) e il suo miss ratio sale da **0,791 a 0,861 fra 14 e 42 req/s (1,09×)**; a 0 req/s non c'e' traffico esaustivo, quindi non c'e' un miss esaustivo | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
 | | *perche' conta* | | **Chiude il caveat di A2.** L'asimmetria non e' un artefatto dell'aver variato il volume di una sola classe: entrambe sono state variate sul proprio volume, con metodologia identica, e si comportano in modo opposto | |
 | **A8** | A parita' di richiesta aggiunta, la classe **esaustiva** degrada il miss umano **molto piu'** della classe agentica: **1,52** millesimi di miss umano per richiesta esaustiva contro **0,20** per richiesta agentica (mappatura separata; ~0 sotto mappatura condivisa) | **MISURATO la direzione**; il fattore (~7×) non e' appaiato: serie diverse per mappatura e finestra | serie crawler 16 set (miss umano 0,173 → 0,236 su +42 rps, condivisa, 1211 s) contro separazione 21 set (0,227 → 0,232 su +24 rps) | un fattore invertito su serie appaiate |
-| A3 | La sovrapposizione fra l'insieme di lavoro di una classe e la testa popolare di un'altra fa apparire quella classe piu' economica: **+0,714 e +1,012 req/s** all'origine, **t = 5,74 e 7,74**, rimuovendola | **MISURATO** | condivisa contro separata, stessi α e β | ripetizione senza differenza |
+| A3 | La sovrapposizione fra l'insieme di lavoro di una classe e la testa popolare di un'altra fa apparire quella classe piu' economica: **+0,714 e +1,012 req/s** all'origine, **t = 5,74 e 7,74**, rimuovendola | **MISURATO** | condivisa contro separata, stessi α e β; condivisa: `tre-20260920-114026` / `-130038` (20 set; AGENT_MUL non passato a k6, quindi permutazione di default = mappatura condivisa; anteriori a `env.txt`); separata: `tre-20260921-150237` / `-162248` (21 set). **Giorni diversi**, come per A9 | ripetizione senza differenza |
 | | *nota di posizionamento* | | Zhang et al. fissano l'overlap al 10-20% **senza variarlo**; FairRide tratta il free-riding come **equita'**, non come bias di misura | |
 | **A4** | Al ginocchio, bloccare la classe agentica oltre a quella esaustiva serve **2 807 ± 185 richieste in meno** (t = 15,19) con una differenza di p99 umano di **+0,03 ± 0,73 ms**, IC 95% **[−1,99, +2,05] che contiene lo zero** | **MISURATO** | politiche B e C a λ = 185, 3 rip. | barre d'errore che rendano significativa la differenza di latenza |
 | A5 | Bloccare una richiesta esaustiva libera ~**0,82** richieste all'origine, una agentica ~**0,10** al punto operativo della frontiera | **SOSTENUTO** | miss ratio misurati, marginale agentico, e A7 che conferma ~0,98 per l'esaustiva a volume proprio | — |
@@ -106,7 +121,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
 | B1 | Il comportamento dipende dall'interazione fra volume della classe, ampiezza del suo insieme di lavoro e capienza della cache — non dall'etichetta. Catena: **pattern di accesso → geometria dell'insieme → interazione con lo stato condiviso → costo marginale** | **SOSTENUTO** | A1, A2 e A7 congiunti | una classe con stesso volume e stesso insieme che si comporta diversamente |
-| B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine dominante e' l'**auto-localita' delle agentiche gia' presenti** (−1,632 su −0,889 totali) | **MISURATO** | scomposizione contabile, chiude a 0% e 5% | scomposizione che non chiude |
+| B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine dominante e' l'**auto-localita' delle agentiche gia' presenti** (−1,632 su −0,889 totali) | **MISURATO** | scomposizione contabile, chiude a **0,3%** (0 → 12: 1,234 contro 1,238) e **circa 5%** (12 → 36: −0,889 contro −0,846) | scomposizione che non chiude |
 | B3 | L'approssimazione del tempo caratteristico — **Fagin 1977** (origine), **Che et al. 2002** (riscoperta e nome), **Fricker, Robert, Roberts 2012** (formalizzazione) — **predice quantitativamente** l'elasticita' | **RESPINTO** | previsione scritta prima che fossero disponibili i primi risultati a scope 0,06 e 0,20, senza marca temporale indipendente (21 set): previsti 3,1 e 1,4, osservati 1,62 e 1,16 (scarto −48% a scope 0,06, fuori dalla tolleranza ±30%); criterio 3 fallito | — |
 | B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,05 > 1,62 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
 | B5 | La degradazione del p99 umano al crescere dello scope (**76,1 → 113,0 ms, +37,0 ± 1,0 ms, t = 37,3**) e' carico all'origine, non spostamento di cache: miss umano 1,06×, origine da 36,8 a 52,6 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |
@@ -144,7 +159,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | Il traffico agentico del Web e' generalmente benigno | **NON SOSTENUTO** | un honeypot, 31 client `agent`, una popolazione, una finestra |
 | Il traffico agentico e' intrinsecamente costoso | **RESPINTO** | A1: il segno dipende dall'insieme di lavoro |
 | Il traffico agentico e' sempre cache-friendly | **RESPINTO** | miss 0,546 a scope 0,20 |
-| Il traffico agentico fa risparmiare lavoro all'origine | **RITIRATO** | netto 0 → 36 positivo: +0,392 ± 0,158 |
+| Il traffico agentico fa risparmiare lavoro all'origine | **RITIRATO** | il netto 0 → 36 **non e' un risparmio (A9)**: +0,392 ± 0,158 |
 | Le politiche basate sulla classe falliscono | **RESPINTO** | D2 |
 | Le politiche statiche sono obsolete | **RESPINTO** | adeguate per 2 classi su 3 nel banco |
 | L'architettura Web attuale e' inadeguata | **NON DIMOSTRATO** | nessuna prova end-to-end |
@@ -153,7 +168,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | Abbiamo un nuovo modello di cache | **RESPINTO** | il modello e' di Fagin e Che |
 | Il rinvio domina il blocco | **RITIRATO** | A6: stessa frontiera |
 | B domina C in senso di Pareto | **RITIRATO** | Δ p99 = +0,03 ± 0,73 ms |
-| Esiste un confine di residenza a 681 oggetti | **RITIRATO** | capienza sbagliata di 7,75× |
+| Esiste un confine di residenza a 681 oggetti | **RITIRATO** | capienza sbagliata di circa 7,7× |
 | Sotto 1,1× di escursione basta un costo fisso | **RITIRATO** | soglia mai misurata |
 | Soglia universale di utilizzazione ρ ≈ 0,9 | **RESPINTO** | il ginocchio varia con la configurazione |
 | **Il cambiamento Cloudflare del 15 settembre 2026 e' un blocco di default generalizzato** | **RESPINTO** | vale per i nuovi domini in onboarding e solo sulle pagine con annunci; **nessuna fonte primaria conferma l'entrata in vigore** |
