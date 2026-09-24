@@ -1,6 +1,25 @@
 # claims.md — mappa claim / stato / evidenza
-**Versione 3, 23 settembre 2026.** Sostituisce la v2. Ogni frase del paper deve
+**Versione 3.1, 24 settembre 2026.** Sostituisce la v3 (e la v2). Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
+
+**Cambiato il 24 settembre (v3.1: A1 tracciata, C2 verificata).** Nessun valore di A1
+cambiato. (1) I parametri di disegno di A1 entrano nella riga, letti da `env.txt` e
+`points.csv` dei sei run con `tools/scope_ttest.py`: rate offerti configurati umana
+55,005 / 55,002, esaustiva 27,9965 / 28,0007, agentica 11,9985 → 35,9975 req/s;
+`AGENT_MUL = 3266489917` in tutti e sei; a scope 0,02 `AGENT_SCOPE` non e' in `env.txt` e
+vale il default 0,02 di `treclassi.sh`. Oggetti: **1 017 / 3 051 / 10 170**, quelli che il
+generatore puo' toccare (`floor(16 954 × scope)` basi × 3 capitoli, `workload.js`), non il
+nominale continuo 1 017 / 3 052 / 10 172 usato prima. (2) t di Welch fra scope
+consecutivi, dalle 5 ripetizioni per run: **22,99** (0,02 → 0,06, df ≈ 10,6) e **32,13**
+(0,06 → 0,20, df ≈ 10,2); lo script riottiene i marginali di A1 (−0,03525 / +0,16051 /
++0,43827). (3) C2 verificata da fonte rintracciabile: il valore 5 274 era annotato solo in
+`docs/decisions.md` §30 (output di `harness/load/capacity.sh`, mai archiviato);
+`tools/cache_capacity.py` rilegge `varnish_main_n_object` da VictoriaMetrics nelle 10
+finestre di misura dei due run a scope 0,20 (cache satura: 26 000-33 000 evizioni LRU per
+finestra, ~32 KB liberi su 134 MB) e da' **5 263,0 ± 8,4** oggetti (−0,21% da 5 274),
+oggetto medio 24,90 KiB (`data/derived/cache_capacity.csv`). Scarto sotto il 2%: i
+rapporti 0,19× / 0,58× / 1,93× restano. `data/derived/fig01_marginal_vs_workingset.csv`
+ora e' generato da `tools/fig01_data.py`, non piu' a mano.
 
 **Cambiato il 24 settembre (ricalcolo A7/A8).** Il marginale di A7 e la pendenza di A8
 usavano come divisore il passo nominale arrotondato (14 e 42 req/s). Ricalcolati con il
@@ -42,7 +61,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
-| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20, mappatura separata, 5 rip. per punto | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
+| **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20 (1 017 / 3 051 / 10 170 oggetti, 0,19× / 0,58× / 1,93× la capienza C2), mappatura separata, 5 rip. per punto; agentica 12 → 36 req/s, umana 55 ed esaustiva 28 fisse; **t di Welch fra scope consecutivi 22,99 e 32,13**; `tre-20260921-150237`/`-162248`, `tre-20260921-214946`/`-230947`, `tre-20260922-002958`/`-015010`; `tools/scope_ttest.py` | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
 | A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,05×** (miss 0,180 → 0,044), esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
 | | *nota di posizionamento* | | Zhang et al. SoCC '25 variano gia' la composizione (0-100% AI) misurando l'**hit ratio**; il nostro apporto e' il **costo marginale all'origine** e il confronto fra tre classi | |
 | **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
