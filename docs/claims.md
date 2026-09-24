@@ -2,6 +2,16 @@
 **Versione 3, 23 settembre 2026.** Sostituisce la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 
+**Cambiato il 24 settembre (ricalcolo A7/A8).** Il marginale di A7 e la pendenza di A8
+usavano come divisore il passo nominale arrotondato (14 e 42 req/s). Ricalcolati con il
+rate offerto configurato della classe esaustiva, α·λ letto da `points.csv` dei run
+`tre-20260916-013722/-025527/-041332/-053137` (α·λ = 0 / 13,9968 / 27,9965 / 41,9977, non
+esattamente 0/14/28/42), con SE dalle 3 ripetizioni: A7 da 0,959 ± 0,009 · 0,998 ± 0,010 ·
+0,985 ± 0,004 a **0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004** (elasticita' invariata,
+1,0889 arrotonda comunque a **1,09×**); A8 da 1,50 a **1,52** millesimi di miss umano per
+richiesta esaustiva (SE 0,02 millesimi). Scostamenti piccoli perche' α·λ era gia' vicino
+al nominale per disegno.
+
 **Stati.** `MISURATO` = differenza diretta con ripetizioni ed errore standard ·
 `SOSTENUTO` = inferenza stretta da misure, con meccanismo · `INTERPRETATIVO` = coerente
 con i dati, non verificato come previsione · `SFIDATO` = assunzione altrui che i nostri
@@ -24,9 +34,9 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20, mappatura separata, 5 rip. per punto | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
 | A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,05×** (miss 0,180 → 0,044), esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
 | | *nota di posizionamento* | | Zhang et al. SoCC '25 variano gia' la composizione (0-100% AI) misurando l'**hit ratio**; il nostro apporto e' il **costo marginale all'origine** e il confronto fra tre classi | |
-| **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,959 ± 0,009 · 0,998 ± 0,010 · 0,985 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
+| **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
 | | *perche' conta* | | **Chiude il caveat di A2.** L'asimmetria non e' un artefatto dell'aver variato il volume di una sola classe: entrambe sono state variate sul proprio volume, con metodologia identica, e si comportano in modo opposto | |
-| **A8** | A parita' di richiesta aggiunta, la classe **esaustiva** degrada il miss umano **molto piu'** della classe agentica: **1,50** millesimi di miss umano per richiesta esaustiva contro **0,20** per richiesta agentica (mappatura separata; ~0 sotto mappatura condivisa) | **MISURATO la direzione**; il fattore (~7×) non e' appaiato: serie diverse per mappatura e finestra | serie crawler 16 set (miss umano 0,173 → 0,236 su +42 rps, condivisa, 1211 s) contro separazione 21 set (0,227 → 0,232 su +24 rps) | un fattore invertito su serie appaiate |
+| **A8** | A parita' di richiesta aggiunta, la classe **esaustiva** degrada il miss umano **molto piu'** della classe agentica: **1,52** millesimi di miss umano per richiesta esaustiva contro **0,20** per richiesta agentica (mappatura separata; ~0 sotto mappatura condivisa) | **MISURATO la direzione**; il fattore (~7×) non e' appaiato: serie diverse per mappatura e finestra | serie crawler 16 set (miss umano 0,173 → 0,236 su +42 rps, condivisa, 1211 s) contro separazione 21 set (0,227 → 0,232 su +24 rps) | un fattore invertito su serie appaiate |
 | A3 | La sovrapposizione fra l'insieme di lavoro di una classe e la testa popolare di un'altra fa apparire quella classe piu' economica: **+0,714 e +1,012 req/s** all'origine, **t = 5,74 e 7,74**, rimuovendola | **MISURATO** | condivisa contro separata, stessi α e β | ripetizione senza differenza |
 | | *nota di posizionamento* | | Zhang et al. fissano l'overlap al 10-20% **senza variarlo**; FairRide tratta il free-riding come **equita'**, non come bias di misura | |
 | **A4** | Al ginocchio, bloccare la classe agentica oltre a quella esaustiva serve **2 807 ± 185 richieste in meno** (t = 15,19) con una differenza di p99 umano di **+0,03 ± 0,73 ms**, IC 95% **[−1,99, +2,05] che contiene lo zero** | **MISURATO** | politiche B e C a λ = 185, 3 rip. | barre d'errore che rendano significativa la differenza di latenza |

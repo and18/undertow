@@ -1,4 +1,4 @@
 from_rps,to_rps,marginal,marginal_se,elasticity,series
-0,14,0.959,0.009,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
-14,28,0.998,0.010,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
-28,42,0.985,0.004,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
+0,14,0.961,0.009,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
+14,28,0.997,0.010,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
+28,42,0.979,0.004,1.09,crawler series 16 Sep 2026 (shared mapping; 1211 s window; 3 reps)
