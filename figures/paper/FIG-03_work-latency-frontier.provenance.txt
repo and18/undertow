@@ -1,7 +1,7 @@
 figure     FIG-03_work-latency-frontier
 claims     A6 (MISURATO); A4 (MISURATO)
 data
-           data/derived/fig03_frontier.csv  sha256:35b8077e1989ebfd
+           data/derived/fig03_frontier.csv  sha256:7e53339fe09256bf
 runs
            tre-20260919-072040
            tre-20260919-080920

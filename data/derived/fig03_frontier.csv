@@ -1,9 +1,9 @@
 policy,label,family,served,served_se,p99_ms,p99_se
 C,block exhaustive + agentic,block,84298,116,57.83,0.44
-B,block exhaustive,block,87105,144,57.87,0.59
-D1,defer budget 1,defer,94022,46,73.2,0.3
-D2,defer budget 2,defer,101008,94,96.7,0.2
-D3,defer budget 3,defer,105596,25,115.2,1.0
-D4,defer budget 4,defer,107717,97,136.4,0.9
-D6,defer budget 6,defer,111338,47,212.3,4.0
-A,no policy,none,114693,1,555.4,48.6
+B,block exhaustive,block,87105,144,57.87,0.58
+D1,defer budget 1,defer,94022,46,73.23,0.26
+D2,defer budget 2,defer,101008,94,96.73,0.23
+D3,defer budget 3,defer,105596,25,115.17,1.04
+D4,defer budget 4,defer,107717,97,136.37,0.87
+D6,defer budget 6,defer,111338,47,212.33,4.02
+A,no policy,none,114693,1,555.37,48.65

@@ -1,6 +1,15 @@
 # claims.md — mappa claim / stato / evidenza
-**Versione 3.3, 24 settembre 2026.** Sostituisce la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
+**Versione 3.4, 24 settembre 2026.** Sostituisce la v3.3, la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
+
+**Cambiato il 24 settembre (v3.4, CSV da script).** Tutti i CSV di `data/derived` tranne
+`figA3_honeypot.csv` sono generati da script in `tools/` (`data/derived/MANIFEST.csv`,
+`make data`); fig02b, fig03 e fig04 riprodotti senza differenze nei valori stampati.
+**B2**: il vecchio `fig05_accounting.csv` usava miss arrotondati a 3 decimali e rate nominali
+(12/24/55/28 req/s); ricalcolato dalle medie e dai rate configurati: variazione sulle
+agentiche gia' presenti −1,622 invece di −1,632, somma 0 → 12 1,257 invece di 1,234,
+chiusura 1,6% invece di 0,3%; 12 → 36 invariato (−0,889 contro −0,846). Tolti «termine
+dominante» e «auto-localita'». Nessuno stato cambia.
 
 **Cambiato il 24 settembre (v3.3, revisione di Results).** (1) **A2 per scope**: i fattori
 di miss 13% → 30% per classe sono calcolati dalle medie non arrotondate ai tre scope
@@ -121,7 +130,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
 | B1 | Il comportamento dipende dall'interazione fra volume della classe, ampiezza del suo insieme di lavoro e capienza della cache — non dall'etichetta. Catena: **pattern di accesso → geometria dell'insieme → interazione con lo stato condiviso → costo marginale** | **SOSTENUTO** | A1, A2 e A7 congiunti | una classe con stesso volume e stesso insieme che si comporta diversamente |
-| B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine dominante e' l'**auto-localita' delle agentiche gia' presenti** (−1,632 su −0,889 totali) | **MISURATO** | scomposizione contabile, chiude a **0,3%** (0 → 12: 1,234 contro 1,238) e **circa 5%** (12 → 36: −0,889 contro −0,846) | scomposizione che non chiude |
+| B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine piu' grande e' la variazione sulle 12 req/s agentiche gia' presenti (−1,622 su −0,889 totali) | **MISURATO** | scomposizione contabile dalle medie non arrotondate e dai rate configurati (`tools/fig05_data.py`, `data/derived/fig05_accounting.csv`); chiude a **1,6%** (0 → 12: 1,257 contro 1,238) e **circa 5%** (12 → 36: −0,889 contro −0,846) | scomposizione che non chiude |
 | B3 | L'approssimazione del tempo caratteristico — **Fagin 1977** (origine), **Che et al. 2002** (riscoperta e nome), **Fricker, Robert, Roberts 2012** (formalizzazione) — **predice quantitativamente** l'elasticita' | **RESPINTO** | previsione scritta prima che fossero disponibili i primi risultati a scope 0,06 e 0,20, senza marca temporale indipendente (21 set): previsti 3,1 e 1,4, osservati 1,62 e 1,16 (scarto −48% a scope 0,06, fuori dalla tolleranza ±30%); criterio 3 fallito | — |
 | B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,05 > 1,62 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
 | B5 | La degradazione del p99 umano al crescere dello scope (**76,1 → 113,0 ms, +37,0 ± 1,0 ms, t = 37,3**) e' carico all'origine, non spostamento di cache: miss umano 1,06×, origine da 36,8 a 52,6 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |

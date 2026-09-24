@@ -35,18 +35,30 @@ EDITORIAL = dict(
            "of 5 runs, whisker ± 1 SE.",
 )
 
-CAPTION = (
-    "Accounting decomposition of the change in origin work at the smallest agentic working "
-    "set (scope 0.02, separated mapping), for the steps 0 → 12 and 12 → 36 agentic "
-    "req/s with human and exhaustive volumes fixed. Each bar is the contribution of one term "
-    "to the change in origin requests per second and starts where the previous one ends; "
-    "the grey bar is their sum and the marker the measured change (mean of 5 runs, ± 1 "
-    "SE). The sum matches the measurement to within 0% (step a) and 5% (step b). In step b "
-    "the largest term is the lower miss ratio of the 12 agentic req/s already present "
-    "(−1.632). The net effect from 0 to 36 req/s is not a saving, +0.392 ± 0.158 (95% CI "
-    "+0.02 to +0.76); the "
-    "0 req/s point is an inter-day baseline."
-)
+STEP_A, STEP_B = "0-12", "12-36"     # step keys in the CSV
+
+
+def _caption():
+    """Every number in the caption is computed from the CSV the figure draws."""
+    r = S.read_csv(DATA[0])
+    a, b, net = _vals(r, STEP_A), _vals(r, STEP_B), _vals(r, "0-36")
+    return (
+        "Accounting decomposition of the change in origin work at the smallest agentic "
+        "working set (scope 0.02, separated mapping), for the steps "
+        f"{STEP_A.replace('-', ' → ')} and {STEP_B.replace('-', ' → ')} "
+        "agentic req/s with human and exhaustive volumes fixed. Each bar is the contribution "
+        "of one term to the change in origin requests per second and starts where the "
+        "previous one ends; the grey bar is their sum and the marker the measured change "
+        "(mean of 5 runs, ± 1 SE). The sum matches the measurement to within "
+        f"{S.num(a['closure_pct'], 1)}% (step a) and {S.num(b['closure_pct'], 1)}% (step b). "
+        "In step b the largest term is the change on the "
+        f"{STEP_B.split('-')[0]} agentic req/s already present "
+        f"({S.num(b['agentic requests already present'], 3, sign=True)}). The net effect "
+        f"from 0 to 36 req/s is not a saving, {S.num(net['net'], 3, sign=True)} ± "
+        f"{S.num(net['net_se'], 3)} (95% CI {S.num(net['net_ci95_lo'], 2, sign=True)} to "
+        f"{S.num(net['net_ci95_hi'], 2, sign=True)}); the 0 req/s point is an inter-day "
+        "baseline."
+    )
 
 TERMS = [("new agentic requests", "New agentic requests", "New agentic", C.agentic),
          ("agentic requests already present", "Agentic already present", "Agentic present", C.agentic),
@@ -57,6 +69,9 @@ XLIM = (-1.25, 2.75)
 
 def _vals(rows, step):
     return {r["term"]: float(r["value"]) for r in rows if r["step"] == step}
+
+
+CAPTION = _caption()
 
 
 def _panel(cv, sp, x, y, w, rows_h, step, v, letter, title, show_keys, key_w):
@@ -120,7 +135,7 @@ def _value(f, sp, a, b, yc, d, col):
 def render(variant):
     sp = S.Spec(variant)
     rows = S.read_csv(DATA[0])
-    va_, vb_ = _vals(rows, "0-12"), _vals(rows, "12-36")
+    va_, vb_ = _vals(rows, STEP_A), _vals(rows, STEP_B)
     net = _vals(rows, "0-36")
     key_w = sp.pick(0.82, 1.18, 1.34)
     rows_h = sp.pick(1.30, 1.40, 1.50)

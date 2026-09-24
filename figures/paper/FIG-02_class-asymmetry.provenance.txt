@@ -2,7 +2,7 @@ figure     FIG-02_class-asymmetry
 claims     A2 (MISURATO); A7 (MISURATO, secondary series)
 data
            data/derived/fig02a_miss_by_class.csv  sha256:310bac0896b2bfa7
-           data/derived/fig02b_exhaustive_marginal.csv  sha256:0ecc0c3a6ccd97d5
+           data/derived/fig02b_exhaustive_marginal.csv  sha256:eb584b8e884e81c0
 runs
            tre-20260921-150237
            tre-20260921-162248

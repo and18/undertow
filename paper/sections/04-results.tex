@@ -49,8 +49,8 @@ while 4.3\% of the sessions of honeypot agentic clients are contiguous
 \undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus working set}{fig:sign}
 
 \subsection{Where the change comes from}\label{sec:r-accounting}
-% \claim{B2}: in 12->36 the largest term is the agentic requests already present (-1.632);
-%   sum and measurement differ by 0.3% (0->12) and about 5% (12->36), from
+% \claim{B2}: in 12->36 the largest term is the agentic requests already present (-1.622);
+%   sum and measurement differ by 1.6% (0->12) and about 5% (12->36), from
 %   fig05_accounting.csv. Arithmetic, not mechanism.
 To see which requests carry the change of sign, we split the measured change in origin
 work at the smallest scope into four terms (\cref{fig:accounting}).\claim{B2}
@@ -63,10 +63,10 @@ human and exhaustive classes fixed at 55 and 28 req/s.\claim{B2}\claim{A1}
 The 0 req/s point comes from a run on a different day.\claim{A9}
 
 In the step from 12 to 36 req/s, the largest term is the change on the 12 agentic req/s
-already present: $-1.632$ origin req/s.\claim{B2}
+already present: $-1.622$ origin req/s.\claim{B2}
 The four terms sum to $-0.889$ origin req/s, against a measured change of
 $-0.846$.\claim{B2}
-The sum and the measurement differ by about 5\% in this step, and by 0.3\% in the step
+The sum and the measurement differ by about 5\% in this step, and by 1.6\% in the step
 from 0 to 12 req/s.\claim{B2}
 This measured change is the same one that gives the marginal cost at the smallest scope
 in \cref{sec:r-sign}, so the decomposition and the marginal agree.\claim{B2}\claim{A1}
