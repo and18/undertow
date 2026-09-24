@@ -148,8 +148,9 @@ all'origine va da 36,8 a 52,6 req/s. **E' carico, non spostamento di cache.**
 ### 4.4 Il confonditore da sovrapposizione
 
 Decorrelando l'insieme agentico dalla testa popolare umana (la sovrapposizione passa dal
-100% per costruzione al 2,1%; la massa di traffico umano sulle basi agentiche dal 62,1%
-al 10,6%): origine **+0,714 (t = 5,74)** e **+1,012 (t = 7,74)** req/s; hit agentico
+99,7% al 2,1%; la massa di traffico umano sulle basi agentiche dal 59,8% all'1,0%, con la
+distribuzione vera del generatore, floor(N^u), che non estrae mai il rango 0:
+`tools/fig04_data.py`): origine **+0,714 (t = 5,74)** e **+1,012 (t = 7,74)** req/s; hit agentico
 0,881 → 0,820 e 0,973 → 0,956.
 
 ### 4.5 Frontiera lavoro/latenza, λ = 185, α = 0,35, β = 0,10, 3 ripetizioni
@@ -178,7 +179,8 @@ rapporto 8×, ed e' la spiegazione del confronto B/C.
 
 ### 4.6 Honeypot — taratura, `theslowshelf.org`
 
-521 171 richieste, 12 agosto - 21 settembre 2026, 53 263 client, 314 520 connessioni,
+520 871 richieste nella finestra fissa [2026-08-12, 2026-09-22) UTC (snapshot
+`data/hplogs/snapshot-20260924`, `tools/honeypot_aggregate.py`), 53 271 client, 314 735 connessioni,
 18 720 pagine. Composizione: `other-bot` 43,5%, browser 22,9%, `training` 13,5%,
 `search` 12,3%, `unknown` 5,3%, **`agent` 2,5%**.
 
@@ -190,11 +192,16 @@ distinti nella stessa finestra**. Il p90 osservato e' **670**. Il punto sperimen
 basso e' appaiato, per ampiezza dell'insieme in finestra, al 90° percentile degli agenti
 osservati **in questo honeypot**.
 
-Divergenza da dichiarare: **contiguita' agentica osservata 4,3%**, contro il 100%
-assunto dal generatore. Va in Limitations, in prima pagina.
+Divergenza da dichiarare, con la stessa metrica sui due lati (coppie di richieste
+consecutive nella stessa sessione su capitoli adiacenti dello stesso libro): classe `agent`
+dell'honeypot **4,25%** contigue e 19,4% ripetute su 1 929 coppie (sessione = connessione
+TCP; 284 connessioni, 37 client); generatore **66,9%** contigue e 0 ripetute (sessione = VU
+di k6; `tools/generator_contiguity.py`). Il generatore non e' al 100% con questa metrica:
+la coppia fra due sessioni di 3 capitoli quasi mai e' contigua. Va in Limitations, in
+prima pagina.
 
-Web Bot Auth: **3,83%** delle richieste firmate (19 930 su 520 038), tutte da
-`other-bot` (8,80% di quella classe), **zero** dagli agenti dichiarati.
+Web Bot Auth: **3,83%** delle richieste firmate (19 934 su 520 871): 19 932 da
+`other-bot` (8,80% di quella classe) e 2 da `search`, **zero** dagli agenti dichiarati.
 
 ---
 

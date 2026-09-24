@@ -10,14 +10,19 @@ Prima il CSV era scritto a mano. Quattro run a scope 0,02, 5 ripetizioni ciascun
 Colonne:
   origin_rps / origin_se  media e SE (stdev / sqrt(n)) di origin_rps da points.csv
   agent_hit               media di h_agent da points.csv
-  overlap_pct             quota delle basi agentiche che cadono nella testa umana, calcolata
-                          sul generatore (harness/load/workload.js): basi agentiche
-                          (r·AGENT_MUL + SEED) mod N per i ranghi r < floor(N·scope), testa
-                          umana (r·2654435761 + SEED) mod N per gli stessi ranghi;
-                          N = 16954, SEED = 42, scope 0,02 (339 basi)
+  overlap_pct             quota delle basi agentiche che cadono nella testa umana, sul
+                          generatore (harness/load/workload.js): basi agentiche
+                          (r·AGENT_MUL + SEED) mod N per r < floor(N·scope); testa umana =
+                          gli stessi 339 ranghi piu' popolari che zipfRank estrae davvero,
+                          cioe' r = 1..339 (floor(N^u) >= 1: il rango 0 non esce mai),
+                          mappati con (r·2654435761 + SEED) mod N; N = 16954, SEED = 42
+  human_mass_pct          quota del traffico umano che cade sulle basi agentiche, con la
+                          distribuzione vera di zipfRank: r = floor(N^u), u uniforme,
+                          P(r = k) = log_N(k+1) − log_N(k) per k >= 1, P(0) = 0
 
-Stampa anche, per confronto con claims.md, l'effetto separata − condivisa con SE combinato
-e t di Welch, e la massa Zipf(1) del traffico umano sulle basi agentiche (didascalia).
+Stampa anche, per confronto, l'effetto separata − condivisa con SE combinato e t, e le due
+grandezze con le definizioni precedenti (testa = ranghi 0..338, Zipf(1) esatta con 1/(k·H_N)).
+Il file e' letto da FIG-04 anche per la didascalia: ci sono anche effect / effect_se / t.
 
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
@@ -48,19 +53,32 @@ RUNS = {
 }
 
 
-def bases(mul, n=st.CORPUS, scope=float(st.SCOPE_DEFAULT)):
-    return [(r * mul + SEED) % n for r in range(max(1, math.floor(n * scope)))]
+def bases(mul, ranks=None, n=st.CORPUS, scope=float(st.SCOPE_DEFAULT)):
+    k = max(1, math.floor(n * scope))
+    return [(r * mul + SEED) % n for r in (ranks if ranks is not None else range(k))]
 
 
-def overlap(mul):
-    head = set(bases(HUMAN_MUL))
+def overlap(mul, head_from=1):
+    """Quota delle basi agentiche nella testa umana di uguale ampiezza (ranghi head_from..)."""
     agent = bases(mul)
+    head = set(bases(HUMAN_MUL, range(head_from, head_from + len(agent))))
     return len(head.intersection(agent)) / len(agent)
 
 
+def _rank_of(n=st.CORPUS):
+    return {(r * HUMAN_MUL + SEED) % n: r for r in range(n)}
+
+
 def human_mass(mul, n=st.CORPUS):
-    """Quota di una Zipf(1) esatta sui ranghi umani che cade sulle basi agentiche."""
-    rank = {(r * HUMAN_MUL + SEED) % n: r for r in range(n)}
+    """Quota del traffico umano sulle basi agentiche, con r = floor(N^u) di zipfRank."""
+    rank = _rank_of(n)
+    p = lambda k: (math.log(k + 1) - math.log(k)) / math.log(n) if k >= 1 else 0.0
+    return sum(p(rank[b]) for b in bases(mul))
+
+
+def human_mass_exact_zipf(mul, n=st.CORPUS):
+    """Definizione precedente: Zipf(1) esatta sui ranghi 0..N−1, P(k) = 1 / ((k+1)·H_N)."""
+    rank = _rank_of(n)
     h = sum(1 / k for k in range(1, n + 1))
     return sum(1 / ((rank[b] + 1) * h) for b in bases(mul))
 
@@ -75,23 +93,31 @@ def read_run(run):
 
 
 def main():
-    res, out = {}, []
+    res, out = {}, {}
     for (load, mapping), (run, mul) in RUNS.items():
         r = res[(load, mapping)] = read_run(run)
-        ov = overlap(mul)
-        out.append([load, mapping, f"{100 * ov:.1f}", f"{r['mean']:.3f}",
-                    f"{math.sqrt(r['var_mean']):.3f}", f"{r['hit']:.3f}"])
+        ov, mass = overlap(mul), human_mass(mul)
+        out[(load, mapping)] = [load, mapping, f"{100 * ov:.1f}", f"{100 * mass:.1f}",
+                                f"{r['mean']:.3f}", f"{math.sqrt(r['var_mean']):.3f}",
+                                f"{r['hit']:.3f}"]
         print(f"  {load} {mapping:9s} {run}  origin {r['mean']:.4f} +/- "
-              f"{math.sqrt(r['var_mean']):.4f}  hit agentico {r['hit']:.4f}  "
-              f"overlap {100 * ov:.2f}%  massa umana {100 * human_mass(mul):.2f}%  (n = {r['n']})")
+              f"{math.sqrt(r['var_mean']):.4f}  hit agentico {r['hit']:.4f}  (n = {r['n']})")
+        print(f"      overlap {100 * ov:.2f}% (testa 0..338: {100 * overlap(mul, 0):.2f}%)  "
+              f"massa umana {100 * mass:.2f}% (Zipf(1) esatta: "
+              f"{100 * human_mass_exact_zipf(mul):.2f}%)")
+    rows = []
     for load in (12, 36):
         a, b = res[(load, "shared")], res[(load, "separated")]
         d, se = b["mean"] - a["mean"], math.sqrt(a["var_mean"] + b["var_mean"])
         print(f"  effetto a {load} req/s: {d:+.4f} +/- {se:.4f}  t = {d / se:.2f}")
+        for mapping in ("shared", "separated"):
+            eff = [f"{d:.3f}", f"{se:.3f}", f"{d / se:.2f}"] if mapping == "separated" else ["", "", ""]
+            rows.append(out[(load, mapping)] + eff)
     with OUT_CSV.open("w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
-        w.writerow(["agent_rps", "mapping", "overlap_pct", "origin_rps", "origin_se", "agent_hit"])
-        w.writerows(out)
+        w.writerow(["agent_rps", "mapping", "overlap_pct", "human_mass_pct", "origin_rps",
+                    "origin_se", "agent_hit", "effect", "effect_se", "t"])
+        w.writerows(rows)
     print(f"scritto {OUT_CSV}")
 
 

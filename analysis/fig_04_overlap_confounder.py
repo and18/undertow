@@ -4,8 +4,8 @@ FIG-04 — Sharing the popular head with human traffic makes the agentic class l
 CLAIM     A3 (MISURATO).
 DATA      data/derived/fig04_overlap.csv
 RUNS      shared mapping: tre-20260920-114026 / -130038 of 20 Sep (AGENT_MUL not passed to
-          k6, so the default permutation: overlap 100% by construction; before env.txt)
-          separated mapping: tre-20260921-150237 / -162248 (AGENT_MUL=3266489917, 2.1%)
+          k6, so the default permutation: same permutation as the human class; before env.txt)
+          separated mapping: tre-20260921-150237 / -162248 (AGENT_MUL=3266489917)
 
 DESIGN PASS
   Reader    removing the overlap raises measured origin work at both agentic loads:
@@ -36,20 +36,37 @@ EDITORIAL = dict(
            "human 55 req/s and exhaustive 28 req/s fixed.",
 )
 
-CAPTION = (
-    "Effect of working-set overlap on measured origin work. Shared: the agentic working "
-    "set is drawn with the same permutation as the human one, so it coincides with the "
-    "human popular head (overlap 100% by construction; 62.1% of human traffic falls on "
-    "agentic bases). Separated: a different permutation (AGENT_MUL = 3266489917) reduces "
-    "the overlap to 2.1% and that share of human traffic to 10.6%. Removing the overlap "
-    "raises origin work by +0.714 req/s (t = 5.74) at 12 agentic req/s and +1.012 req/s "
-    "(t = 7.74) at 36, and lowers the agentic hit ratio from 0.881 to 0.820 and from 0.973 "
-    "to 0.956. Mean of 5 runs; whiskers ± 1 SE. The shared runs are of 20 Sep 2026, the "
-    "separated runs of 21 Sep. The overlap is a bias of the "
-    "experimental characterisation of a class's cost, not a property of the class."
-)
+def _row(rows, load, mapping):
+    return next(r for r in rows if int(r["agent_rps"]) == load and r["mapping"] == mapping)
 
-T_STAT = {12: "5.74", 36: "7.74"}
+
+def _caption():
+    """Every number in the caption is computed from the CSV the figure draws."""
+    r = S.read_csv(DATA[0])
+    sh, se = _row(r, 12, "shared"), _row(r, 12, "separated")
+    e12, e36 = se, _row(r, 36, "separated")
+    h = {k: S.num(float(_row(r, *k)["agent_hit"]), 3)
+         for k in ((12, "shared"), (12, "separated"), (36, "shared"), (36, "separated"))}
+    return (
+        "Effect of working-set overlap on measured origin work. Shared: the agentic working "
+        "set is drawn with the same permutation as the human one, so its bases coincide with "
+        f"the human popular head (overlap {S.num(float(sh['overlap_pct']), 1)}%; the human "
+        "generator never draws rank 0); "
+        f"{S.num(float(sh['human_mass_pct']), 1)}% of human traffic falls on agentic bases. "
+        "Separated: a different permutation (AGENT_MUL = 3266489917) reduces the overlap to "
+        f"{S.num(float(se['overlap_pct']), 1)}% and that share of human traffic to "
+        f"{S.num(float(se['human_mass_pct']), 1)}%. Removing the overlap raises origin work by "
+        f"{S.num(float(e12['effect']), 3, sign=True)} req/s (t = {S.num(float(e12['t']), 2)}) "
+        f"at 12 agentic req/s and {S.num(float(e36['effect']), 3, sign=True)} req/s "
+        f"(t = {S.num(float(e36['t']), 2)}) at 36, and lowers the agentic hit ratio from "
+        f"{h[(12, 'shared')]} to {h[(12, 'separated')]} and from {h[(36, 'shared')]} to "
+        f"{h[(36, 'separated')]}. Mean of 5 runs; whiskers ± 1 SE. The shared runs are of "
+        "20 Sep 2026, the separated runs of 21 Sep. The overlap is a bias of the "
+        "experimental characterisation of a class's cost, not a property of the class."
+    )
+
+
+CAPTION = _caption()
 
 
 def render(variant):
@@ -57,7 +74,9 @@ def render(variant):
     rows = S.read_csv(DATA[0])
     key_w = sp.pick(0.86, 1.06, 1.20)
     row_h = sp.pick(0.50, 0.54, 0.58)
-    keys = ((True, "shared popular head, overlap 100%"), (False, "separated, overlap 2.1%"))
+    ov = {m: S.num(float(_row(rows, 12, m)["overlap_pct"]), 1) for m in ("shared", "separated")}
+    keys = ((True, f"shared popular head, overlap {ov['shared']}%"),
+            (False, f"separated, overlap {ov['separated']}%"))
     one_line = (0.11 + S.text_w(keys[0][1], T.sub) + 0.20 + 0.11
                 + S.text_w(keys[1][1], T.sub)) < (sp.w - 2 * S.Canvas.MARGIN[sp.mode] - key_w)
     n_key = 1 if one_line else 2
@@ -90,8 +109,7 @@ def render(variant):
 
     for i, load in enumerate((12, 36)):
         yc = (i + 0.5) * row_h
-        sh = next(r for r in rows if int(r["agent_rps"]) == load and r["mapping"] == "shared")
-        se = next(r for r in rows if int(r["agent_rps"]) == load and r["mapping"] == "separated")
+        sh, se = _row(rows, load, "shared"), _row(rows, load, "separated")
         a, b = float(sh["origin_rps"]), float(se["origin_rps"])
         f.ax.plot([a, b], [yc, yc], color=C.agentic_tint, lw=3.2, zorder=2,
                   solid_capstyle="butt")
@@ -99,10 +117,10 @@ def render(variant):
             v = float(r["origin_rps"])
             f.whisker(v, yc, float(r["origin_se"]), axis="x")
             f.dot(v, yc, C.agentic, hollow=hollow, size=6.2 * T.base / 8.4)
-        d = b - a
-        f.label((a + b) / 2, yc, f"+{S.num(d, 3)} req/s", T.value, dy=7,
+        d = float(se["effect"])            # from the unrounded means (tools/fig04_data.py)
+        f.label((a + b) / 2, yc, f"{S.num(d, 3, sign=True)} req/s", T.value, dy=7,
                       ha="center", va="bottom", weight=SEMIBOLD)
-        f.label((a + b) / 2, yc, f"t = {T_STAT[load]}", T.sub, dy=-7, ha="center",
+        f.label((a + b) / 2, yc, f"t = {S.num(float(se['t']), 2)}", T.sub, dy=-7, ha="center",
                 va="top", color=C.ink_faint)
         # row key
         y_in = f.at(a, yc)[1]

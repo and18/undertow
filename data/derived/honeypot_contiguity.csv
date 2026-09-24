@@ -1,0 +1,7 @@
+class,pairs,contiguous,repeated,contiguous_pct,repeated_pct,connections_with_pairs,clients_with_pairs,connections_2plus,connections
+agent,1929,82,375,4.25,19.44,284,37,654,1650
+training,35479,2004,269,5.65,0.76,175,24,390,27165
+search,5491,34,97,0.62,1.77,693,116,1507,24331
+other-bot,33085,16596,881,50.16,2.66,13380,201,14893,182157
+browser,32230,9393,11673,29.14,36.22,3328,1728,4898,64587
+unknown,4763,1123,805,23.58,16.90,107,75,131,14845

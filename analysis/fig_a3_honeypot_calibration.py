@@ -3,22 +3,26 @@ FIG-A3 — The synthetic agent matches real agents on working-set width, not on 
 
 CLAIMS    C3 (MISURATO): lowest testbed point ~693 distinct objects in 143 s;
           honeypot agent-class p90 = 670.
-          C5 (MISURATO, declared divergence): contiguity 4.3% observed vs 100% assumed.
-DATA      data/derived/figA3_honeypot.csv (aggregates only; no client identifiers)
-SOURCE    theslowshelf.org honeypot, 12 Aug - 21 Sep 2026; tools/honeypot_window.py.
+          C5 (MISURATO, declared divergence): contiguity with the same metric on both sides,
+          honeypot agent class 4.25% of consecutive pairs vs generator 66.9%.
+DATA      data/derived/figA3_honeypot.csv (tools/figA3_data.py; aggregates only, no client
+          identifiers), from tools/honeypot_aggregate.py on the fixed window
+          [2026-08-12, 2026-09-22) UTC and tools/generator_contiguity.py.
 
 DESIGN PASS
   Reader    on the dimension the cache cares about (distinct objects within one
             characteristic time) the lowest testbed point sits at the real agents'
             90th percentile; on contiguity the generator is far from reality.
-  Encoding  a: a range strip on a log axis for the 31 real agent clients (median,
+  Encoding  a: a range strip on a log axis for the real agent clients (median,
             p90, max) with the testbed point on its own row below;
             b: two bars on a 0-100% axis.
   Dominant  the testbed dot landing under the real agents' p90.
   Secondary summary statistics as labels; sample sizes in the row keys.
   Prevent   "real agents are benign / all below the testbed" (E: not supported):
             the strip shows the whole summary (median 4, p90 670, max 678) and the
-            caption states one honeypot, 31 clients, one period.
+            caption states one honeypot, the number of clients, one period.
+            On b, not "the generator is 100% contiguous": the same pair metric gives
+            about two thirds, because the pair between two sessions is rarely contiguous.
 """
 import figure_style as S
 from figure_style import C, T, PT, SEMIBOLD
@@ -26,31 +30,68 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-A3_honeypot-calibration"
 CLAIMS = "C3 (MISURATO); C5 (MISURATO, declared divergence)"
 DATA = ["figA3_honeypot.csv"]
-RUNS = ["honeypot theslowshelf.org 2026-08-12..2026-09-21 (aggregates)",
+RUNS = ["honeypot theslowshelf.org, fixed window [2026-08-12, 2026-09-22) UTC (aggregates)",
         "generator calculation for scope 0.02 at 12 req/s"]
+
+
+def _v(rows, k):
+    return float(_s(rows, k))
+
+
+def _s(rows, k):
+    return next(r for r in rows if r["quantity"] == k)["value"]
+
+
+def _period(rows):
+    """'12 Aug – 21 Sep 2026' from the window in the CSV (end excluded)."""
+    from datetime import datetime, timedelta
+    a = datetime.fromisoformat(_s(rows, "window_from_utc"))
+    b = datetime.fromisoformat(_s(rows, "window_to_utc_excluded")) - timedelta(days=1)
+    return f"{a.day} {a:%b} – {b.day} {b:%b %Y}"
+
+
+def _texts():
+    """Source line and caption: every number is computed from the CSV the figure draws."""
+    r = S.read_csv(DATA[0])
+    n, per = S.num(_v(r, "agent_clients"), 0), _period(r)
+    pairs = S.num(_v(r, "pairs_observed"), 0, thousands=True)
+    source = (f"Source: theslowshelf.org honeypot, {per}, {n} agent-class clients, {pairs} "
+              "request pairs; Undertow testbed generator.")
+    caption = (
+        "Calibration of the synthetic agentic class against agent-class clients observed on "
+        f"the theslowshelf.org honeypot ({per}, UTC). (a) Distinct objects requested within "
+        "a 143 s window, the characteristic time of the testbed cache: median "
+        f"{S.num(_v(r, 'agent_ws_median'), 0)}, 90th percentile {S.num(_v(r, 'agent_ws_p90'), 0)} "
+        f"and maximum {S.num(_v(r, 'agent_ws_max'), 0)} across {n} clients (mean "
+        f"{S.num(_v(r, 'agent_ws_mean'), 0)}), against about {S.num(_v(r, 'testbed_ws'), 0)} "
+        "for the lowest testbed setting. (b) Contiguity, with the same metric on both sides: "
+        "the share of consecutive request pairs within one session that read adjacent "
+        "chapters of the same book. On the honeypot a session is a TCP connection: "
+        f"{S.num(_v(r, 'contiguity_observed'), 2)}% of {pairs} pairs "
+        f"({S.num(_v(r, 'connections_observed'), 0)} connections, "
+        f"{S.num(_v(r, 'clients_observed'), 0)} clients), and "
+        f"{S.num(_v(r, 'repeated_observed'), 1)}% repeat the same chapter. On the generator a "
+        f"session is a k6 virtual user: {S.num(_v(r, 'contiguity_generator'), 1)}% of "
+        f"{S.num(_v(r, 'pairs_generator'), 0, thousands=True)} pairs (mean of "
+        f"{S.num(_v(r, 'seeds_generator'), 0)} seeds), "
+        f"{S.num(_v(r, 'repeated_generator'), 0)}% repeated: two of the three chapters of a "
+        "session follow a contiguous one, while the pair between two sessions almost never "
+        "does. One honeypot, one "
+        "population and one period; the comparison does not characterise agentic traffic on "
+        "the Web in general.")
+    return source, caption
+
+
+_SOURCE, CAPTION = _texts()
 
 EDITORIAL = dict(
     headline="The synthetic agent matches real agents on working-set width,\nnot on contiguity",
     deck="Agent-class clients observed on a honeypot compared with the testbed’s agentic "
          "class at its\nlowest setting (scope 0.02, 12 req/s).",
-    source="Source: theslowshelf.org honeypot, 12 Aug – 21 Sep 2026, 31 agent-class "
-           "clients, 1,929 sessions; Undertow testbed generator.",
-)
-
-CAPTION = (
-    "Calibration of the synthetic agentic class against agent-class clients observed on the "
-    "theslowshelf.org honeypot (12 Aug – 21 Sep 2026). (a) Distinct objects requested "
-    "within a 143 s window, the characteristic time of the testbed cache: median 4, 90th "
-    "percentile 670 and maximum 678 across 31 clients (mean 240), against about 693 for "
-    "the lowest testbed setting. (b) Share of agent sessions that read three contiguous "
-    "chapters: 4.3% observed across 1,929 sessions, against 100% assumed by the generator. "
-    "One honeypot, one population and one period; the comparison does not characterise "
-    "agentic traffic on the Web in general."
+    source=_SOURCE,
 )
 
 
-def _v(rows, k):
-    return float(next(r for r in rows if r["quantity"] == k)["value"])
 
 
 def _keys(cv, f, x, rows_):
@@ -100,7 +141,7 @@ def render(variant):
     fa.dot(tb, y2, C.agentic, size=ms)
     fa.label(tb, y2, f"about {S.num(tb, 0)}", T.sub, dx=-6, ha="right", va="center",
              weight=SEMIBOLD)
-    _keys(cv, fa, L, ((y1, "Real agents", "31 honeypot clients"),
+    _keys(cv, fa, L, ((y1, "Real agents", f"{S.num(_v(rows, 'agent_clients'), 0)} honeypot clients"),
                       (y2, "Testbed agent", "scope 0.02, 12 req/s")))
 
     # b — contiguity
@@ -111,15 +152,16 @@ def render(variant):
     fb.vgrid(xt[1:])
     fb.vbase(0, color=C.rule_mid, lw=0.6)
     fb.xticks(xt, [f"{v}%" for v in xt])
-    fb.xtitle("Sessions reading three contiguous chapters")
+    fb.xtitle(sp.pick("Consecutive pairs on adjacent chapters",
+                      "Consecutive request pairs on adjacent chapters, within one session"))
     obs, gen = _v(rows, "contiguity_observed"), _v(rows, "contiguity_generator")
     bh = row_h * 0.40
     fb.ax.barh(y1, obs, height=bh, color=C.ink, lw=0, zorder=2)
     fb.ax.barh(y2, gen, height=bh, color=C.agentic, lw=0, zorder=2)
-    fb.label(obs, y1, f"{S.num(obs, 1)}%", T.sub, dx=4, ha="left", va="center",
+    fb.label(obs, y1, f"{S.num(obs, 2)}%", T.sub, dx=4, ha="left", va="center",
              weight=SEMIBOLD)
-    fb.label(gen, y2, "100%", T.sub, dx=-4, ha="right", va="center", color=C.surface,
+    fb.label(gen, y2, f"{S.num(gen, 1)}%", T.sub, dx=-4, ha="right", va="center", color=C.surface,
              weight=SEMIBOLD)
-    _keys(cv, fb, L, ((y1, "Real agents", "1,929 sessions"),
-                      (y2, "Generator", "assumed by design")))
+    _keys(cv, fb, L, ((y1, "Real agents", "per TCP connection"),
+                      (y2, "Generator", "per k6 virtual user")))
     return cv.save(STEM)

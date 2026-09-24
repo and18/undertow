@@ -1,0 +1,2 @@
+pairs,contiguous,repeated,contiguous_pct,contiguous_pct_min,contiguous_pct_max,repeated_pct,vus_with_pairs,sessions,seeds,rate,beta,scope,session,agent_mul,measure_s,assign,run
+7169,4795,0,66.89,66.71,67.05,0.00,200,2522,5,95.0,0.1263,0.02,3,3266489917,620,rr,tre-20260921-150237

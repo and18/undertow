@@ -3,6 +3,9 @@
 % - Stack and pinning; corpus (495 books, 16,954 chapters); cache 128 MB = 5,263 objects
 %   measured with varnish_main_n_object, mean object 24.9 KB \claim{C2}.
 % - Three classes and their generators; AGENT_SCOPE, AGENT_SESSION, AGENT_SKEW, AGENT_MUL.
+%   Human ranks are drawn as floor(N^u), u uniform: log-uniform, approximately Zipf(1);
+%   rank 0 is never drawn (floor(N^u) >= 1). Overlap and human share on agentic bases
+%   (FIG-04) are computed with this distribution (tools/fig04_data.py).
 % - Open-loop generation; one manipulated variable at a time; WARMUP 300 s, MEASURE 620 s;
 %   validity gates; drift reference; env.txt since 21 Sep 2026 (earlier configurations
 %   are not recorded: say so).

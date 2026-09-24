@@ -66,8 +66,8 @@ classes can be decorrelated (`AGENT_MUL`).
 
 The honeypot is a public site of 18,720 pages of public-domain literature whose
 `robots.txt` explicitly permits every AI crawler — the inverse of current practice, and
-deliberate: a site that blocks crawlers cannot observe them. It logged 521,171 requests
-between 12 August and 21 September 2026. Only aggregates are published.
+deliberate: a site that blocks crawlers cannot observe them. It logged 520,871 requests
+in the fixed window [2026-08-12, 2026-09-22) UTC. Only aggregates are published.
 
 ## Method, non-negotiable
 
@@ -169,7 +169,10 @@ some ISP ranges: copy `cache/` from an existing host.
 
 One testbed, one corpus, one cache technology, one synthetic generator. The synthetic agent
 matches the agents seen on the honeypot on working-set width within one cache
-characteristic time, but not on contiguity (4.3% observed against 100% assumed). One
+characteristic time, but not on contiguity: with the same metric on both sides (consecutive
+request pairs within one session reading adjacent chapters; a session is a TCP connection
+on the honeypot and a k6 virtual user in the generator), 4.25% observed against 66.9% in
+the generator. One
 honeypot, 31 agent-class clients and one period do not characterise agentic traffic on the
 Web. The CPU proxy is validated on this testbed only.
 

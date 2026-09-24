@@ -1,5 +1,5 @@
-agent_rps,mapping,overlap_pct,origin_rps,origin_se,agent_hit
-12,shared,100.0,36.950,0.091,0.881
-12,separated,2.1,37.664,0.085,0.820
-36,shared,100.0,35.806,0.091,0.973
-36,separated,2.1,36.818,0.094,0.956
+agent_rps,mapping,overlap_pct,human_mass_pct,origin_rps,origin_se,agent_hit,effect,effect_se,t
+12,shared,99.7,59.8,36.950,0.091,0.881,,,
+12,separated,2.1,1.0,37.664,0.085,0.820,0.714,0.124,5.74
+36,shared,99.7,59.8,35.806,0.091,0.973,,,
+36,separated,2.1,1.0,36.818,0.094,0.956,1.012,0.131,7.74

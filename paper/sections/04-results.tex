@@ -41,8 +41,11 @@ By working-set width alone, the smallest scope is closest to the agentic clients
 public honeypot: at 12 agentic req/s it touches about 693 distinct objects in a 143 s
 window, against a 90th percentile of 670 for honeypot agentic clients
 (Appendix, \cref{fig:a-honeypot}).\claim{C3}
-It is not close on contiguity: our generator draws sessions of three contiguous chapters,
-while 4.3\% of the sessions of honeypot agentic clients are contiguous
+It is not close on contiguity.\claim{C5}
+Measured the same way on both sides, as the share of consecutive requests within one
+session that read adjacent chapters, 4.25\% of the request pairs of honeypot agentic
+clients are contiguous, against 66.9\% for our generator; a session is a TCP connection
+on the honeypot and a k6 virtual user in the generator
 (\cref{sec:limitations}).\claim{C5}
 
 \Cref{sec:r-accounting} asks where this change of sign comes from, term by term.\claim{B2}

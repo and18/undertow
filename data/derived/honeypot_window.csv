@@ -1,0 +1,7 @@
+class,clients,median,mean,p90,max
+agent,31,4,240.0,670,678
+training,67,12,25.0,19,289
+search,1834,1,12.2,2,7858
+other-bot,1013,2,10.2,16,660
+browser,1179,2,18.8,6,4460
+unknown,1126,1,6.6,1,2568

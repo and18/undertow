@@ -10,4 +10,10 @@ fig05_accounting.csv,tools/fig05_data.py,tre-20260920-102015 tre-20260921-150237
 fig06_cpu_validation.csv,tools/cpu_validation.py,tre-20260919-072040 tre-20260919-080920 tre-20260919-085754 tre-20260919-094627 tre-20260919-103501 (VictoriaMetrics)
 figA1_human_externality.csv,tools/figA_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
 figA2_elasticity_model.csv,tools/figA_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
-figA3_honeypot.csv,- (a mano: gli script honeypot non limitano il periodo al 21 set),honeypot theslowshelf.org 2026-08-12..2026-09-21 (tools/honeypot_window.py tools/honeypot_scope.py) + calcolo sul generatore
+honeypot_window.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
+honeypot_contiguity.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
+honeypot_signed.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
+honeypot_totals.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
+honeypot_snapshot.sha256,- (impronte dei file dello snapshot; scritto da Andrea),data/hplogs/snapshot-20260924
+generator_contiguity.csv,tools/generator_contiguity.py,setup_data di tre-20260921-150237 (identico nei run 16-22 set)
+figA3_honeypot.csv,tools/figA3_data.py,honeypot_window.csv honeypot_contiguity.csv honeypot_totals.csv generator_contiguity.csv + calcolo sul generatore; honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)

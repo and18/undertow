@@ -14,10 +14,17 @@ clean-figures:
 # Regenerate data/derived from the runs on the lab (read only: ssh lab cat), see
 # data/derived/MANIFEST.csv. data-vm also needs the VictoriaMetrics tunnel on
 # localhost:8428 (usage in tools/cache_capacity.py); fig01 and figA read
-# cache_capacity.csv, so data-vm runs first. figA3_honeypot.csv is not regenerated:
-# the honeypot scripts cannot restrict the log period to the frozen one.
-.PHONY: data data-vm data-lab
-data: data-vm data-lab
+# cache_capacity.csv, so data-vm runs first. data-honeypot needs the local log snapshot
+# (aggregates only; the fixed window is written here and in MANIFEST.csv).
+HP_SNAPSHOT ?= data/hplogs/snapshot-20260924
+HP_FROM ?= 2026-08-12T00:00:00+00:00
+HP_TO ?= 2026-09-22T00:00:00+00:00
+.PHONY: data data-vm data-lab data-honeypot
+data: data-vm data-honeypot data-lab
+
+data-honeypot:
+	@test -d $(HP_SNAPSHOT) || { echo "manca lo snapshot $(HP_SNAPSHOT)"; exit 1; }
+	$(PY) tools/honeypot_aggregate.py --logs $(HP_SNAPSHOT) --from $(HP_FROM) --to $(HP_TO)
 
 data-vm:
 	@curl -sf -o /dev/null http://localhost:8428/health || \
@@ -33,6 +40,8 @@ data-lab:
 	$(PY) tools/fig04_data.py
 	$(PY) tools/fig05_data.py
 	$(PY) tools/figA_data.py
+	$(PY) tools/generator_contiguity.py
+	$(PY) tools/figA3_data.py
 
 .PHONY: paper
 # Build the paper PDF (needs a LaTeX installation with latexmk). Run make figures first.

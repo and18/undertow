@@ -1,8 +1,18 @@
 quantity,value,unit,note
+agent_clients,31,clients,"agent-class clients with >= 5 requests; 2026-08-12 to 2026-09-22 (excluded), UTC"
 agent_ws_median,4,objects,31 agent clients; distinct objects per 143 s window
-agent_ws_mean,240,objects,31 agent clients
+agent_ws_mean,240.0,objects,31 agent clients
 agent_ws_p90,670,objects,31 agent clients
 agent_ws_max,678,objects,31 agent clients
-testbed_ws,693,objects,scope 0.02 at 12 req/s; distinct objects per 143 s window
-contiguity_observed,4.3,percent,agent sessions with 3 contiguous chapters; 1929 sessions
-contiguity_generator,100,percent,assumed by the generator
+testbed_ws,692.8,objects,scope 0.02 at 0.1263 x 95 req/s; expected distinct objects per 143 s window
+contiguity_observed,4.25,percent,honeypot agent class; consecutive request pairs on one TCP connection
+repeated_observed,19.44,percent,honeypot agent class; same pairs
+pairs_observed,1929,pairs,honeypot agent class
+connections_observed,284,connections,agent TCP connections with at least one pair
+clients_observed,37,clients,clients of those connections
+contiguity_generator,66.89,percent,generator; consecutive agentic requests of one k6 VU; mean of 5 seeds
+repeated_generator,0.00,percent,generator; same pairs
+seeds_generator,5,seeds,generator simulations averaged
+pairs_generator,7169,pairs,"generator; scope 0.02, 200 VUs, 620 s"
+window_from_utc,2026-08-12T00:00:00+00:00,,honeypot window start
+window_to_utc_excluded,2026-09-22T00:00:00+00:00,,"honeypot window end, excluded"
