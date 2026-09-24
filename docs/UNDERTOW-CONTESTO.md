@@ -94,9 +94,9 @@ Sono la cornice, e il risultato sperimentale e' **l'evidenza per Q4**, non la te
 
 OCI Ampere Neoverse-N1, 6 core fisici senza SMT, 23 GB RAM, aarch64. Catena Docker:
 k6 (core 0) → Varnish (1) → gunicorn/Flask 8 thread (2) → PostgreSQL (3-5).
-Corpus: 495 libri Gutenberg, **16 954 capitoli**, oggetto medio **24,8 KB**.
-Cache 128 MB = **5 274 oggetti**, il 31,1% del corpus (misurato da
-`varnish_main_n_object` a cache piena, non stimato).
+Corpus: 495 libri Gutenberg, **16 954 capitoli**, oggetto medio **24,9 KB**.
+Cache 128 MB = **5 263 ± 8 oggetti**, circa il 31% del corpus (misurato da
+`varnish_main_n_object` a cache piena, non stimato; claims C2).
 
 Generazione di carico a ciclo aperto (`constant-arrival-rate`). Protocollo fisso:
 `WARMUP=300`, `MEASURE=620` derivato dalla copertura del corpus, gate di validita' per
@@ -142,8 +142,8 @@ e' trascurabile. Non e' «tre classi sotto lo stesso stimolo».
 ### 4.3 Esternalita' sulla classe umana
 
 Quota agentica 30%, al variare dello scope: p99 umano **76,1 → 88,0 → 113,0 ms**
-(Δ = +36,9 ± 1,0, **t = 36**), mentre il miss umano si muove di 1,06× e il lavoro
-all'origine va da 36,8 a 52,7 req/s. **E' carico, non spostamento di cache.**
+(Δ = +37,0 ± 1,0, **t = 37,3**), mentre il miss umano si muove di 1,06× e il lavoro
+all'origine va da 36,8 a 52,6 req/s. **E' carico, non spostamento di cache.**
 
 ### 4.4 Il confonditore da sovrapposizione
 
@@ -336,10 +336,10 @@ README; i dati che le sostenevano stanno in `archive/retired/`, **non** in
    +0,392 ± 0,158.
 3. «La separazione ha falsificato la critica del workload cache-friendly» — confronto
    non appaiato; poi il run si e' rivelato un no-op (`AGENT_MUL` mai inoltrato a k6).
-4. «Confine di residenza a 681 oggetti» — capienza sbagliata di 7,75×: sono 5 274.
+4. «Confine di residenza a 681 oggetti» — capienza sbagliata di circa 7,7×: sono 5 263 (C2).
 5. «B domina C in senso di Pareto» — la differenza di p99 e' +0,03 ± 0,73 ms.
-6. «Il tempo caratteristico predice quantitativamente l'elasticita'» — pre-registrazione
-   fallita: previsti 3,1 e 1,4, osservati 1,63 e 1,16.
+6. «Il tempo caratteristico predice quantitativamente l'elasticita'» — previsione precedente
+   fallita: previsti 3,1 e 1,4, osservati 1,62 e 1,16.
 
 **Tutte e sei erano interpretazioni, nessuna era una misura.** Le misure non sono mai
 cambiate. Tutte e sei sono state trovate da noi, prima di pubblicare.

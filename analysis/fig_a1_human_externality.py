@@ -1,8 +1,8 @@
 """
 FIG-A1 — Human latency rises with the agentic working set; the human hit ratio barely moves.
 
-CLAIM     B5 (SOSTENUTO): p99 76.1 -> 113.0 ms (t = 36), human miss 1.06x, origin
-          36.8 -> 52.7 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
+CLAIM     B5 (SOSTENUTO): p99 76.1 -> 113.0 ms (+37.0 +/- 1.0, t = 37.3), human miss
+          1.06x, origin 36.8 -> 52.6 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
           the figure does not name one.
 DATA      data/derived/figA1_human_externality.csv (agentic share 30%)
 RUNS      as FIG-01.

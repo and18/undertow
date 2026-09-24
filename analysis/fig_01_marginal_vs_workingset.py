@@ -17,7 +17,7 @@ DESIGN PASS
             the honeypot reference as a short tag on the row it refers to.
             Load range, runs and the net-effect caveat go to the caption.
   Prevent   "agentic traffic reduces origin work" (retracted, R2): the bar is the
-            12->36 req/s marginal; the net 0->36 effect is positive and the
+            12->36 req/s marginal; the net 0->36 effect is not a saving and the
             caption says so. No line joins the rows (3 points, no functional form).
             No "working set = capacity" boundary (retracted, R4).
 """
@@ -45,10 +45,10 @@ CAPTION = (
     "exhaustive classes stay fixed at 55 and 28 req/s; only the scope from which agentic "
     "sessions are drawn changes. Rows give the working set (the objects the generator "
     "can draw: scope × corpus session starts, rounded down, × 3 contiguous chapters) as a "
-    "multiple of the measured cache capacity of 5,274 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
+    "multiple of the measured cache capacity of 5,263 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
     "values are marginal between 12 and 36 req/s; in the first row the first 12 req/s cost "
-    "+0.103 origin requests each and the net effect from 0 to 36 req/s is positive "
-    "(+0.392 ± 0.158). The tag marks the row closest to real agents by windowed working "
+    "+0.103 origin requests each and the net effect from 0 to 36 req/s is not a saving, "
+    "+0.392 ± 0.158 (95% CI +0.02 to +0.76). The tag marks the row closest to real agents by windowed working "
     "set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for that "
     "row), not by the size of the whole working set. Working sets are decorrelated across classes "
     "(AGENT_MUL = 3266489917)."

@@ -1,6 +1,33 @@
 # claims.md — mappa claim / stato / evidenza
-**Versione 3.1, 24 settembre 2026.** Sostituisce la v3 (e la v2). Ogni frase del paper deve
+**Versione 3.2, 24 settembre 2026.** Sostituisce la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
+
+**Cambiato il 24 settembre (v3.2, B3/B4/B5 dalle medie).** I CSV di FIG-A1 e FIG-A2, ora
+generati da `tools/figA_data.py`, ricalcolano i valori dalle medie delle ripetizioni (regola
+v3: rapporti ed elasticita' dalle medie, mai da valori arrotondati). Cambiano tre righe:
+**B3** elasticita' osservata a scope 0,06 **1,62** invece di 1,63 (1,6240; scarto dalla
+previsione 3,1 **−48%** invece di −47%); **B4** monotonia **4,05 > 1,62 > 1,16**; **B5**
+p99 umano **+37,0 ± 1,0 ms, t = 37,3** invece di +36,9 e t = 36, origine **da 36,8 a
+52,6 req/s** invece di 52,7. Nessuno stato cambia. Le didascalie di FIG-A1 e FIG-A2 sono
+calcolate dal CSV. **C3**: la finestra di 143 s resta; nota aggiunta nella riga (parametro
+fissato con C2 = 5 274, con 5 263 sarebbe 142 s, scarto 0,2%, non ricalcolato).
+
+**Cambiato il 24 settembre (v3.2: C2 aggiornata, A9 nuova, «previsione precedente»).**
+(1) **C2 = 5 263 ± 8 oggetti**, oggetto medio 24,9 KB: media di `varnish_main_n_object`
+sulle 10 finestre sature dei run a scope 0,20 (`tools/cache_capacity.py`). Il 5 274 usato
+fino alla v3.1 era l'output non archiviato di `harness/load/capacity.sh` (`decisions.md`
+§30). I rapporti di A1 restano 0,19× / 0,58× / 1,93×. I CSV di FIG-01, FIG-A1 e FIG-A2
+sono generati da script (`tools/fig01_data.py`, `tools/figA_data.py`) con questo divisore.
+(2) **A9 nuova**: il netto 0 → 36 req/s non e' un risparmio, ricalcolato dalle ripetizioni
+con `tools/net_agentic.py`. (3) **La previsione di B3 e B4 diventa «previsione
+precedente».** Fatti: il lab e' in UTC; il primo run a scope 0,06 (`tre-20260921-214946`)
+e' stato lanciato alle 21:49:46 UTC (`env.txt`), il suo primo risultato (`m-…-1.json`) e'
+delle 22:05:53 UTC; il file `docs/PREREGISTRAZIONE-scopesweep.md` porta l'intestazione
+«21 settembre 2026, 23:50» senza fuso orario ed e' in git solo dal 23 settembre
+(`c961151`); sul lab non ce n'e' una copia. La previsione e' quindi descritta come scritta
+prima che fossero disponibili i primi risultati a scope 0,06 e 0,20, senza marca
+temporale indipendente; nel paper, «prior prediction». Il punto a scope 0,02 era gia'
+misurato e resta l'ancora.
 
 **Cambiato il 24 settembre (v3.1: A1 tracciata, C2 verificata).** Nessun valore di A1
 cambiato. (1) I parametri di disegno di A1 entrano nella riga, letti da `env.txt` e
@@ -62,6 +89,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | # | claim | stato | evidenza | cosa lo falsificherebbe |
 |---|---|---|---|---|
 | **A1** | Il costo marginale della classe agentica **cambia segno** al variare dell'ampiezza del suo insieme di lavoro, a parita' di classe, volumi, cache e corpus: **−0,0353 ± 0,0053 → +0,1605 ± 0,0067 → +0,4383 ± 0,0055** richieste all'origine per richiesta | **MISURATO** | sweep AGENT_SCOPE 0,02 / 0,06 / 0,20 (1 017 / 3 051 / 10 170 oggetti, 0,19× / 0,58× / 1,93× la capienza C2), mappatura separata, 5 rip. per punto; agentica 12 → 36 req/s, umana 55 ed esaustiva 28 fisse; **t di Welch fra scope consecutivi 22,99 e 32,13**; `tre-20260921-150237`/`-162248`, `tre-20260921-214946`/`-230947`, `tre-20260922-002958`/`-015010`; `tools/scope_ttest.py` | un difetto di disegno che faccia variare altro oltre lo scope; ripetizione con esito diverso |
+| A9 | A scope 0,02 il netto dell'aggiunta della classe agentica da 0 a 36 req/s **non e' un risparmio**: **+0,392 ± 0,158** req/s all'origine, IC 95% **[+0,02, +0,76]** (t di Welch = 2,48, df = 7,35) | **MISURATO** | `tre-20260920-102015` (β = 0) e `tre-20260921-162248` (β·λ = 36), 5 rip. ciascuno, **run di giorni diversi (20 e 21 set)**; λ ricostruito dai conteggi per classe nei JSON di k6 del run a β = 0 (umana 54,92, esaustiva 28,08, λ = 83,00 req/s), perche' il run e' anteriore a `env.txt`; `tools/net_agentic.py` | netto significativamente negativo in ripetizione |
 | A2 | Nel banco, la sensibilita' del costo per richiesta al **proprio** volume differisce fortemente fra classi coesistenti: agentica **4,05×** (miss 0,180 → 0,044), esaustiva 1,03×, umana 1,02× | **MISURATO** | separazione working-set, 21 set, 5 rip. | rapporti simili fra le tre classi in ripetizione |
 | | *nota di posizionamento* | | Zhang et al. SoCC '25 variano gia' la composizione (0-100% AI) misurando l'**hit ratio**; il nostro apporto e' il **costo marginale all'origine** e il confronto fra tre classi | |
 | **A7** | Variando il **proprio** volume da 0 a 42 req/s a umano e agente fissi, il costo marginale della classe **esaustiva** e' **piatto a ~0,98** (0,961 ± 0,009 · 0,997 ± 0,010 · 0,979 ± 0,004) e la sua elasticita' e' **1,09×** | **MISURATO** | serie crawler, 16 set, 4 punti, 3 rip., finestra 1211 s | marginale esaustivo non piatto in ripetizione |
@@ -79,9 +107,9 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 |---|---|---|---|---|
 | B1 | Il comportamento dipende dall'interazione fra volume della classe, ampiezza del suo insieme di lavoro e capienza della cache — non dall'etichetta. Catena: **pattern di accesso → geometria dell'insieme → interazione con lo stato condiviso → costo marginale** | **SOSTENUTO** | A1, A2 e A7 congiunti | una classe con stesso volume e stesso insieme che si comporta diversamente |
 | B2 | Nel tratto 12 → 36 req/s a scope 0,02 il termine dominante e' l'**auto-localita' delle agentiche gia' presenti** (−1,632 su −0,889 totali) | **MISURATO** | scomposizione contabile, chiude a 0% e 5% | scomposizione che non chiude |
-| B3 | L'approssimazione del tempo caratteristico — **Fagin 1977** (origine), **Che et al. 2002** (riscoperta e nome), **Fricker, Robert, Roberts 2012** (formalizzazione) — **predice quantitativamente** l'elasticita' | **RESPINTO** | pre-registrazione 21 set: previsti 3,1 e 1,4, osservati 1,63 e 1,16; criterio 3 fallito | — |
-| B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,05 > 1,63 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
-| B5 | La degradazione del p99 umano al crescere dello scope (**76,1 → 113,0 ms, +36,9 ± 1,0 ms, t = 36**) e' carico all'origine, non spostamento di cache: miss umano 1,06×, origine da 36,8 a 52,7 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |
+| B3 | L'approssimazione del tempo caratteristico — **Fagin 1977** (origine), **Che et al. 2002** (riscoperta e nome), **Fricker, Robert, Roberts 2012** (formalizzazione) — **predice quantitativamente** l'elasticita' | **RESPINTO** | previsione scritta prima che fossero disponibili i primi risultati a scope 0,06 e 0,20, senza marca temporale indipendente (21 set): previsti 3,1 e 1,4, osservati 1,62 e 1,16 (scarto −48% a scope 0,06, fuori dalla tolleranza ±30%); criterio 3 fallito | — |
+| B4 | La stessa approssimazione **spiega qualitativamente** il regime e l'ordinamento: piu' grande l'insieme, minore l'elasticita' | **INTERPRETATIVO** | monotonia 4,05 > 1,62 > 1,16; r(0,20) < 2,0 | rapporti non monotoni in un'altra configurazione |
+| B5 | La degradazione del p99 umano al crescere dello scope (**76,1 → 113,0 ms, +37,0 ± 1,0 ms, t = 37,3**) e' carico all'origine, non spostamento di cache: miss umano 1,06×, origine da 36,8 a 52,6 req/s | **SOSTENUTO** | sweep scope, quota 30% | hit umano in calo proporzionale al p99 |
 | B6 | Il canale preciso della contesa a monte (Varnish, connessioni, pool di thread) | **NON SOSTENUTO** | inferito per esclusione; coda per stadio mai misurata | — |
 
 ## C. Claim di validita' e taratura
@@ -89,8 +117,8 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | # | claim | stato | evidenza |
 |---|---|---|---|
 | C1 | Il lavoro all'origine e' proxy validato del carico di backend **su questo banco**: `CPU = 0,021 + 0,0368 × origin_rps`, R² = 0,997, residuo max 3,1% | **MISURATO** | 5 politiche, intervallo di carico 4,5× |
-| C2 | Capienza della cache **5 274 oggetti**, oggetto medio **24,8 KB** | **MISURATO** | `varnish_main_n_object` a cache piena |
-| C3 | Il punto sperimentale piu' basso (scope 0,02, λ = 12) tocca **~693 oggetti distinti in 143 s**; il **p90** dei client agentici dell'honeypot nella stessa finestra e' **670** | **MISURATO** | calcolo sul generatore + `honeypot_window.py` |
+| C2 | Capienza della cache **5 263 ± 8 oggetti**, oggetto medio **24,9 KB** | **MISURATO** | `varnish_main_n_object` da VictoriaMetrics, media delle 10 finestre di misura sature dei run a scope 0,20 (`tools/cache_capacity.py`, `data/derived/cache_capacity.csv`); il 5 274 precedente era l'output non archiviato di `harness/load/capacity.sh` |
+| C3 | Il punto sperimentale piu' basso (scope 0,02, λ = 12) tocca **~693 oggetti distinti in 143 s**; il **p90** dei client agentici dell'honeypot nella stessa finestra e' **670** | **MISURATO** | calcolo sul generatore + `honeypot_window.py`. *Nota:* la finestra di 143 s e' un parametro fissato con C2 = 5 274 (T_C = 5 274 / 37 req/s); con C2 = 5 263 sarebbe 142 s, scarto 0,2%, non ricalcolato |
 | C4 | Il costo di una classe misurato **in isolamento** non predice quello in mistura: la classe agentica sola a cache calda ha miss **0,002**, in mistura al 13% di quota ha miss **0,180** | **MISURATO** | `tre-20260911-154109` contro separazione |
 | C5 | Il generatore assume 3 capitoli **contigui**; la contiguita' osservata per la classe `agent` e' **4,3%** | **MISURATO — divergenza dichiarata** | honeypot, 1 929 sessioni |
 | C6 | Il **3,83%** delle richieste honeypot porta una firma Web Bot Auth, tutte da `other-bot` (8,80% di quella classe), **zero** dagli agenti dichiarati | **MISURATO** | `sig_agent`/`sig_input`, 520 038 richieste; `draft-ietf-webbotauth-httpsig-protocol-00`, 1 set 2026, su RFC 9421 |

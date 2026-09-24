@@ -78,7 +78,9 @@ quel confine — da cui la sua sensibilita'.
 **Falsificata da:** la misura diretta. `varnish_main_n_object` a cache piena da'
 **5 274 oggetti** e 134,2 MB occupati, cioe' un oggetto medio di **24,8 KB**. La stima
 era sbagliata di **7,75 volte**, e l'insieme agentico sta a **0,19×** la capienza, non
-a 1,49×: comodamente dentro.
+a 1,49×: comodamente dentro. *(Nota del 24 settembre, claims v3.2: la capienza oggi in C2
+e' **5 263 ± 8 oggetti**, oggetto medio 24,9 KB, dalle finestre sature dei run a scope
+0,20; l'errore della stima resta di circa 7,7 volte e l'insieme agentico resta a 0,19×.)*
 **L'errore:** i 192,4 KB erano i byte di lavoro a PostgreSQL per richiesta misurati da
 `classcost.py` — corpo del capitolo, righe di indice, byte dei capitoli correlati — non
 la dimensione dell'oggetto HTTP memorizzato da Varnish. Due grandezze diverse, confuse
@@ -110,12 +112,14 @@ La parola «domina» resta vietata.
 
 ## R6 — «Il tempo caratteristico predice quantitativamente l'elasticita'»
 
-**Affermata:** 21 settembre, in `PREREGISTRAZIONE-scopesweep.md`, **prima** dello sweep.
+**Affermata:** 21 settembre, in `PREREGISTRAZIONE-scopesweep.md`, **prima** che fossero
+disponibili i primi risultati a scope 0,06 e 0,20, senza marca temporale indipendente
+(«previsione precedente», claims v3.2).
 **Sosteneva:** che il rapporto fra il miss ratio al 13% e al 30% di quota agentica
 valesse circa **3,1** a scope 0,06 e **1,4** a scope 0,20, entro il ±30%.
-**Falsificata da:** lo sweep stesso. Osservati **1,63** e **1,16**. Il primo sbaglia del
-**47%**, fuori tolleranza. Dei tre criteri pre-registrati due sono soddisfatti — la
-monotonia decrescente (4,09 > 1,63 > 1,16) e r(0,20) < 2,0 — ma erano richiesti
+**Falsificata da:** lo sweep stesso. Osservati **1,62** e **1,16**. Il primo sbaglia del
+**48%**, fuori tolleranza. Dei tre criteri scritti con la previsione due sono soddisfatti —
+la monotonia decrescente (4,05 > 1,62 > 1,16) e r(0,20) < 2,0 — ma erano richiesti
 congiuntamente.
 **Causa:** l'approssimazione **uniforme**, che avevo dichiarato come semplificazione e
 poi usato per generare i numeri. Rifacendo lo stesso calcolo con la distribuzione reale
@@ -123,7 +127,7 @@ poi usato per generare i numeri. Rifacendo lo stesso calcolo con la distribuzion
 giusta, ampiezza ancora sovrastimata. **Quel ricalcolo e' post-hoc e va etichettato
 come tale.**
 **Sostituita da:** il modello resta come **strumento interpretativo** che spiega
-direzione e ordinamento, non come previsione validata. La pre-registrazione fallita si
+direzione e ordinamento, non come previsione validata. La previsione fallita si
 pubblica insieme al risultato.
 
 ---

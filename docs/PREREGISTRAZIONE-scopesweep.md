@@ -1,3 +1,12 @@
+> **Nota aggiunta il 24 settembre 2026 (il testo sotto non e' stato modificato).**
+> Il nome del file resta, ma nel paper questa e' una **previsione precedente** («prior
+> prediction»): e' stata scritta prima che fossero disponibili i primi risultati a scope
+> 0,06 e 0,20, senza marca temporale indipendente. Fatti: il lab e' in UTC; il primo run
+> a scope 0,06 (`tre-20260921-214946`) e' stato lanciato alle 21:49:46 UTC, il suo primo
+> risultato e' delle 22:05:53 UTC; l'intestazione «23:50» qui sotto non indica il fuso
+> orario; il file e' in git solo dal 23 settembre (`c961151`) e sul lab non ce n'e' una
+> copia. Il punto a scope 0,02 era gia' misurato: e' l'ancora.
+
 # Pre-registrazione dello sweep di AGENT_SCOPE
 **21 settembre 2026, 23:50 — scritta PRIMA del lancio.**
 Questo file non va modificato dopo aver visto i risultati.

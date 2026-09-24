@@ -43,7 +43,8 @@ CAPTION = (
     "the grey bar is their sum and the marker the measured change (mean of 5 runs, ± 1 "
     "SE). The sum matches the measurement to within 0% (step a) and 5% (step b). In step b "
     "the largest term is the lower miss ratio of the 12 agentic req/s already present "
-    "(−1.632). The net effect from 0 to 36 req/s is positive (+0.392 ± 0.158); the "
+    "(−1.632). The net effect from 0 to 36 req/s is not a saving, +0.392 ± 0.158 (95% CI "
+    "+0.02 to +0.76); the "
     "0 req/s point is an inter-day baseline."
 )
 

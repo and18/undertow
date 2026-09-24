@@ -60,11 +60,15 @@ che quella congelata regga.
   ± 1 SE sempre disegnato). Ogni script di figura ha in testa il suo "design pass".
 - La build si ferma su glifi mancanti, testo fuori margine o sovrapposto.
 
-## Aperti al 23 settembre
+## Aperti al 24 settembre
 
-- FIG-06: servono i 5 punti `policy,origin_rps,cpu_cores` in `data/derived/fig06_cpu_validation.csv`.
-- A7: confermare che i punti della serie crawler siano a 0/14/28/42 req/s.
+- Chiusi il 24 settembre: FIG-06 (C1 da `tools/cpu_validation.py`), A7 (divisore α·λ
+  configurato, 0 / 13,9968 / 27,9965 / 41,9977), C2 (5 263 ± 8 oggetti da
+  `tools/cache_capacity.py`).
+- B3, B4, B5: i CSV di FIG-A1 e FIG-A2, ora generati da script, cambiano valori stampati
+  (elasticita' a scope 0,06: 1,62 invece di 1,63; p99 umano +37,0 invece di +36,9 ms,
+  t 37,3; origine 52,6 invece di 52,7). Da decidere se aggiornare righe e didascalie.
 - Capitolo 5: GPTBot 217 (decisions §17) contro 20,4 (§5.3.3); denominatori della cache
-  (245 MB / 438 MB / 5 274 oggetti); tabella 5.3.2 non confrontabile con la nuova analisi.
+  245 MB / 438 MB; tabella 5.3.2 non confrontabile con la nuova analisi.
 - `docs/thesis.md`, `findings.md`, `contribution-boundary.md`: narrativa superata, da spostare
   in `docs/archive/` nella fase di pulizia.

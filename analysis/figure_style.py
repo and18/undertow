@@ -40,7 +40,7 @@ UNCERTAINTY — one treatment everywhere
   ± 1 standard error, drawn as a thin whisker (0.6 pt) in ink with short caps.
   Whiskers are always drawn, under point markers and over bars: a whisker
   shorter than its marker is hidden by it, and the caption says so. Uncertainty
-  is never removed to tidy a figure. A pre-registered tolerance is a wash band.
+  is never removed to tidy a figure. The tolerance of a prior prediction is a wash band.
 
 AXES AND GRID
   No box. Value axes get hairline gridlines in `rule`; categorical axes none.

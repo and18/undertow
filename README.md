@@ -45,7 +45,7 @@ its working set relative to the cache.
 | A6 | blocking and deferring lie on a single convex work/latency frontier | measured |
 | B5 | a wider agentic working set raises human p99 from 76.1 to 113.0 ms while the human miss ratio moves 1.06×: the cost arrives as origin load, not as lost cache hits | supported |
 | C1 | origin requests are a validated proxy for backend CPU **on this testbed** (R² = 0.997) | measured |
-| B3 | the characteristic-time approximation predicts the elasticity quantitatively | **rejected** by our own pre-registration |
+| B3 | the characteristic-time approximation predicts the elasticity quantitatively | **rejected** by our own prior prediction |
 
 Every sentence of the paper maps to one row of [`docs/claims.md`](docs/claims.md), with its
 status (measured, supported, interpretive, rejected, retracted) and what would falsify it.
@@ -58,7 +58,7 @@ status (measured, supported, interpretive, rejected, retracted) and what would f
 | **honeypot** (`theslowshelf.org`) | that the synthetic agent is realistic on the dimension that matters, and where it is not | one site |
 
 The testbed is a CPU-pinned stack on a 6-core ARM server (Ampere Neoverse-N1):
-k6 → Varnish (128 MB, 5,274 objects measured at full cache) → gunicorn/Flask → PostgreSQL,
+k6 → Varnish (128 MB, 5,263 ± 8 objects measured at full cache) → gunicorn/Flask → PostgreSQL,
 serving 495 public-domain books split into 16,954 chapters. Three traffic classes:
 *human* (Zipf over the whole corpus), *exhaustive* (uniform traversal), *agentic* (sessions
 of three contiguous chapters drawn from a configurable scope). Working sets of different
@@ -83,8 +83,9 @@ between 12 August and 21 September 2026. Only aggregates are published.
 - **Intervention, not correlation.** Where one variable drives every link of a chain, all
   correlations along it approach unity by construction. Mechanism is established by
   manipulating the hypothesised mediator.
-- **Pre-registration where a model makes a prediction.** The prediction is written before
-  the runs and never edited afterwards; a failed prediction is published as failed.
+- **A prior prediction where a model makes one.** The prediction is written before the
+  results it predicts are available and never edited afterwards; a failed prediction is
+  published as failed. Ours has no independent timestamp, and we say so.
 - **Nothing random unseeded.** A generator parameter drawn at random is an uncontrolled
   variable.
 - **Provenance on every run.** Since 21 September 2026 every run writes its full
@@ -94,7 +95,7 @@ between 12 August and 21 September 2026. Only aggregates are published.
 ## Repository layout
 
 ```
-docs/                    claims, run registry, retractions, pre-registration,
+docs/                    claims, run registry, retractions, prior prediction,
                          verifications, design decisions, setup
                          (working documents are in Italian; the paper is in English)
 harness/
@@ -159,8 +160,10 @@ some ISP ranges: copy `cache/` from an existing host.
   internally and later withdrew, with what falsified each one. The measurements never
   changed; the readings did. All six were found by us before publication.
 - [`docs/PREREGISTRAZIONE-scopesweep.md`](docs/PREREGISTRAZIONE-scopesweep.md) — the
-  prediction registered before the working-set sweep, left unmodified. It failed its
-  quantitative criterion, and the paper reports that.
+  prior prediction for the working-set sweep, written before the first results at scopes
+  0.06 and 0.20 were available and not independently timestamped. The text is unmodified;
+  a dated note on top records the timing. It failed its quantitative criterion, and the
+  paper reports that.
 
 ## Limitations
 

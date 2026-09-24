@@ -1,18 +1,19 @@
 """
-FIG-A2 — The pre-registered characteristic-time prediction got the direction right
+FIG-A2 — The prior characteristic-time prediction got the direction right
 and the size wrong.
 
 CLAIMS    B3 (RESPINTO): quantitative prediction failed (criterion 3).
-          B4 (INTERPRETATIVO): ordering and direction hold (4.05 > 1.63 > 1.16).
+          B4 (INTERPRETATIVO): ordering and direction hold (4.05 > 1.62 > 1.16).
 DATA      data/derived/figA2_elasticity_model.csv
-SOURCES   docs/PREREGISTRAZIONE-scopesweep.md (written before the runs, unmodified);
+SOURCES   docs/PREREGISTRAZIONE-scopesweep.md (a prediction written before the first
+          results at scopes 0.06 and 0.20 were available, not independently timestamped);
           docs/RISULTATO-scopesweep.md (post-hoc computation, labelled as such).
 
 DESIGN PASS
   Reader    observed elasticity falls with the working set, as the model said, but
-            at 0.58x cache it falls outside the registered +/-30% tolerance.
+            at 0.58x cache it falls outside the +/-30% tolerance stated with the prediction.
   Encoding  a dot plot per working set on a log axis (elasticity is a ratio):
-            observed = filled, class colour; pre-registered = hollow, with its
+            observed = filled, class colour; prior prediction = hollow, with its
             tolerance as a wash band; post-hoc model = grey diamond.
   Dominant  the observed dots against the tolerance bands.
   Secondary numeric values next to each mark; a verdict at the end of each row.
@@ -29,25 +30,38 @@ RUNS = ["tre-20260921-150237", "tre-20260921-162248", "tre-20260921-214946",
         "tre-20260921-230947", "tre-20260922-002958", "tre-20260922-015010"]
 
 EDITORIAL = dict(
-    headline="The pre-registered model got the direction right\nand the size wrong",
+    headline="The prior model got the direction right\nand the size wrong",
     deck="Elasticity of the agentic miss ratio (miss at 12 req/s over miss at 36 req/s) at "
-         "three working-set\nsizes: observed, pre-registered prediction, and a post-hoc "
+         "three working-set\nsizes: observed, prior prediction, and a post-hoc "
          "recomputation of the same model.",
-    source="Source: Undertow testbed, mean of 5 runs; pre-registration of 21 Sep 2026, "
-           "written before the runs.",
+    source="Source: Undertow testbed, mean of 5 runs; prior prediction of 21 Sep 2026, written "
+           "before the first results\nat scopes 0.06 and 0.20 were available, not independently "
+           "timestamped.",
 )
 
-CAPTION = (
-    "Characteristic-time approximation (Fagin 1977; Che et al. 2002; formalised by Fricker "
-    "et al. 2012) against observed elasticity of the agentic miss ratio, defined as the miss "
-    "ratio at 12 req/s over that at 36 req/s. Hollow circles: predictions registered before "
-    "the runs with a uniform access approximation, with the registered ±30% tolerance "
-    "(band); the first row was measured before registration and serves as anchor. Grey "
-    "diamonds: post-hoc recomputation with the generator's actual access distribution, not a "
-    "prediction. Filled circles: observed, mean of 5 runs. The ordering predicted by the "
-    "model holds; the quantitative criterion fails at 0.58× cache (1.63 against 3.1, "
-    "−47%)."
-)
+def _caption():
+    """Every number in the caption is computed from the CSV the figure draws."""
+    rows = S.read_csv(DATA[0])
+    fail = [r for r in rows if r["prior"]
+            and abs(float(r["observed"]) / float(r["prior"]) - 1) > float(r["tolerance"])]
+    r = fail[0]
+    obs, pri = float(r["observed"]), float(r["prior"])
+    return (
+        "Characteristic-time approximation (Fagin 1977; Che et al. 2002; formalised by Fricker "
+        "et al. 2012) against observed elasticity of the agentic miss ratio, defined as the miss "
+        "ratio at 12 req/s over that at 36 req/s. Hollow circles: a prior prediction with a "
+        "uniform access approximation, written before the first results at scopes 0.06 and "
+        "0.20 were available and not independently timestamped, with the \u00b130% tolerance "
+        "stated with it (band); the first row was measured before the prediction was written "
+        "and serves as anchor. Grey "
+        "diamonds: post-hoc recomputation with the generator's actual access distribution, not a "
+        "prediction. Filled circles: observed, mean of 5 runs. The ordering predicted by the "
+        f"model holds; the quantitative criterion fails at {S.num(float(r['W_over_capacity']), 2)}\u00d7 "
+        f"cache ({S.num(obs, 2)} against {S.num(pri, 1)}, "
+        f"{S.num(100 * (obs / pri - 1), 0)}%).")
+
+
+CAPTION = _caption()
 
 
 def render(variant):
@@ -73,13 +87,13 @@ def render(variant):
     for i, r in enumerate(rows):
         yc = (i + 0.5) * row_h
         obs, post = float(r["observed"]), float(r["posthoc_realdist"])
-        pre = float(r["preregistered"]) if r["preregistered"] else None
+        pre = float(r["prior"]) if r["prior"] else None
         if pre:
             tol = float(r["tolerance"])
             f.ax.fill_betweenx([yc - row_h * 0.24, yc + row_h * 0.24], pre * (1 - tol),
                                pre * (1 + tol), color=C.wash, lw=0, zorder=1)
             f.dot(pre, yc, C.ink_soft, hollow=True, size=ms * 0.95)
-            # the registered value sits at the end of its own band, clear of the others
+            # the predicted value sits at the end of its own band, clear of the others
             f.label(pre * (1 + tol), yc, S.num(pre, 1), T.sub, dx=4, ha="left",
                     va="center", color=C.ink_faint)
         f.dot(post, yc, C.neutral, marker="D", size=ms * 0.85)
@@ -102,7 +116,7 @@ def render(variant):
     # key
     ky = top + T.s(T.sub) * 0.7 * PT
     entries = [(C.agentic, "o", False, "observed"),
-               (C.ink_soft, "o", True, "pre-registered, ±30% band"),
+               (C.ink_soft, "o", True, "prior prediction, ±30% band"),
                (C.neutral, "D", False, "post-hoc recomputation")]
     x = fx
     for i, (col, mk, hollow, text) in enumerate(entries):
