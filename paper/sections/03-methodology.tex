@@ -8,6 +8,11 @@
 %   are not recorded: say so).
 % - Definition used everywhere: marginal cost = change in origin req/s divided by the change
 %   in the OFFERED rate of the class (alpha*lambda or beta*lambda as configured).
+%   WRITE IT OUT IN FULL HERE, as the single reference for every marginal in the paper
+%   (Results 4.1 points here instead of restating it):
+%     marginal = Delta(origin req/s) / Delta(configured offered rate of the class),
+%   with the divisor read from the configuration (alpha*lambda from points.csv), never
+%   the rounded nominal step (see claims.md v3 changelog, A7/A8 recomputation).
 % - Duration invariance \claim{C7}.
 % - Origin requests as a proxy for backend CPU on this testbed \claim{C1}, FIG-06.
 % - Honeypot: what is logged, hashing, aggregates only; calibration in Appendix (FIG-A3)

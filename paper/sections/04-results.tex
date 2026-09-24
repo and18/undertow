@@ -8,7 +8,40 @@
 % Caveat in the text, not only in the caption: this is the 12->36 req/s marginal; the net
 %   effect 0->36 is positive (+0.392 +/- 0.158) — "reduces origin work" is retracted (R2).
 % Honeypot placement by windowed working set (C3), details in Appendix.
-\todo{R1 text}
+The marginal origin cost of the agentic class changes sign as its working set grows.
+When the agentic class is raised from 12 to 36 req/s, each added request costs
+$-0.0353 \pm 0.0053$ origin requests with a working set of 0.19$\times$ the cache,
+$+0.1605 \pm 0.0067$ at 0.58$\times$, and $+0.4383 \pm 0.0055$ at 1.93$\times$
+(\cref{fig:sign}).\claim{A1}
+Class, volumes, cache and corpus are identical across the three configurations; only
+the working set changes.\claim{A1}
+
+In our testbed, a working set is the set of objects from which our load generator draws
+the requests of a class, with sessions built as described in \cref{sec:method}.
+We set the agentic scope to 0.02, 0.06 and 0.20 of the corpus, that is 1,017, 3,051 and
+10,170 objects, against a measured cache capacity of 5,274 objects.\claim{A1}\claim{C2}
+At each scope the agentic rate goes from 12 to 36 req/s, the human and exhaustive classes
+stay at 55 and 28 req/s, working sets are mapped separately across classes, and each point
+is the mean of 5 runs.\claim{A1}
+The marginal cost is the change in origin req/s divided by the change in the configured
+offered rate of the class (\cref{sec:method}).
+
+Consecutive points are well separated (Welch $t = 22.99$ and $t = 32.13$).\claim{A1}
+The negative value at the smallest scope lies well below zero ($t = -6.7$), so its sign
+is not noise.\claim{A1}
+
+This is a marginal cost between 12 and 36 req/s, not the net effect of the class.
+At the smallest scope, the net effect of adding the agentic class from 0 to 36 req/s is
+positive: $+0.392 \pm 0.158$ origin req/s.\claim{A1}
+A negative marginal cost therefore does not mean that agentic traffic lowers total origin
+work in this configuration.\claim{A1}
+
+By working-set width alone, the smallest scope is closest to the agentic clients of our
+public honeypot: it touches about 693 distinct objects in a 143 s
+window, against a 90th percentile of 670 for honeypot agentic clients
+(Appendix, \cref{fig:a-honeypot}).\claim{C3}
+
+\Cref{sec:r-accounting} asks where this change of sign comes from, term by term.\claim{B2}
 \undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus working set}{fig:sign}
 
 \subsection{Where the change comes from}\label{sec:r-accounting}
@@ -38,8 +71,8 @@
 \subsection{Consequence for admission policies}\label{sec:r-frontier}
 % \claim{A6}: blocking and deferring lie on one convex frontier (slopes 0.01 -> 102.25 ms
 %   per 1,000 served). \claim{A4}: B vs C, +2,807 +/- 185 served (t = 15.19), p99
-%   +0.03 +/- 0.73 ms, CI [-1.99, +2.05]. Never "dominates". \claim{A5} (SOSTENUTO, so
-%   phrased as explanation, may move to Mechanism): ~0.82 vs ~0.10 origin requests freed.
+%   +0.03 +/- 0.73 ms, CI [-1.99, +2.05]. Never "dominates". Why blocking one class frees
+%   more origin work than the other (A5, SOSTENUTO) is in Mechanism, not here.
 % One line: the no-policy point is not only slow but unstable (SE 48.6 ms).
 \todo{R5 text}
 \undertowfig{FIG-03_work-latency-frontier}{Work/latency frontier of admission policies}{fig:frontier}
