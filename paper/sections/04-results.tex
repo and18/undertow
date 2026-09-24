@@ -1,0 +1,45 @@
+\section{Results}\label{sec:results}
+% Only MISURATO rows. Each subsection: one finding, stated first; the figure; the numbers
+% with SE; the caveat that prevents the wrong reading. No mechanism here.
+
+\subsection{The marginal cost of one class changes sign with its working set}\label{sec:r-sign}
+% Finding \claim{A1}: -0.0353 +/- 0.0053 -> +0.1605 +/- 0.0067 -> +0.4383 +/- 0.0055
+%   origin requests per added agentic request, same class, volumes, cache, corpus.
+% Caveat in the text, not only in the caption: this is the 12->36 req/s marginal; the net
+%   effect 0->36 is positive (+0.392 +/- 0.158) — "reduces origin work" is retracted (R2).
+% Honeypot placement by windowed working set (C3), details in Appendix.
+\todo{R1 text}
+\undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus working set}{fig:sign}
+
+\subsection{Where the change comes from}\label{sec:r-accounting}
+% \claim{B2}: in 12->36 the largest term is the agentic requests already present (-1.632);
+%   terms add up to the measurement within 0% and 5%. Arithmetic, not mechanism.
+\todo{R2 text}
+\undertowfig{FIG-05_accounting-decomposition}{Accounting decomposition of the change in origin work}{fig:accounting}
+
+\subsection{Composition moves one class, not the others}\label{sec:r-asymmetry}
+% \claim{A2}: agentic 4.05x, exhaustive 1.03x, human 1.02x (13% -> 30% agentic share).
+%   Say explicitly that only the agentic volume moved (UNDERTOW-CONTESTO §4.2).
+% \claim{A7}: exhaustive own-volume marginal flat (~0.98, values being re-verified),
+%   elasticity 1.09x — secondary series: shared mapping, 1,211 s window. Closes the
+%   "you varied only one class" objection.
+% Position against Zhang et al.: they vary composition and measure hit ratio; we measure
+%   marginal origin cost and compare three classes.
+\todo{R3 text}
+\undertowfig{FIG-02_class-asymmetry}{Sensitivity of per-request cost to composition, by class}{fig:asymmetry}
+
+\subsection{A confounder: overlap between working sets}\label{sec:r-overlap}
+% \claim{A3}: +0.714 (t = 5.74) and +1.012 (t = 7.74) origin req/s when the agentic working
+%   set is decorrelated from the human popular head. Narrow wording: a bias in the
+%   experimental characterisation of a class's cost (not "we discovered free-riding").
+\todo{R4 text}
+\undertowfig{FIG-04_overlap-confounder}{Effect of working-set overlap on measured origin work}{fig:overlap}
+
+\subsection{Consequence for admission policies}\label{sec:r-frontier}
+% \claim{A6}: blocking and deferring lie on one convex frontier (slopes 0.01 -> 102.25 ms
+%   per 1,000 served). \claim{A4}: B vs C, +2,807 +/- 185 served (t = 15.19), p99
+%   +0.03 +/- 0.73 ms, CI [-1.99, +2.05]. Never "dominates". \claim{A5} (SOSTENUTO, so
+%   phrased as explanation, may move to Mechanism): ~0.82 vs ~0.10 origin requests freed.
+% One line: the no-policy point is not only slow but unstable (SE 48.6 ms).
+\todo{R5 text}
+\undertowfig{FIG-03_work-latency-frontier}{Work/latency frontier of admission policies}{fig:frontier}

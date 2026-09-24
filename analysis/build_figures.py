@@ -6,6 +6,7 @@ build_figures.py — regenerate every Undertow figure from data/derived, from sc
 For each figure module and each target (paper 4.80 in, narrow 3.33 in, editorial
 6.20 in) it renders PDF + PNG, then writes next to the canonical paper output:
     <STEM>.caption.txt      the caption, versioned with the figure
+    <STEM>.caption.tex      the same caption, escaped for pdfLaTeX (\\input by paper/)
     <STEM>.provenance.txt   claims, data files with sha256, runs, toolchain
 Then it runs the QA pass (figure_qa.py) and writes figures/_qa/.
 
@@ -52,10 +53,28 @@ def git_rev():
         return "not a git checkout"
 
 
+_TEX = [("\\", r"\textbackslash{}"), ("%", r"\%"), ("&", r"\&"), ("_", r"\_"), ("#", r"\#"),
+        ("\u2212", "$-$"), ("\u00b1", r"$\pm$"), ("\u00d7", r"$\times$"), ("\u00f7", r"$\div$"),
+        ("\u03b1", r"$\alpha$"), ("\u03b2", r"$\beta$"), ("\u2192", r"$\rightarrow$"),
+        ("\u2248", r"$\approx$"), ("\u2264", r"$\leq$"), ("\u00b2", r"$^{2}$"),
+        ("\u00b7", r"$\cdot$"), ("\u2013", "--"), ("\u2014", "---"), ("\u2019", "'")]
+
+
+def latex(s):
+    """Caption text made safe for pdfLaTeX (no Unicode left, specials escaped)."""
+    for a, b in _TEX:
+        s = s.replace(a, b)
+    bad = sorted({c for c in s if ord(c) > 127})
+    if bad:
+        raise ValueError(f"caption has characters with no LaTeX mapping: {bad}")
+    return s
+
+
 def write_sidecars(mod):
     d = OUT / "paper"
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{mod.STEM}.caption.txt").write_text(mod.CAPTION.strip() + "\n", encoding="utf-8")
+    (d / f"{mod.STEM}.caption.tex").write_text(latex(mod.CAPTION.strip()) + "\n", encoding="utf-8")
     lines = [f"figure     {mod.STEM}",
              f"claims     {mod.CLAIMS}",
              "data"]

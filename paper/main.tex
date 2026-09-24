@@ -1,0 +1,79 @@
+% Undertow — paper source.  Build:  make paper   (or: cd paper && latexmk -pdf main.tex)
+%
+% RULES FOR EVERY SENTENCE IN THIS FILE TREE
+%   1. It belongs to a row of docs/claims.md. Mark it with \claim{ID} at the end of the
+%      sentence (invisible in the final PDF; visible in draft mode, see \showclaimstrue).
+%   2. Results contains only MISURATO rows. Mechanism may use SOSTENUTO and INTERPRETATIVO,
+%      each labelled as such. Implications contains only section D, stated as design
+%      implications, not validated technology.
+%   3. Numbers are copied from docs/claims.md, never recomputed by hand in the text.
+%   4. Figures are included from ../figures/paper/ at their printed size; their captions
+%      are \input from the .caption.tex files that `make figures` writes. Never edit a
+%      caption here: edit CAPTION in the figure script.
+\documentclass[10pt]{article}
+
+\usepackage[utf8]{inputenc}
+% T1 + lmodern is nicer if installed; the default encoding keeps the build portable.
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[labelfont=bf,font=small,justification=justified]{caption}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+% ── claim markers ───────────────────────────────────────────────────────────
+\newif\ifshowclaims
+\showclaimstrue          % draft: claim IDs appear in the margin.  Set \showclaimsfalse to hide.
+\ifshowclaims
+  \newcommand{\claim}[1]{\marginpar{\raggedright\tiny\color{teal}#1}}
+\else
+  \newcommand{\claim}[1]{}
+\fi
+\newcommand{\todo}[1]{\textcolor{orange!80!black}{[TODO: #1]}}
+
+% ── figures: one command, caption from the build ────────────────────────────
+% \undertowfig{STEM}{short caption for the list of figures}{label}
+\newcommand{\undertowfig}[3]{%
+  \begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{../figures/paper/#1.pdf}
+    \caption[#2]{\input{../figures/paper/#1.caption.tex}\unskip}
+    \label{#3}
+  \end{figure}}
+% The figures are drawn 4.80 in wide; \textwidth of this class is 345 pt (4.77 in), so they
+% are scaled by 0.995. A venue template replaces this preamble; the figures do not change.
+
+\title{\todo{working title} When the Label Is Not Enough:\\
+       Working-Set Width and the Origin Cost of Automated Web Traffic}
+\author{Andrea Licitra}
+\date{\todo{date}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00-abstract}
+\end{abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-methodology}
+\input{sections/04-results}
+\input{sections/05-mechanism}
+\input{sections/06-implications}
+\input{sections/07-limitations}
+\input{sections/08-conclusion}
+
+% While no section cites anything yet, \nocite keeps BibTeX from failing. Remove it when
+% the first \cite lands.
+\nocite{*}
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\input{sections/A-appendix}
+
+\end{document}

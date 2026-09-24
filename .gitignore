@@ -52,3 +52,14 @@ harness/nginx/router.active.conf
 !figures/**/*.png
 # ...ma non le prove di QA, che si rigenerano a ogni build
 figures/_qa/
+
+# LaTeX build products
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.out
+paper/*.toc
+paper/main.pdf
