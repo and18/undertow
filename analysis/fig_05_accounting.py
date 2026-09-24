@@ -4,7 +4,8 @@ FIG-05 — Where the change in origin work comes from, term by term.
 CLAIM     B2 (MISURATO). Supports A1 (sign of the 12->36 step) without restating it.
 DATA      data/derived/fig05_accounting.csv
 RUNS      tre-20260921-150237 / -162248 (separated mapping, scope 0.02) and the
-          agentic = 0 baseline of 20 Sep (inter-day, see caption).
+          agentic = 0 baseline tre-20260920-102015 of 20 Sep (inter-day, see caption;
+          beta = 0, so the AGENT_MUL defect of that campaign does not apply).
 
 DESIGN PASS
   Reader    in the second step the largest term is the agentic requests already
@@ -24,7 +25,7 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-05_accounting-decomposition"
 CLAIMS = "B2 (MISURATO)"
 DATA = ["fig05_accounting.csv"]
-RUNS = ["tre-20260921-150237", "tre-20260921-162248", "agentic=0 baseline 2026-09-20"]
+RUNS = ["tre-20260920-102015", "tre-20260921-150237", "tre-20260921-162248"]
 
 EDITORIAL = dict(
     headline="Past 12 req/s, the largest term is the agentic requests\nalready present becoming cheaper",

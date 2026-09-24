@@ -19,7 +19,6 @@ import hashlib
 import importlib
 import platform
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -43,14 +42,6 @@ OUT = S.ROOT / "figures"
 
 def sha256(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()[:16]
-
-
-def git_rev():
-    try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=S.ROOT,
-                              capture_output=True, text=True, check=True).stdout.strip()
-    except Exception:
-        return "not a git checkout"
 
 
 _TEX = [("\\", r"\textbackslash{}"), ("%", r"\%"), ("&", r"\&"), ("_", r"\_"), ("#", r"\#"),
@@ -88,7 +79,6 @@ def write_sidecars(mod):
               f"targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in",
               f"toolchain  python {platform.python_version()} · matplotlib "
               f"{matplotlib.__version__} · font {S.FONT}",
-              f"commit     {git_rev()}",
               "rebuild    make figures"]
     (d / f"{mod.STEM}.provenance.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

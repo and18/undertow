@@ -1,7 +1,7 @@
 figure     FIG-01_marginal-cost-vs-working-set
 claims     A1 (MISURATO); refs C2, C3
 data
-           data/derived/fig01_marginal_vs_workingset.csv  sha256:e365f2e8490e12c2
+           data/derived/fig01_marginal_vs_workingset.csv  sha256:15fa297e1334d6b5
 runs
            tre-20260921-150237
            tre-20260921-162248
@@ -9,9 +9,8 @@ runs
            tre-20260921-230947
            tre-20260922-002958
            tre-20260922-015010
-script     analysis/fig_01_marginal_vs_workingset.py  sha256:881ed7efcdddb788
+script     analysis/fig_01_marginal_vs_workingset.py  sha256:fb1a65362a2d10ab
 style      analysis/figure_style.py  sha256:683f528f4975002d
 targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
 toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3
-commit     97962cd
 rebuild    make figures

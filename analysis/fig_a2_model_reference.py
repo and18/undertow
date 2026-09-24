@@ -25,7 +25,8 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-A2_model-reference"
 CLAIMS = "B3 (RESPINTO); B4 (INTERPRETATIVO)"
 DATA = ["figA2_elasticity_model.csv"]
-RUNS = ["as FIG-01 (observed values)"]
+RUNS = ["tre-20260921-150237", "tre-20260921-162248", "tre-20260921-214946",
+        "tre-20260921-230947", "tre-20260922-002958", "tre-20260922-015010"]
 
 EDITORIAL = dict(
     headline="The pre-registered model got the direction right\nand the size wrong",

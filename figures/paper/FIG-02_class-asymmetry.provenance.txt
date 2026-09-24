@@ -11,5 +11,4 @@ script     analysis/fig_02_class_asymmetry.py  sha256:beb07c041975f2da
 style      analysis/figure_style.py  sha256:683f528f4975002d
 targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
 toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3
-commit     97962cd
 rebuild    make figures
