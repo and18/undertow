@@ -44,7 +44,7 @@ its working set relative to the cache.
 | A4 | at the knee, also blocking the agentic class costs 2,807 ± 185 served requests with no measurable latency benefit (Δp99 +0.03 ± 0.73 ms) | measured |
 | A6 | blocking and deferring lie on a single convex work/latency frontier | measured |
 | B5 | a wider agentic working set raises human p99 from 76.1 to 113.0 ms while the human miss ratio moves 1.06×: the cost arrives as origin load, not as lost cache hits | supported |
-| C1 | origin requests are a validated proxy for backend CPU **on this testbed** (R² = 0.998) | measured |
+| C1 | origin requests are a validated proxy for backend CPU **on this testbed** (R² = 0.997) | measured |
 | B3 | the characteristic-time approximation predicts the elasticity quantitatively | **rejected** by our own pre-registration |
 
 Every sentence of the paper maps to one row of [`docs/claims.md`](docs/claims.md), with its

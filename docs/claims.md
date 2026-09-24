@@ -12,6 +12,17 @@ esattamente 0/14/28/42), con SE dalle 3 ripetizioni: A7 da 0,959 ± 0,009 · 0,9
 richiesta esaustiva (SE 0,02 millesimi). Scostamenti piccoli perche' α·λ era gia' vicino
 al nominale per disegno.
 
+**Cambiato il 24 settembre (C1 tracciato).** I coefficienti precedenti di C1
+(`CPU = 0,106 + 0,0345 × origin_rps`, R² = 0,998, residuo max 3,4%) non avevano una fonte
+rintracciabile nel repository. Ricalcolati con `tools/cpu_validation.py`, che legge i
+`points.csv` delle 5 politiche della frontiera del 19 settembre (A, B, C, D4, D6, gia' usate
+in FIG-03/FIG-05) e interroga VictoriaMetrics su `node_cpu_seconds_total{cpu=~"3|4|5",
+mode!="idle"}` (core 3-5 = PostgreSQL, `harness/.env`: `CPUSET_DB=3,4,5`, `CPUSET_APP=2`;
+i default "3,4"/"5" di `harness/docker-compose.yml` non sono quelli in uso) sulla finestra
+di misura di ciascuna ripetizione, mediando le 3 ripetizioni per politica. Nuovi valori: **CPU = 0,021 +
+0,0368 × origin_rps**, R² = **0,997**, residuo max **3,1%** (dati in
+`data/derived/fig06_cpu_validation.csv`).
+
 **Stati.** `MISURATO` = differenza diretta con ripetizioni ed errore standard ·
 `SOSTENUTO` = inferenza stretta da misure, con meccanismo · `INTERPRETATIVO` = coerente
 con i dati, non verificato come previsione · `SFIDATO` = assunzione altrui che i nostri
@@ -58,7 +69,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 
 | # | claim | stato | evidenza |
 |---|---|---|---|
-| C1 | Il lavoro all'origine e' proxy validato del carico di backend **su questo banco**: `CPU = 0,106 + 0,0345 × origin_rps`, R² = 0,998, residuo max 3,4% | **MISURATO** | 5 politiche, intervallo di carico 4,5× |
+| C1 | Il lavoro all'origine e' proxy validato del carico di backend **su questo banco**: `CPU = 0,021 + 0,0368 × origin_rps`, R² = 0,997, residuo max 3,1% | **MISURATO** | 5 politiche, intervallo di carico 4,5× |
 | C2 | Capienza della cache **5 274 oggetti**, oggetto medio **24,8 KB** | **MISURATO** | `varnish_main_n_object` a cache piena |
 | C3 | Il punto sperimentale piu' basso (scope 0,02, λ = 12) tocca **~693 oggetti distinti in 143 s**; il **p90** dei client agentici dell'honeypot nella stessa finestra e' **670** | **MISURATO** | calcolo sul generatore + `honeypot_window.py` |
 | C4 | Il costo di una classe misurato **in isolamento** non predice quello in mistura: la classe agentica sola a cache calda ha miss **0,002**, in mistura al 13% di quota ha miss **0,180** | **MISURATO** | `tre-20260911-154109` contro separazione |

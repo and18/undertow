@@ -107,8 +107,8 @@ Tre classi: **umana** Zipf(1) su tutto il corpus · **esaustiva** traversata uni
 Parametri agentici: `AGENT_SCOPE` (0,02 default), `AGENT_SESSION` 3, `AGENT_SKEW` 0,6,
 `AGENT_MUL` (2654435761 default, **3266489917** = insieme separato da quello umano).
 
-Proxy validato del carico di backend, **solo su questo banco**:
-`CPU = 0,106 + 0,0345 × origin_rps`, R² = 0,998, residuo massimo 3,4%.
+Proxy validato del carico di backend (PostgreSQL, core 3-5), **solo su questo banco**:
+`CPU = 0,021 + 0,0368 × origin_rps`, R² = 0,997, residuo massimo 3,1% (`tools/cpu_validation.py`).
 
 ---
 
