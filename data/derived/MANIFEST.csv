@@ -1,5 +1,6 @@
 file,script,run
 cache_capacity.csv,tools/cache_capacity.py,tre-20260922-002958 tre-20260922-015010 (VictoriaMetrics)
+chapter_sizes.csv,tools/sim/object_sizes.py,nessun run: testi in ~/undertow/cache sul lab (sola lettura)
 class_miss_by_scope.csv,tools/class_miss_by_scope.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010
 fig01_marginal_vs_workingset.csv,tools/fig01_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
 fig02a_miss_by_class.csv,tools/class_miss_by_scope.py,tre-20260921-150237 tre-20260921-162248

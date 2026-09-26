@@ -42,6 +42,7 @@ data-lab:
 	$(PY) tools/figA_data.py
 	$(PY) tools/generator_contiguity.py
 	$(PY) tools/figA3_data.py
+	$(PY) tools/sim/object_sizes.py
 
 .PHONY: paper
 # Build the paper PDF (needs a LaTeX installation with latexmk). Run make figures first.
