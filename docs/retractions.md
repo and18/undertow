@@ -44,6 +44,10 @@ riabilitata erano confusi dalla sovrapposizione degli insiemi di lavoro (vedi R3
 al 13% di quota, −0,0352 ± 0,0053 al 30% — ma il netto resta positivo. Il massimo
 interno e' reale; il risparmio netto no.
 
+> **Nota del 26 settembre 2026.** Superato da claims.md v3.6: A9 afferma solo che il netto
+> non è negativo; la replica pre-registrata ha IC 95% [−0,0601, +0,5361], che contiene lo
+> zero.
+
 ---
 
 ## R3 — «La separazione working-set ha falsificato la critica del workload cache-friendly»
