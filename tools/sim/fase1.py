@@ -58,6 +58,7 @@ REPLICA = {"C12": "tre-20260925-213527", "S12": "tre-20260925-225538",
 T2_LAB = {"S12": 37.678, "S36": 36.706, "C12": 36.796, "C36": 35.834, "P0": 36.468}
 D_RATE = 35.9975 - 11.9985     # 23,9990
 C2 = 5263.0
+NOTE = ""                     # --nota: fonte dei dati del lab, scritta in testa alle uscite
 
 
 # ------------------------------------------------------------------ utilita'
@@ -99,6 +100,8 @@ def write(path, cm, header, rows):
     OUT.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="") as f:
         f.write(f"# commit {cm}; docs/PREREG-simulatore-fase1.md; stato SIMULATO\n")
+        if NOTE:
+            f.write(f"# fonte: {NOTE}\n")
         w = csv.writer(f, lineterminator="\n")
         w.writerow(header + ["stato"])
         for r in rows:
@@ -349,5 +352,7 @@ def confronto():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=("gates", "confronto"))
+    ap.add_argument("--nota", default="", help="fonte dei dati del lab (es. copia locale)")
     a = ap.parse_args()
+    NOTE = a.nota
     gates() if a.step == "gates" else confronto()
