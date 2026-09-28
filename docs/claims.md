@@ -122,7 +122,8 @@ di misura di ciascuna ripetizione, mediando le 3 ripetizioni per politica. Nuovi
 `SOSTENUTO` = inferenza stretta da misure, con meccanismo · `INTERPRETATIVO` = coerente
 con i dati, non verificato come previsione · `SFIDATO` = assunzione altrui che i nostri
 dati mettono in discussione · `NON SOSTENUTO` = i dati non bastano ·
-`RESPINTO` = testato e fallito · `RITIRATO` = affermato da noi e poi smentito.
+`RESPINTO` = testato e fallito · `RITIRATO` = affermato da noi e poi smentito ·
+`SIMULATO` = risultato di un simulatore validato sul lab; mai equiparato a `MISURATO`.
 
 **Cambiato dalla v2 (correzioni numeriche, nessun claim nuovo).** Il punto a scope 0,02 di A1 e B5 usava i valori di origine e p99 dei run a **mappatura condivisa** del 20 set invece di quelli separati del 21 set (`tre-20260921-150237`/`-162248`, `AGENT_MUL=3266489917`, verificato sui `points.csv` il 23 set). Ricalcolato dalle 5 ripetizioni: A1 da −0,0477 a **−0,0353 ± 0,0053** (t = −6,7, il segno regge); B5 da 75,9 a **76,1 ms** e origine da 35,8 a **36,8 req/s**; A2 **4,05×** invece di 4,09× (4,09 era il rapporto di valori gia' arrotondati, 0,180/0,044; 4,05 e' il rapporto delle medie); A8 mescolava un miss umano condiviso (0,223) con uno separato (0,232) ed e' ricalcolata. Coerenza verificata: il marginale di A1 a scope 0,02 coincide ora con la scomposizione contabile di B2 (−0,846 / 24 req/s).
 
@@ -210,6 +211,12 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | **Proponiamo un'architettura di consegna alternativa** | **NON LO FACCIAMO** | e' cio' che fa SemDN (Hua & Xiao, HotNets 2026); noi studiamo la dipendenza del costo dallo stato condiviso. **Non affermare che il nostro criterio sia validato su SemDN: non l'abbiamo testato** |
 | origin RPS = carico di backend in generale | **DA QUALIFICARE** | C1 vale su questo banco |
 | Il nostro agente sintetico rappresenta gli agenti reali | **DA QUALIFICARE** | C3 regge sull'ampiezza, C5 no sulla contiguita' |
+
+## S. Claim del simulatore — mai equiparati a MISURATO
+
+| # | claim | stato | evidenza |
+|---|---|---|---|
+| S1 | Il simulatore (generatore di `workload.js` + LRU a byte come Varnish `malloc` 128 MiB) riproduce, **entro le tolleranze pre-registrate**, segni e ampiezze di A1 e A3 e i miss per classe: T1 (18 miss su 18 entro 0,02), T2 (`origin_rps` entro 3%, fra +0,37% e +0,92%), T3 (m −0,0451 ± 0,0033 contro −0,0405 ± 0,0061; d₁₂ +0,882 contro +0,882; d₃₆ +0,839 contro +0,872), M1 (t = −13,49), M2 (t = +12,31 e +10,40) | **SIMULATO** | `docs/PREREG-simulatore-fase1.md` (`c026e0b`, emendamento 1 in `5c9597a`), esito in `docs/RISULTATO-simulatore-fase1.md`; `tools/sim/`, `data/sim/fase1/` (20 semi per punto); dati del lab dalla copia locale `~/undertow-backup/lab-20260928` (`SHA256SUMS`). Limite: miss simulato leggermente piu' alto del lab quasi ovunque (`origin_rps` +0,4…+0,9% in 5 punti su 5), entro soglia. Non e' una misura: non entra in Results come evidenza di A1 o A3 |
 
 ---
 

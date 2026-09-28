@@ -1,0 +1,53 @@
+# commit ef89c24; docs/PREREG-simulatore-fase1.md; stato SIMULATO
+# fonte: dati del lab dalla copia locale ~/undertow-backup/lab-20260928 (integrita' in SHA256SUMS), letti con un finto ssh (verifica/ssh-shim) al posto di ssh lab; testi, points.csv e JSON di k6 identici a quelli del lab al 28 set; emendamento 1 in 5c9597a
+criterion,quantity,sim,sim_se,lab,lab_se,rule,verdict,stato
+T1,miss_human_scope0.02_q13,0.230446,0.000607,0.2270,0.0010,|d|<=0.02,PASSA,SIMULATO
+T1,miss_human_scope0.02_q30,0.234421,0.000644,0.2318,0.0007,|d|<=0.02,PASSA,SIMULATO
+A2,factor_human_scope0.02,0.983044,,0.9793,,senza soglia,,SIMULATO
+T1,miss_exhaustive_scope0.02_q13,0.824644,0.000582,0.8214,0.0019,|d|<=0.02,PASSA,SIMULATO
+T1,miss_exhaustive_scope0.02_q30,0.799303,0.000551,0.8000,0.0011,|d|<=0.02,PASSA,SIMULATO
+A2,factor_exhaustive_scope0.02,1.031705,,1.0268,,senza soglia,,SIMULATO
+T1,miss_agentic_scope0.02_q13,0.185258,0.000987,0.1796,0.0023,|d|<=0.02,PASSA,SIMULATO
+T1,miss_agentic_scope0.02_q30,0.045182,0.000424,0.0444,0.0005,|d|<=0.02,PASSA,SIMULATO
+A2,factor_agentic_scope0.02,4.100230,,4.0450,,senza soglia,,SIMULATO
+T1,miss_human_scope0.06_q13,0.232992,0.000580,0.2324,0.0007,|d|<=0.02,PASSA,SIMULATO
+T1,miss_human_scope0.06_q30,0.242249,0.000604,0.2410,0.0009,|d|<=0.02,PASSA,SIMULATO
+A2,factor_human_scope0.06,0.961784,,0.9643,,senza soglia,,SIMULATO
+T1,miss_exhaustive_scope0.06_q13,0.816902,0.000573,0.8134,0.0027,|d|<=0.02,PASSA,SIMULATO
+T1,miss_exhaustive_scope0.06_q30,0.803019,0.001087,0.7998,0.0013,|d|<=0.02,PASSA,SIMULATO
+A2,factor_exhaustive_scope0.06,1.017289,,1.0170,,senza soglia,,SIMULATO
+T1,miss_agentic_scope0.06_q13,0.384126,0.001881,0.3758,0.0021,|d|<=0.02,PASSA,SIMULATO
+T1,miss_agentic_scope0.06_q30,0.234194,0.001028,0.2314,0.0019,|d|<=0.02,PASSA,SIMULATO
+A2,factor_agentic_scope0.06,1.640206,,1.6240,,senza soglia,,SIMULATO
+T1,miss_human_scope0.20_q13,0.235137,0.000600,0.2324,0.0010,|d|<=0.02,PASSA,SIMULATO
+T1,miss_human_scope0.20_q30,0.248925,0.000642,0.2466,0.0018,|d|<=0.02,PASSA,SIMULATO
+A2,factor_human_scope0.20,0.944608,,0.9424,,senza soglia,,SIMULATO
+T1,miss_exhaustive_scope0.20_q13,0.813094,0.000505,0.8114,0.0004,|d|<=0.02,PASSA,SIMULATO
+T1,miss_exhaustive_scope0.20_q30,0.791505,0.000758,0.7884,0.0016,|d|<=0.02,PASSA,SIMULATO
+A2,factor_exhaustive_scope0.20,1.027276,,1.0292,,senza soglia,,SIMULATO
+T1,miss_agentic_scope0.20_q13,0.545956,0.002359,0.5464,0.0045,|d|<=0.02,PASSA,SIMULATO
+T1,miss_agentic_scope0.20_q30,0.474647,0.000899,0.4704,0.0013,|d|<=0.02,PASSA,SIMULATO
+A2,factor_agentic_scope0.20,1.150237,,1.1616,,senza soglia,,SIMULATO
+T2,origin_rps_S12,38.017097,0.053588,37.678000,0.145685,|x/lab-1|<=0.03,PASSA,SIMULATO
+T2,origin_rps_S36,36.935000,0.059666,36.706000,0.020881,|x/lab-1|<=0.03,PASSA,SIMULATO
+T2,origin_rps_C12,37.135645,0.047497,36.796000,0.110887,|x/lab-1|<=0.03,PASSA,SIMULATO
+T2,origin_rps_C36,36.096210,0.054216,35.834000,0.060548,|x/lab-1|<=0.03,PASSA,SIMULATO
+T2,origin_rps_P0,36.604516,0.052270,36.468000,0.108324,|x/lab-1|<=0.03,PASSA,SIMULATO
+T3,m,-0.045089,0.003342,-0.040502,0.006132,|d|<=0.020952,PASSA,SIMULATO
+T3,d12,0.881452,0.071608,0.882000,0.183085,|d|<=0.589771,PASSA,SIMULATO
+T3,d36,0.838790,0.080619,0.872000,0.064047,|d|<=0.308889,PASSA,SIMULATO
+M1,m_sign,-0.045089,0.003342,,,m<0 and t<=-3,PASSA,SIMULATO
+M2,d_sign,0.881452;0.838790,0.071608;0.080619,,,d>0 and t>=3 both,PASSA,SIMULATO
+extra,marginal_scope0.02,-0.045089,0.003342,,,senza soglia,,SIMULATO
+extra,marginal_scope0.06,0.164718,0.004166,,,senza soglia,,SIMULATO
+extra,marginal_scope0.20,0.446054,0.003376,,,senza soglia,,SIMULATO
+extra,net_S36_P0,0.330484,0.079323,0.238000,0.110318,senza soglia,,SIMULATO
+extra,n_object_S12,5201.4932,5.3690,,,senza soglia,,SIMULATO
+extra,n_object_S36,5222.5227,4.5784,,,senza soglia,,SIMULATO
+extra,n_object_C12,5167.2769,5.5063,,,senza soglia,,SIMULATO
+extra,n_object_C36,5170.2760,4.8334,,,senza soglia,,SIMULATO
+extra,n_object_P0,5151.8169,6.3320,,,senza soglia,,SIMULATO
+extra,n_object_S12_006,5197.4787,5.4775,,,senza soglia,,SIMULATO
+extra,n_object_S36_006,5231.2949,4.4101,,,senza soglia,,SIMULATO
+extra,n_object_S12_020,5183.2852,5.6538,,,senza soglia,,SIMULATO
+extra,n_object_S36_020,5203.3843,3.9308,,,senza soglia,,SIMULATO
