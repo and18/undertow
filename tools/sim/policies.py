@@ -208,6 +208,8 @@ class CountMin:
         self.resets = 0
 
     def _cols(self, x):
+        if not isinstance(x, int):              # chiavi dei test (lettere): intero deterministico
+            x = int.from_bytes(str(x).encode(), "little")
         return [_mix(x * 0x100000001B3 + s) % self.width for s in self.seeds]
 
     def add(self, x):
