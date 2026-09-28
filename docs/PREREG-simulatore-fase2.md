@@ -267,3 +267,80 @@ si emenda con una sezione datata in coda **prima** di implementare:
 2. Sulla pagina del blog Cloudflare del 2 aprile 2026: data, frase citata, e l'indicazione di
    S3-FIFO e SIEVE come direzione a breve termine. La pagina non e' stata letta in questa
    sessione.
+
+## Emendamento 1 — 28 settembre 2026 (esito delle verifiche, prima di qualunque codice)
+
+Scritto dopo le «Verifiche richieste» e **prima** di scrivere codice della fase 2: nessuna
+traccia generata, nessuna politica implementata. Il testo sopra non e' modificato; dove
+diverge, vale questo emendamento. Fonti scaricate in `~/undertow-backup/verifiche-fase2/`
+(fuori dal repository, impronte in `SHA256SUMS`): pagina del blog (sha256 `57836766…2da26`),
+SIEVE `6192e388…c65ab`, S3-FIFO `56e4419d…95e0e`, TinyLFU `7358c2ad…cba60`, size-aware
+`4490943f…133a4`. Sedi controllate su Crossref.
+
+**Blog Cloudflare** (<https://blog.cloudflare.com/rethinking-cache-ai-humans/>). Verificati:
+data **2 aprile 2026** (`datePublished` 2026-04-02); autori **Avani Wildani e Suleman Ahmad**;
+frase, alla lettera: «For mixed human and AI bot traffic, however, our initial experiments
+indicate that a different choice of cache replacement algorithm, particularly using SEIVE or
+S3FIFO, could allow human traffic to achieve the same hit rate with or without AI
+interference.» (nel blog SIEVE e' scritto «SEIVE»). **Diverge:** il blog non dice «a breve
+termine». Presenta S3-FIFO e SIEVE come esito di «initial experiments», condotti con
+«collaborators at ETH Zurich», e mette in contrasto: «Long term, we expect that a separate
+cache layer for AI traffic will be the best way forward.» Formulazione corretta da usare:
+«S3-FIFO (SOSP '23) e SIEVE (NSDI '24), che il blog Cloudflare del 2 aprile 2026 indica, sulla
+base di esperimenti iniziali con collaboratori dell'ETH di Zurigo, come alternativa all'LRU
+per il traffico misto umano e AI; a lungo termine il blog punta a un livello di cache separato
+per il traffico AI». La metrica del miss umano con e senza traffico agentico resta quella del
+blog (frase verificata).
+
+**Paper — autori e sedi, verificati:**
+- SIEVE: Yazhuo Zhang (Emory), Juncheng Yang (CMU), Yao Yue (Pelikan Foundation), Ymir
+  Vigfusson (Emory e Keystrike), K. V. Rashmi (CMU), «SIEVE is Simpler than LRU: an Efficient
+  Turn-Key Eviction Algorithm for Web Caches», NSDI '24 (dal PDF USENIX).
+- S3-FIFO: Juncheng Yang, Yazhuo Zhang, Ziyue Qiu, Yao Yue, K. V. Rashmi, «FIFO queues are all
+  you need for cache eviction», SOSP '23, doi 10.1145/3600006.3613147.
+- TinyLFU: Gil Einziger, Roy Friedman, Ben Manes, ACM Transactions on Storage 13(4), 2017,
+  doi 10.1145/3149371. Testo letto: arXiv 1512.00727v2.
+- Variante size-aware: Gil Einziger, Ohad Eytan, Roy Friedman, Benjamin Manes, «Lightweight
+  Robust Size Aware Cache Management», ACM Transactions on Storage 18(3), 2022, doi
+  10.1145/3507920. Testo letto: arXiv 2105.08770v2. La regola scelta e' quella che il paper
+  chiama **Aggregated Victims (AV)**, Algoritmo 4.
+
+**Algoritmi — cosa coincide.** SIEVE (Algoritmo 1 del paper): coincide con la descrizione
+sopra; a byte si ripete lo sfratto finche' il nuovo oggetto entra. TinyLFU: reset con
+dimezzamento (divisione intera) di tutti i contatori ogni W incrementi, W = 10 × capienza come
+in Caffeine («a sample size that is 10 times the cache size»), finestra 1%, SLRU 80% protetta
+e 20% in prova, Doorkeeper facoltativo (non usato): coincidono. La larghezza dello sketch non
+e' fissata dai paper: resta 4 × 32 768.
+
+**Algoritmi — cosa diverge e cosa si usa** (si seguono gli pseudocodici dei paper):
+
+1. **S3-FIFO, scatto dello sfratto** (Algoritmo 1, righe 7-18). Sopra: «sfratto da S quando S
+   supera il 10%». Si usa il paper: a ogni inserimento, **finche' la cache e' piena**, si
+   sfratta da S se la dimensione di S e' **≥ 10%** della capienza, altrimenti da M.
+   Promozione da S a M (righe 23-26): se dopo la promozione M supera il 90%, si sfratta da M.
+   La frequenza si azzera nel passaggio a M (testo del §4.1). Il fantasma: FIFO con tante
+   chiavi quanti gli oggetti in M (§4.1); una chiave ritrovata esce dal fantasma e l'oggetto
+   entra in M con `freq = 0` (lo pseudocodice non rimuove la chiave: scelta dichiarata).
+2. **W-TinyLFU, regola AV** (Algoritmi 1 e 4 del paper size-aware). Sostituisce la regola
+   size-aware scritta sopra in questi punti:
+   - **confronto `≥`**, non `>`: ammesso se `stima(candidato) ≥ somma delle stime delle
+     vittime` (Algoritmo 4, riga 8; il testo dice «higher», si segue lo pseudocodice);
+   - **se il candidato e' respinto, le vittime sono «promosse»** come se fossero state
+     richieste una volta (Algoritmo 4, riga 14): nella SLRU un oggetto in prova passa in
+     testa alla protetta, uno nella protetta torna in testa alla protetta. Sopra: «le vittime
+     restano»;
+   - un oggetto **piu' grande della finestra** (1% = 1 342 177 byte; nel corpus ce ne sono)
+     salta la finestra ed e' subito candidato per la principale; un oggetto piu' grande
+     dell'intera cache e' respinto (Algoritmo 1, righe 2-7);
+   - se un inserimento nella finestra ne fa uscire **piu' oggetti**, ognuno e' un candidato,
+     valutato nell'ordine di uscita (Algoritmo 1, righe 10-14);
+   - vittime nell'ordine della politica di sfratto della principale: coda della parte in
+     prova, poi coda della protetta (i paper non lo precisano per la SLRU: scelta dichiarata);
+   - «early pruning» (riga 6) non cambia l'esito e si implementa come nel paper.
+3. **Tetto dei contatori.** Sopra: 4 bit, saturazione a 15. Entrambi i paper limitano i
+   contatori a W/C («we can safely cap the counters by W/C»; «capped by S/C»): con W = 10 × C,
+   **tetto 10**.
+
+**Nessun altro cambiamento**: combinazioni, grandezze, criteri, previsioni, semi, cancelli (K,
+R0, calibrazione, G0-R) e regole restano quelli scritti sopra. Le previsioni per W-TinyLFU non
+si riscrivono.
