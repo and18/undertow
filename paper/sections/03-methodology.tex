@@ -1,24 +1,207 @@
 \section{Testbed and methodology}\label{sec:method}
-% Content, in order:
-% - Stack and pinning; corpus (495 books, 16,954 chapters); cache 128 MB = 5,263 objects
-%   measured with varnish_main_n_object, mean object 24.9 KB \claim{C2}.
-% - Three classes and their generators; AGENT_SCOPE, AGENT_SESSION, AGENT_SKEW, AGENT_MUL.
-%   Human ranks are drawn as floor(N^u), u uniform: log-uniform, approximately Zipf(1);
-%   rank 0 is never drawn (floor(N^u) >= 1). Overlap and human share on agentic bases
-%   (FIG-04) are computed with this distribution (tools/fig04_data.py).
-% - Open-loop generation; one manipulated variable at a time; WARMUP 300 s, MEASURE 620 s;
-%   validity gates; drift reference; env.txt since 21 Sep 2026 (earlier configurations
-%   are not recorded: say so).
-% - Definition used everywhere: marginal cost = change in origin req/s divided by the change
-%   in the OFFERED rate of the class (alpha*lambda or beta*lambda as configured).
-%   WRITE IT OUT IN FULL HERE, as the single reference for every marginal in the paper
-%   (Results 4.1 points here instead of restating it):
-%     marginal = Delta(origin req/s) / Delta(configured offered rate of the class),
-%   with the divisor read from the configuration (alpha*lambda from points.csv), never
-%   the rounded nominal step (see claims.md v3 changelog, A7/A8 recomputation).
-% - Duration invariance \claim{C7}.
-% - Origin requests as a proxy for backend CPU on this testbed \claim{C1}, FIG-06.
-% - Honeypot: what is logged, hashing, aggregates only; calibration in Appendix (FIG-A3)
-%   \claim{C3} \claim{C5}.
-\todo{methodology}
+% Sources: harness/ (docker-compose.yml, env.arm6, varnish/default.vcl, app/app.py,
+% load/workload.js, load/treclassi.sh), docs/claims.md v3.6, docs/registry.csv,
+% docs/PREREG-replica-20260924.md, docs/RISULTATO-replica-20260924.md.
+% Gate outcome of every run used here checked on the points.csv files of the lab copy
+% (copy of 28 Sep 2026, SHA256SUMS): dropped_iterations = 0 in every
+% repetition; http_req_failed < 1% except the blocking and deferral policies of the frontier.
+
+\subsection{Testbed}\label{sec:m-testbed}
+The testbed is a chain of four components on one virtual machine with 6 physical ARM
+cores (Ampere Neoverse-N1, no SMT): a k6 load generator, a Varnish~7.5
+cache, a gunicorn/Flask application and a PostgreSQL~16 database, each in its own
+container.
+Every component is pinned to fixed cores: the generator and the metrics collectors to
+core~0, Varnish to core~1, the application to core~2 and PostgreSQL to cores
+3--5.\claim{C1}
+The application runs one gunicorn process with 8 threads and a pool of 2 to 12 database
+connections.
+Varnish keeps objects in 128\,MiB of memory and evicts them in LRU order.
+Its configuration is deliberately minimal: no normalisation of the cache key, no grace or
+keep period, and cacheability set only by the \texttt{Cache-Control} header of the
+application.
+
+The corpus is 495 public-domain books from Project Gutenberg, split into 16,954 chapters
+and stored in PostgreSQL.\claim{A1}
+All experiments request the chapter page.
+It is cacheable for 86,400\,s, longer than any run, and a miss costs the application four
+queries: the chapter, the book's metadata, its table of contents, and excerpts of the
+linked chapters with a full-text headline.
+The cache holds $5{,}263 \pm 8$ objects, with a mean object of 24.9\,KiB: this is the mean
+number of objects in Varnish over the ten measurement windows in which the cache is
+full.\claim{C2}
+We measure it rather than estimate it from the configured size.\claim{C2}
+
+On this testbed, origin requests are a proxy for backend load.
+Across five admission policies that span a 4.5$\times$ range of load, the CPU used by
+PostgreSQL, in cores, follows $0.021 + 0.0368 \times$ origin req/s ($R^2 = 0.997$,
+largest residual 3.1\%).\claim{C1}
+We claim this relation for this testbed only, not for backend load in
+general.\claim{C1}
 % \undertowfig{FIG-06_cpu-validation}{Origin requests track backend CPU}{fig:cpu}
+
+\subsection{Three traffic classes}\label{sec:m-classes}
+k6 generates load in open loop at a constant arrival rate $\lambda$: a request is sent on
+schedule whether or not earlier requests have completed.
+Each request is assigned to a class by one uniform draw: exhaustive with probability
+$\alpha$, agentic with probability $\beta$ and human otherwise.
+The configured offered rates of the three classes are therefore $\alpha\lambda$,
+$\beta\lambda$ and $(1-\alpha-\beta)\lambda$.
+Each class sends its own \texttt{User-Agent}, and the generator records, per class,
+whether each request was a hit or a miss from a diagnostic header that Varnish adds to
+the response.
+The classes differ only in which chapters they request.
+\begin{itemize}
+\item \emph{Human.} A popularity rank $r = \lfloor N^{u} \rfloor$ is drawn with $u$
+  uniform on $[0,1]$ and $N = 16{,}954$: a log-uniform distribution, approximately
+  Zipf(1), that never draws rank~0.\claim{A3}
+  The rank is mapped to a chapter by the permutation $(r \cdot m_H + s) \bmod N$, with
+  $m_H = 2654435761$ and seed $s$.
+\item \emph{Exhaustive.} The class traverses the corpus in a fixed pseudo-random order,
+  one new chapter per request, so no chapter is requested twice before the whole corpus
+  has been visited.
+  The measurement phase continues the traversal where the warm-up left it.
+\item \emph{Agentic.} The class requests short sessions of three consecutive chapters in
+  corpus order.
+  Each k6 virtual user keeps its own session.
+  A session starts from a rank drawn with a power law close to Zipf(0.6) among the first
+  $\lfloor \mathrm{scope} \cdot N \rfloor$ ranks, mapped to a chapter by
+  $(r \cdot m_A + s) \bmod N$.
+  The working set of the class, the objects the generator can reach, is therefore
+  $3\lfloor \mathrm{scope} \cdot N \rfloor$ chapters: 1,017, 3,051 and 10,170 at scopes
+  0.02, 0.06 and 0.20, that is 0.19$\times$, 0.58$\times$ and 1.93$\times$ the cache
+  capacity.\claim{A1}\claim{C2}
+\end{itemize}
+To change the volume of one class while the others stay fixed in absolute terms, we
+change $\lambda$, $\alpha$ and $\beta$ together.\claim{A1}
+In the primary design the human and exhaustive classes are offered 55 and 28 req/s, and
+the agentic class 12 or 36 req/s (configured values 11.9985 and 35.9975).\claim{A1}
+
+\paragraph{Shared and separated mapping.}
+The multiplier $m_A$ decides where the agentic working set lies with respect to human
+popularity.
+With $m_A = m_H$, the \emph{shared} mapping, agentic sessions start on the most popular
+human chapters.
+With $m_A = 3266489917$, the \emph{separated} mapping, they start in a region of the
+corpus uncorrelated with the human ranks.\claim{A3}
+Computed from the generator's distribution at scope 0.02, the overlap between agentic
+session starts and the human popular head is 99.7\% under the shared mapping and 2.1\%
+under the separated one; the share of human traffic that falls on agentic session starts
+is 59.8\% and 1.0\%.\claim{A3}
+The primary design uses the separated mapping.\claim{A1}
+The two mappings meet only in the comparison between them (\cref{sec:r-overlap}); no
+other comparison mixes a shared and a separated measurement.\claim{A3}
+The shared-mapping runs of 20 September 2026 were launched as separated runs, but the
+multiplier was not passed to the generator, which used the default $m_A = m_H$.
+We use them only as shared-mapping runs.\claim{A3}
+
+\subsection{Marginal cost}\label{sec:m-marginal}
+The origin rate of a run is the number of requests that miss in Varnish and reach the
+application, summed over the three classes and divided by the length of the measurement
+window.
+The miss ratio of a class is the share of its successful requests that miss.
+Every marginal cost in this paper is
+\begin{equation}\label{eq:marginal}
+  m \;=\; \frac{\Delta\,(\text{origin req/s})}{\Delta\,(\text{configured offered rate of the class})},
+\end{equation}
+between two configurations that differ only in the offered rate of that class.
+The divisor is the configured rate, $\beta\lambda$ or $\alpha\lambda$, read from the
+configuration of the run, never the rounded nominal step: for the agentic class of the
+primary design it is $35.9975 - 11.9985 = 23.9990$ req/s.\claim{A1}
+For the exhaustive class the configured rates are 0, 13.9968, 27.9965 and
+41.9977 req/s.\claim{A7}
+A marginal cost is measured between two non-zero rates and is not the net effect of the
+class; we report the net effect separately (\cref{sec:r-sign}).\claim{A9}
+
+\subsection{Measurement protocol}\label{sec:m-protocol}
+A run is one configuration measured several times; each measurement is a repetition.
+Each repetition starts from an empty cache, because Varnish is restarted.
+It then runs 300\,s of warm-up, whose results are discarded, and a measurement window of
+620\,s.
+The code lengthens the window when the exhaustive class needs longer to traverse the
+whole corpus once; this never happens in the primary design.
+The secondary series that varies the exhaustive volume uses a window of
+1,211\,s.\claim{A7}
+Primary runs and the replication have 5 repetitions; the admission-policy frontier and
+the exhaustive series have 3.\claim{A1}\claim{A4}\claim{A7}
+The origin rate does not depend on the length of the window: 39.84, 40.03 and
+40.28 req/s over windows of 620, 1,860 and 3,720\,s.\claim{C7}
+
+A repetition passes the validity gate if k6 dropped no scheduled request and fewer than
+1\% of requests failed.
+% NOT IN claims.md (checked 28 Sep on the lab copy, points.csv): every repetition used here
+% has dropped_iterations = 0; http_req_failed < 1% except the blocking and deferral
+% policies of the frontier (6-27%, the policy's own 403/503). Re-enter the outcome only
+% with a row or note in claims.md.
+
+Since 21 September 2026 each run stores its full configuration and the code version.
+The configurations of earlier runs are not recorded: where we use them, the rates are
+reconstructed from the per-class request counts in the k6 output, and we say
+so.\claim{A9}\claim{A3}
+Some comparisons join runs from different days.
+The replication (\cref{sec:m-prereg}) re-measured five such configurations: the origin rate
+moved by at most 0.154 req/s, within 1.17 standard errors.\claim{A3}\claim{A9}
+This supports the comparisons between those two sets of days only; drift within one night
+is not measured.\claim{A3}\claim{A9}
+
+\subsection{Statistics}\label{sec:m-stats}
+Each point is the mean over its repetitions, with standard error $\mathrm{SE} = s/\sqrt{n}$.
+The SE of a difference between two points is $\sqrt{\mathrm{SE}_1^2 + \mathrm{SE}_2^2}$;
+we test it with Welch's $t$, with degrees of freedom from the Welch--Satterthwaite
+formula, and give 95\% confidence intervals with the matching Student quantile.
+The SE of a marginal cost is the SE of the difference divided by the step in offered rate.
+Ratios and elasticities are computed from unrounded means, never from rounded values.
+
+\subsection{Honeypot}\label{sec:m-honeypot}
+To place the synthetic agentic class against real clients, we run a honeypot on a public
+measurement site, a static site of chapters of public-domain books.
+Its web server logs, for each request, the time, URL, status and user agent, an
+identifier of the TCP connection with the request's position in it, and the Web Bot Auth
+headers \texttt{Signature-Agent} and \texttt{Signature-Input}.\claim{C6}
+Clients are classed by their declared user agent into six classes; the \emph{agent}
+class matches fetchers that act for a user, such as \texttt{ChatGPT-User},
+\texttt{Claude-User} and Perplexity.
+The declaration is not verified.
+All aggregates come from one fingerprinted snapshot of the logs and a fixed window,
+[12 August, 22 September 2026) UTC, with 520,871 requests.\claim{C6}
+Client addresses are used only in memory, as a grouping key through a keyed hash with a
+fresh random key; no address, hash or log line is written, and only per-class aggregates
+leave the analysis.
+
+We compare the honeypot with the generator on two quantities.
+The windowed working set of a client is the largest number of distinct URLs it requests
+within a sliding window of 143\,s, for the clients with at least 5 requests.\claim{C3}
+The window is the characteristic time of the testbed cache, fixed from an earlier capacity
+estimate of 5,274 objects; with 5,263 it would be 142\,s, a difference of 0.2\% that we
+do not recompute.\claim{C3}
+Contiguity is the share of consecutive request pairs within one session that read
+adjacent chapters of the same book.\claim{C5}
+A session is a TCP connection on the honeypot and a k6 virtual user in the generator.\claim{C5}
+
+\subsection{Pre-registered replication}\label{sec:m-prereg}
+The three results that rest on one run per point or on runs from different days (A1 at
+scope 0.02, the overlap effect and the net effect) were measured again in one night, on
+25--26 September 2026.\claim{A1}\claim{A3}\claim{A9}
+The protocol was committed to the repository before launch, and its version is recorded
+in the configuration of every run.\claim{A1}
+It fixed the five configurations, identical to the original runs; their order, chosen so
+that a linear drift during the night least affects the comparisons for A1 and the net
+effect; the formulas; and the criteria.
+% Thresholds of R1-R3 are in docs/PREREG-replica-20260924.md, NOT in claims.md:
+%   R1 m < 0 and t <= -3; R2 d > 0 and t >= 3 at both rates; R3 t > -2.
+% Re-enter them only with a note in claims.md.
+R1: the marginal at scope 0.02 is negative, distinguishable from zero, and within three
+combined standard errors of the original.\claim{A1}
+R2: removing the overlap raises the origin rate at both agentic rates.\claim{A3}
+R3: the net effect is not significantly negative.\claim{A9}
+R4: the drift between days, reported without a threshold.
+The analysis script was tested on the original runs before the new runs were read.
+All five runs passed the gate; none was repeated, and nothing deviated from the
+protocol.\claim{A1}\claim{A3}\claim{A9}
+The prediction tested in \cref{sec:mechanism} is different: it was written before the
+first results at scopes 0.06 and 0.20 were available, but it has no independent
+timestamp, so we call it a prior prediction.\claim{B3}
+
+Code, configurations, derived data and figure scripts are available at \anonrepo.
+The corpus is identified by book, not redistributed, and the honeypot logs are not
+released; only their aggregates are.

@@ -1,4 +1,4 @@
-% Undertow — paper source.  Build:  make paper   (or: cd paper && latexmk -pdf main.tex)
+% Paper source.  Build:  make paper   (or: cd paper && latexmk -pdf main.tex)
 %
 % RULES FOR EVERY SENTENCE IN THIS FILE TREE
 %   1. It belongs to a row of docs/claims.md. Mark it with \claim{ID} at the end of the
@@ -10,21 +10,28 @@
 %   4. Figures are included from ../figures/paper/ at their printed size; their captions
 %      are \input from the .caption.tex files that `make figures` writes. Never edit a
 %      caption here: edit CAPTION in the figure script.
-\documentclass[10pt]{article}
+% Format: Springer LNCS (llncs), anonymous submission to PAM 2027 (long paper: at most 24
+% pages of content, target about 16, plus at most 5 for appendices and references;
+% double-blind). Do not add
+% names, affiliations, the measurement site's domain or the repository URL: use
+% "a public measurement site" and \anonrepo.
+\documentclass[runningheads]{llncs}
 
 \usepackage[utf8]{inputenc}
-% T1 + lmodern is nicer if installed; the default encoding keeps the build portable.
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{microtype}
 \usepackage{xcolor}
-\usepackage[labelfont=bf,font=small,justification=justified]{caption}
-\usepackage[numbers,sort&compress]{natbib}
 \usepackage[hidelinks]{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 
 % ── claim markers ───────────────────────────────────────────────────────────
+% llncs defines a "claim" theorem environment, unused here: free the name for the marker.
+\let\claim\relax
+\let\endclaim\relax
 \newif\ifshowclaims
 \showclaimstrue          % draft: claim IDs appear in the margin.  Set \showclaimsfalse to hide.
 \ifshowclaims
@@ -33,6 +40,8 @@
   \newcommand{\claim}[1]{}
 \fi
 \newcommand{\todo}[1]{\textcolor{orange!80!black}{[TODO: #1]}}
+% Anonymous artifact link: replace with the anonymised repository URL before submission.
+\newcommand{\anonrepo}{\todo{anonymised repository link}}
 
 % ── figures: one command, caption from the build ────────────────────────────
 % \undertowfig{STEM}{short caption for the list of figures}{label}
@@ -43,13 +52,15 @@
     \caption[#2]{\input{../figures/paper/#1.caption.tex}\unskip}
     \label{#3}
   \end{figure}}
-% The figures are drawn 4.80 in wide; \textwidth of this class is 345 pt (4.77 in), so they
-% are scaled by 0.995. A venue template replaces this preamble; the figures do not change.
+% The figures are drawn 4.80 in wide; the llncs \textwidth is 12.2 cm (4.80 in), so they are
+% included at their printed size.
 
-\title{\todo{working title} Beyond Traffic Classes:\\
+\title{\todo{working title} Beyond Traffic Classes:
        Working-Set Width and the Origin Cost of Automated Web Traffic}
-\author{Andrea Licitra}
-\date{\todo{date}}
+\titlerunning{Working-Set Width and the Origin Cost of Automated Web Traffic}
+\author{Anonymous Author(s)}
+\authorrunning{Anonymous}
+\institute{Anonymous Institution}
 
 \begin{document}
 \maketitle
@@ -67,10 +78,7 @@
 \input{sections/07-limitations}
 \input{sections/08-conclusion}
 
-% While no section cites anything yet, \nocite keeps BibTeX from failing. Remove it when
-% the first \cite lands.
-\nocite{*}
-\bibliographystyle{plainnat}
+\bibliographystyle{splncs04}
 \bibliography{references}
 
 \appendix

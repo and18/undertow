@@ -5,9 +5,11 @@
 \subsection{The marginal cost of one class changes sign with its working set}\label{sec:r-sign}
 % Finding \claim{A1}: -0.0353 +/- 0.0053 -> +0.1605 +/- 0.0067 -> +0.4383 +/- 0.0055
 %   origin requests per added agentic request, same class, volumes, cache, corpus.
+% Replication (claims v3.6): the scope-0.02 point only, -0.0405 +/- 0.0061, t = -6.60.
 % Caveat in the text, not only in the caption: this is the 12->36 req/s marginal; the net
-%   effect 0->36 is not a saving (+0.392 +/- 0.158, 95% CI +0.02 to +0.76, \claim{A9}) —
-%   "reduces origin work" is retracted (R2).
+%   effect 0->36 is NOT NEGATIVE (never "positive"): two measurements reported separately,
+%   +0.392 +/- 0.158 [+0.0215, +0.7625] and +0.238 +/- 0.110 [-0.0601, +0.5361]
+%   (\claim{A9}) — "reduces origin work" is retracted (R2).
 % Honeypot placement by windowed working set (C3), details in Appendix.
 The marginal origin cost of the agentic class changes sign as its working set grows.
 When the agentic class is raised from 12 to 36 req/s, each added request costs
@@ -18,24 +20,35 @@ Class, volumes, cache and corpus are identical across the three configurations; 
 the working set changes.\claim{A1}
 
 In our testbed, a working set is the set of objects from which our load generator draws
-the requests of a class, with sessions built as described in \cref{sec:method}.
+the requests of a class, with sessions built as described in \cref{sec:m-classes}.
 We set the agentic scope to 0.02, 0.06 and 0.20 of the corpus, that is 1,017, 3,051 and
 10,170 objects, against a measured cache capacity of 5,263 objects.\claim{A1}\claim{C2}
 At each scope the agentic rate goes from 12 to 36 req/s, the human and exhaustive classes
 stay at 55 and 28 req/s, working sets are mapped separately across classes, and each point
 is the mean of 5 runs.\claim{A1}
 The marginal cost is the change in origin req/s divided by the change in the configured
-offered rate of the class (\cref{sec:method}).
+offered rate of the class (\cref{sec:m-marginal}).
 
 Consecutive points are well separated (Welch $t = 22.99$ and $t = 32.13$).\claim{A1}
 The negative value at the smallest scope is distinguishable from zero
 ($t = -6.7$).\claim{A1}
+We measured this point again, with all runs in one night, under a pre-registered protocol
+(\cref{sec:m-prereg}).\claim{A1}
+The replication gives $-0.0405 \pm 0.0061$ ($t = -6.60$), within three combined standard
+errors of the original value.\claim{A1}
+Only this point was replicated; the scopes 0.06 and 0.20 have one run per
+point.\claim{A1}
 
 This is a marginal cost between 12 and 36 req/s, not the net effect of the class.
 At the smallest scope, the net effect of adding the agentic class from 0 to 36 req/s is
-not a saving: $+0.392 \pm 0.158$ origin req/s (95\% CI $+0.02$ to $+0.76$).\claim{A9}
+not negative.\claim{A9}
+We measured it twice and report the two measurements separately.\claim{A9}
+From runs on two different days it is $+0.392 \pm 0.158$ origin req/s (95\% CI $+0.02$ to
+$+0.76$).\claim{A9}
+In the same-day replication it is $+0.238 \pm 0.110$ origin req/s (95\% CI $-0.06$ to
+$+0.54$), an interval that contains zero.\claim{A9}
 A negative marginal cost therefore does not mean that agentic traffic lowers total origin
-work in this configuration.\claim{A9}
+work in this configuration: adding it is not a saving.\claim{A9}
 
 By working-set width alone, the smallest scope is closest to the agentic clients of our
 public honeypot: at 12 agentic req/s it touches about 693 distinct objects in a 143 s
@@ -78,8 +91,8 @@ The decomposition is accounting.
 It states which terms make up the measured change and how large each one is.\claim{B2}
 It does not state why a term takes the value it has.
 The step from 0 to 12 req/s is shown next to the step from 12 to 36 req/s so that the
-second is not read alone: from 0 to 36 req/s, the net change in origin work is
-$+0.392 \pm 0.158$ req/s, not a saving (\cref{sec:r-sign}).\claim{A9}
+second is not read alone: from 0 to 36 req/s, the net change in origin work is not
+negative (\cref{sec:r-sign}).\claim{A9}
 \undertowfig{FIG-05_accounting-decomposition}{Accounting decomposition of the change in origin work}{fig:accounting}
 
 \subsection{Composition moves one class, not the others}\label{sec:r-asymmetry}
@@ -96,7 +109,7 @@ $+0.392 \pm 0.158$ req/s, not a saving (\cref{sec:r-sign}).\claim{A9}
 When only the agentic volume grows, the per-request cost of the agentic class changes
 strongly and that of the other two classes barely changes.\claim{A2}
 Here the cost per request of a class is its miss ratio, the share of its requests that
-reaches the origin (\cref{sec:method}).\claim{A2}
+reaches the origin (\cref{sec:m-marginal}).\claim{A2}
 The runs are those of \cref{sec:r-sign}: only the agentic volume moves, from 12 to
 36 req/s, while the human and exhaustive volumes stay fixed.\claim{A2}\claim{A1}
 
@@ -136,8 +149,11 @@ classes.\claim{A2}
 
 \subsection{A confounder: overlap between working sets}\label{sec:r-overlap}
 % \claim{A3}: +0.714 (t = 5.74) and +1.012 (t = 7.74) origin req/s when the agentic working
-%   set is decorrelated from the human popular head. Narrow wording: a bias in the
-%   experimental characterisation of a class's cost (not "we discovered free-riding").
+%   set is decorrelated from the human popular head (different days); same-day
+%   replication +0.882 +/- 0.183 (t = 4.82) and +0.872 +/- 0.064 (t = 13.62). The
+%   difference between the two rates does not recur: no claim that the effect grows with
+%   the rate. Narrow wording: a bias in the experimental characterisation of a class's
+%   cost (not "we discovered free-riding").
 How cheap a class looks depends on how much its working set overlaps with the popular
 head of another class.\claim{A3}
 We measure the same configuration under two mappings of the agentic working set, with the
@@ -146,14 +162,20 @@ In the shared mapping, the agentic working set is drawn with the same permutatio
 human one, so it coincides with the human popular head.\claim{A3}
 In the separated mapping, a different permutation removes most of this
 overlap.\claim{A3}
-The two mappings were measured on different days: the shared runs on 20 September
-2026, before full configurations were recorded, and the separated runs on 21 September,
-as for the 0 req/s point of \cref{sec:r-sign}.\claim{A3}
+In the original runs the two mappings were measured on different days: the shared runs
+on 20 September 2026, before full configurations were recorded, and the separated runs on
+21 September, as for the 0 req/s point of \cref{sec:r-sign}.\claim{A3}
+The pre-registered replication measured both mappings in the same night
+(\cref{sec:m-prereg}).\claim{A3}
 
-Removing the overlap raises origin work by $+0.714$ req/s at 12 agentic req/s
-($t = 5.74$) and by $+1.012$ req/s at 36 agentic req/s ($t = 7.74$)
+Removing the overlap raises origin work at both agentic rates, in both measurements
 (\cref{fig:overlap}).\claim{A3}
-Both differences are well above their standard errors.\claim{A3}
+In the original runs the increase is $+0.714$ req/s at 12 agentic req/s ($t = 5.74$) and
+$+1.012$ req/s at 36 agentic req/s ($t = 7.74$).\claim{A3}
+In the same-day replication it is $+0.882 \pm 0.183$ req/s ($t = 4.82$) and
+$+0.872 \pm 0.064$ req/s ($t = 13.62$).\claim{A3}
+The difference between the two rates seen in the original runs does not recur, so we make
+no claim that the effect grows with the agentic rate.\claim{A3}
 Under the shared mapping, the agentic class at the same volume therefore appears cheaper
 than under the separated one.\claim{A3}
 

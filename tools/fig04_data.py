@@ -23,6 +23,11 @@ Colonne:
 Stampa anche, per confronto, l'effetto separata − condivisa con SE combinato e t, e le due
 grandezze con le definizioni precedenti (testa = ranghi 0..338, Zipf(1) esatta con 1/(k·H_N)).
 Il file e' letto da FIG-04 anche per la didascalia: ci sono anche effect / effect_se / t.
+  rep_effect / rep_effect_se / rep_t  stesso effetto nella replica pre-registrata nello
+                          stesso giorno (docs/PREREG-replica-20260924.md, R2; 25-26 set):
+                          C12 tre-20260925-213527, S12 tre-20260925-225538,
+                          S36 tre-20260926-001550, C36 tre-20260926-025613. La figura disegna
+                          solo i run del 20-21 set; la replica entra solo nella didascalia.
 
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
@@ -50,6 +55,13 @@ RUNS = {
     (12, "separated"): ("tre-20260921-150237", SEPARATED_MUL),
     (36, "shared"): ("tre-20260920-130038", HUMAN_MUL),
     (36, "separated"): ("tre-20260921-162248", SEPARATED_MUL),
+}
+# replica pre-registrata nello stesso giorno (R2): (agentica nominale, mappatura) -> run
+REPLICA = {
+    (12, "shared"): "tre-20260925-213527",
+    (12, "separated"): "tre-20260925-225538",
+    (36, "shared"): "tre-20260926-025613",
+    (36, "separated"): "tre-20260926-001550",
 }
 
 
@@ -105,18 +117,25 @@ def main():
         print(f"      overlap {100 * ov:.2f}% (testa 0..338: {100 * overlap(mul, 0):.2f}%)  "
               f"massa umana {100 * mass:.2f}% (Zipf(1) esatta: "
               f"{100 * human_mass_exact_zipf(mul):.2f}%)")
+    rep = {k: read_run(run) for k, run in REPLICA.items()}
     rows = []
     for load in (12, 36):
         a, b = res[(load, "shared")], res[(load, "separated")]
         d, se = b["mean"] - a["mean"], math.sqrt(a["var_mean"] + b["var_mean"])
         print(f"  effetto a {load} req/s: {d:+.4f} +/- {se:.4f}  t = {d / se:.2f}")
+        ra, rb = rep[(load, "shared")], rep[(load, "separated")]
+        rd, rse = rb["mean"] - ra["mean"], math.sqrt(ra["var_mean"] + rb["var_mean"])
+        print(f"  replica a {load} req/s: {rd:+.4f} +/- {rse:.4f}  t = {rd / rse:.2f}")
         for mapping in ("shared", "separated"):
-            eff = [f"{d:.3f}", f"{se:.3f}", f"{d / se:.2f}"] if mapping == "separated" else ["", "", ""]
+            eff = ([f"{d:.3f}", f"{se:.3f}", f"{d / se:.2f}",
+                    f"{rd:.3f}", f"{rse:.3f}", f"{rd / rse:.2f}"]
+                   if mapping == "separated" else [""] * 6)
             rows.append(out[(load, mapping)] + eff)
     with OUT_CSV.open("w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["agent_rps", "mapping", "overlap_pct", "human_mass_pct", "origin_rps",
-                    "origin_se", "agent_hit", "effect", "effect_se", "t"])
+                    "origin_se", "agent_hit", "effect", "effect_se", "t",
+                    "rep_effect", "rep_effect_se", "rep_t"])
         w.writerows(rows)
     print(f"scritto {OUT_CSV}")
 

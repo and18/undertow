@@ -17,8 +17,9 @@ DESIGN PASS
             the honeypot reference as a short tag on the row it refers to.
             Load range, runs and the net-effect caveat go to the caption.
   Prevent   "agentic traffic reduces origin work" (retracted, R2): the bar is the
-            12->36 req/s marginal; the net 0->36 effect is not a saving and the
-            caption says so. No line joins the rows (3 points, no functional form).
+            12->36 req/s marginal, the axis says "marginal, not net", the header
+            names the direction of the origin rate and not "work"; the net 0->36
+            effect (A9, two measurements) is in the text, and the caption says so. No line joins the rows (3 points, no functional form).
             No "working set = capacity" boundary (retracted, R4).
 """
 import figure_style as S
@@ -46,9 +47,8 @@ CAPTION = (
     "sessions are drawn changes. Rows give the working set (the objects the generator "
     "can draw: scope × corpus session starts, rounded down, × 3 contiguous chapters) as a "
     "multiple of the measured cache capacity of 5,263 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
-    "values are marginal between 12 and 36 req/s; in the first row the first 12 req/s cost "
-    "+0.103 origin requests each and the net effect from 0 to 36 req/s is not a saving, "
-    "+0.392 ± 0.158 (95% CI +0.02 to +0.76). The tag marks the row closest to real agents by windowed working "
+    "values are marginal between 12 and 36 req/s, not the net effect of adding the class, "
+    "which is reported in the text. The tag marks the row closest to real agents by windowed working "
     "set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for that "
     "row), not by the size of the whole working set. Working sets are decorrelated across classes "
     "(AGENT_MUL = 3266489917)."
@@ -87,9 +87,9 @@ def render(variant):
     hd = dict(color=C.ink_soft, va="baseline")
     cv.text(cv.left, y_head, "Working set", T.sub, weight=SEMIBOLD, ha="left", **hd)
     cv.text(cv.right, y_head, "Mean ± SE", T.sub, weight=SEMIBOLD, ha="right", **hd)
-    cv.text(x0 - 0.06, y_head, sp.pick("reduces", "reduces origin work"), T.sub,
+    cv.text(x0 - 0.06, y_head, sp.pick("lower", "lower origin rate"), T.sub,
             ha="right", **hd)
-    cv.text(x0 + 0.06, y_head, sp.pick("adds", "adds origin work"), T.sub, ha="left", **hd)
+    cv.text(x0 + 0.06, y_head, sp.pick("higher", "higher origin rate"), T.sub, ha="left", **hd)
     cv.line([cv.left, cv.right], [y_rule, y_rule], color=C.rule_mid, lw=0.5)
     cv.line([x0, x0], [y_head - T.s(T.sub) * 0.8 * PT, y_rule], color=C.baseline, lw=1.0)
 
@@ -124,6 +124,6 @@ def render(variant):
                 color=C.ink_faint, ha="center", va="top")
     if not sp.editorial:
         cv.text(bx + bw / 2, y_end + tick_h + 0.05,
-                "Origin requests per added agentic request", T.axis,
+                "Origin requests per added agentic request (marginal, not net)", T.axis,
                 color=C.ink_soft, ha="center", va="top")
     return cv.save(STEM)

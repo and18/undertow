@@ -6,6 +6,8 @@ DATA      data/derived/fig04_overlap.csv
 RUNS      shared mapping: tre-20260920-114026 / -130038 of 20 Sep (AGENT_MUL not passed to
           k6, so the default permutation: same permutation as the human class; before env.txt)
           separated mapping: tre-20260921-150237 / -162248 (AGENT_MUL=3266489917)
+          caption only: same-day pre-registered replication of 25-26 Sep,
+          tre-20260925-213527 / -225538 / tre-20260926-001550 / -025613 (rep_* columns)
 
 DESIGN PASS
   Reader    removing the overlap raises measured origin work at both agentic loads:
@@ -26,7 +28,9 @@ STEM = "FIG-04_overlap-confounder"
 CLAIMS = "A3 (MISURATO)"
 DATA = ["fig04_overlap.csv"]
 RUNS = ["tre-20260920-114026", "tre-20260920-130038", "tre-20260921-150237",
-        "tre-20260921-162248"]
+        "tre-20260921-162248",
+        "caption only (replication): tre-20260925-213527", "tre-20260925-225538",
+        "tre-20260926-001550", "tre-20260926-025613"]
 
 EDITORIAL = dict(
     headline="Sharing the popular head with human traffic\nmakes the agentic class look cheaper",
@@ -61,7 +65,13 @@ def _caption():
         f"(t = {S.num(float(e36['t']), 2)}) at 36, and lowers the agentic hit ratio from "
         f"{h[(12, 'shared')]} to {h[(12, 'separated')]} and from {h[(36, 'shared')]} to "
         f"{h[(36, 'separated')]}. Mean of 5 runs; whiskers ± 1 SE. The shared runs are of "
-        "20 Sep 2026, the separated runs of 21 Sep. The overlap is a bias of the "
+        "20 Sep 2026, the separated runs of 21 Sep. In a pre-registered replication with "
+        "both mappings measured in the same night (25–26 Sep, not drawn), the increase is "
+        f"{S.num(float(e12['rep_effect']), 3, sign=True)} ± {S.num(float(e12['rep_effect_se']), 3)} "
+        f"req/s (t = {S.num(float(e12['rep_t']), 2)}) at 12 and "
+        f"{S.num(float(e36['rep_effect']), 3, sign=True)} ± {S.num(float(e36['rep_effect_se']), 3)} "
+        f"req/s (t = {S.num(float(e36['rep_t']), 2)}) at 36; the difference between the two "
+        "rates does not recur. The overlap is a bias of the "
         "experimental characterisation of a class's cost, not a property of the class."
     )
 

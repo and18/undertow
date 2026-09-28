@@ -97,8 +97,10 @@ non la conclusione.
 
 ## Pubblicazione
 
-- **Venue:** PAM 2027, short paper.
-- **Formato:** ≤ 11 pagine LNCS di contenuto, più ≤ 5 per appendici e bibliografia.
+- **Venue:** PAM 2027, long paper (deciso il 28 settembre, al posto dello short paper).
+- **Formato:** ≤ 24 pagine LNCS di contenuto, più ≤ 5 per appendici e bibliografia.
+  **Obiettivo circa 16 pagine**, non 24. Classe `llncs` (v2.26, in `~/texmf` da CTAN),
+  bibliografia `splncs04`.
 - **Revisione:** doppio cieco.
 - **Obbligatori:**
   - appendice «Ethics»;

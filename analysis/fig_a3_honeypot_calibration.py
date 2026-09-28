@@ -59,7 +59,7 @@ def _texts():
               "request pairs; Undertow testbed generator.")
     caption = (
         "Calibration of the synthetic agentic class against agent-class clients observed on "
-        f"the theslowshelf.org honeypot ({per}, UTC). (a) Distinct objects requested within "
+        f"a honeypot on a public measurement site ({per}, UTC). (a) Distinct objects requested within "
         "a 143 s window, the characteristic time of the testbed cache: median "
         f"{S.num(_v(r, 'agent_ws_median'), 0)}, 90th percentile {S.num(_v(r, 'agent_ws_p90'), 0)} "
         f"and maximum {S.num(_v(r, 'agent_ws_max'), 0)} across {n} clients (mean "
