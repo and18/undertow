@@ -27,9 +27,15 @@ All experiments request the chapter page.
 It is cacheable for 86,400\,s, longer than any run, and a miss costs the application four
 queries: the chapter, the book's metadata, its table of contents, and excerpts of the
 linked chapters with a full-text headline.
-The cache holds $5{,}263 \pm 8$ objects, with a mean object of 24.9\,KiB: this is the mean
-number of objects in Varnish over the ten measurement windows in which the cache is
-full.\claim{C2}
+Every class requests this same page and triggers the same four queries on a miss, so what
+a miss costs depends on the size of the chapter, not on the class that requests it.
+% Mean chapter size in the agentic reachable sets vs the corpus (data/derived/chapter_sizes.csv,
+% computed 28 Sep, separated mapping, distinct chapters): 23.3 / 24.4 / 25.5 KB at scopes
+% 0.02 / 0.06 / 0.20 against 25.5 KB for the corpus (medians ~20.2 KB everywhere).
+% NOT written: pending Andrea's decision (the smallest set is ~8% below the corpus).
+The cache holds $5{,}263 \pm 8$ objects, with a mean of 24.9\,KiB of storage per object:
+this is the mean number of objects in Varnish over the ten measurement windows in which
+the cache is full.\claim{C2}
 We measure it rather than estimate it from the configured size.\claim{C2}
 
 On this testbed, origin requests are a proxy for backend load.
@@ -67,18 +73,32 @@ The classes differ only in which chapters they request.
   A session starts from a rank drawn with a power law close to Zipf(0.6) among the first
   $\lfloor \mathrm{scope} \cdot N \rfloor$ ranks, mapped to a chapter by
   $(r \cdot m_A + s) \bmod N$.
-  The working set of the class, the objects the generator can reach, is therefore
-  $3\lfloor \mathrm{scope} \cdot N \rfloor$ chapters: 1,017, 3,051 and 10,170 at scopes
-  0.02, 0.06 and 0.20, that is 0.19$\times$, 0.58$\times$ and 1.93$\times$ the cache
-  capacity.\claim{A1}\claim{C2}
+  We call the chapters that the generator can request for the class its \emph{reachable
+  set}: $3\lfloor \mathrm{scope} \cdot N \rfloor$ chapters, that is 1,017, 3,051 and
+  10,170 at scopes 0.02, 0.06 and 0.20, or 0.19$\times$, 0.58$\times$ and 1.93$\times$
+  the cache capacity.\claim{A1}\claim{C2}
+  % CHECK with the A1 update: at scope 0.20 the 10,170 positions contain 10,020 distinct
+  % chapters (sessions of adjacent bases overlap), i.e. 1.90x; at 0.02 and 0.06 the counts
+  % are exact. claims.md A1 says 10,170 and 1.93x: not changed here.
 \end{itemize}
+We keep three quantities apart.
+The \emph{reachable set} is the variable we manipulate: it is fixed by the generator's
+configuration, whether or not every object in it is requested during a run.
+The \emph{windowed working set} is observed: the distinct objects that a client or a class
+actually requests within a time window, which is what we can measure on the honeypot
+(\cref{sec:m-honeypot}).\claim{C3}
+The \emph{occupancy} of the cache is the number of bytes that Varnish holds, bounded by its
+128\,MiB.
+We express the reachable set as a multiple of the capacity in objects, not in bytes,
+because the capacity itself was measured as a number of objects and every class requests
+the same kind of object, with a mean of 24.9\,KiB of storage per object.\claim{C2}
 To change the volume of one class while the others stay fixed in absolute terms, we
 change $\lambda$, $\alpha$ and $\beta$ together.\claim{A1}
 In the primary design the human and exhaustive classes are offered 55 and 28 req/s, and
 the agentic class 12 or 36 req/s (configured values 11.9985 and 35.9975).\claim{A1}
 
 \paragraph{Shared and separated mapping.}
-The multiplier $m_A$ decides where the agentic working set lies with respect to human
+The multiplier $m_A$ decides where the agentic reachable set lies with respect to human
 popularity.
 With $m_A = m_H$, the \emph{shared} mapping, agentic sessions start on the most popular
 human chapters.

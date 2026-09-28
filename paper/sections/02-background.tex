@@ -48,12 +48,12 @@ We add four things.
 First, we measure the marginal cost at the origin and compare it across three coexisting
 classes, rather than the hit ratio.\claim{A2}
 Second, for the agentic class the sign of that cost depends on the width of the class's
-working set (\cref{sec:r-sign}), and the agentic clients of our honeypot sit near the
-narrow end by that measure.\claim{A1}\claim{C3}
+reachable set (\cref{sec:r-sign}), and by windowed working set the agentic clients of our
+honeypot sit near the narrow end.\claim{A1}\claim{C3}
 Third, the overlap that these workloads fix changes the measured cost of a class
 (\cref{sec:r-overlap}).\claim{A3}
-Fourth, in our testbed the hit ratio of the exhaustive class rises from 0.179 to 0.200 as
-the agentic share grows under the separated mapping, so isolating the agentic class in a
+Fourth, in our testbed the hit ratio of the exhaustive class rises from 0.179 to 0.200 when
+the agentic offered rate increases while the others stay fixed, under the separated mapping, so isolating the agentic class in a
 separate cache would remove a measured benefit (supported).\claim{D8}
 The separate layer that Cloudflare envisions is organised differently: it routes human and
 AI traffic to distinct tiers and, for AI traffic, varies the handling by task and by the
@@ -63,31 +63,76 @@ training crawls~\cite{cloudflare2026cache}.
 Our evidence says only that, in our testbed, isolating the agentic class has a measured
 cost; it does not say that their design is wrong.\claim{D8}
 
-\paragraph{Allocation, sharing and feedback.}
-Utility-based cache partitioning~\cite{qureshi2006ucp} and Cliffhanger~\cite{cidon2016cliffhanger}
-steer cache space by the gradient of the hit or miss ratio with respect to the memory
-allocated to a workload.
-We vary the composition of the traffic that shares a fixed cache, not the allocation.
+\paragraph{Capacity-marginal and load-marginal.}
+Two different marginals are easy to conflate.
+A \emph{capacity-marginal} asks how much a workload gains from more memory: utility-based
+cache partitioning~\cite{qureshi2006ucp} and Cliffhanger~\cite{cidon2016cliffhanger} steer
+cache space by the gradient of the hit or miss ratio with respect to the memory allocated
+to a workload, and stack algorithms~\cite{mattson1970} and their approximations,
+SHARDS~\cite{waldspurger2015shards} and Counter Stacks~\cite{wires2014counterstacks},
+estimate the miss ratio as a function of cache size.
+A \emph{load-marginal}, the quantity we measure, asks how much origin work one more
+request of a class causes in the current state of a cache of fixed size, when the offered
+rate of that class increases while the others stay fixed.\claim{A1}
+The two are related through the cache state but answer different questions: a
+capacity-marginal tells an operator where to put memory, a load-marginal what admitting
+more of a class will cost.
 FairRide~\cite{pu2016fairride} treats free-riding in a shared cache as a problem of
-fairness and incentives; we treat the overlap between working sets as a bias in the
+fairness and incentives; we treat the overlap between reachable sets as a bias in the
 measured cost of a class.\claim{A3}
 Admission control driven by feedback on load or latency is well established, for example
 in Breakwater~\cite{cho2020breakwater}, DAGOR~\cite{zhou2018dagor},
 Protego~\cite{cho2023protego} and TopFull~\cite{park2024topfull}.
 Feedback control is not a contribution of this paper, and we do not propose a controller.
+\Cref{tab:rw} summarises these lines of work.
 
-\paragraph{Working sets, characteristic time and miss-ratio curves.}
-The working set of a program~\cite{denning1968} is the concept we use for a class of
-traffic.
+\begin{table}[t]
+\caption{Closest lines of work and what this paper adds. ``Overlap'' is the overlap between
+the objects requested by different classes or users.}
+\label{tab:rw}
+\centering\scriptsize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.2cm}
+  >{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X
+  >{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+Work & What varies & Metric & Overlap & What is missing \\
+\midrule
+Zhang et al.~\cite{zhang2025} & Share of AI traffic (0--100\%); eviction policy &
+  Hit and miss ratio, overall and of human traffic &
+  Fixed (about 20\% and 10\%) &
+  Origin cost of one more request; width of the AI working set; overlap as a variable \\
+\addlinespace
+FairRide~\cite{pu2016fairride} & How a cache is shared among users &
+  Cache performance and fairness properties &
+  Shared data treated as free-riding, a fairness problem &
+  Overlap as a bias in the measured cost of a class \\
+\addlinespace
+UCP, Cliffhanger~\cite{qureshi2006ucp,cidon2016cliffhanger} & Memory allocated to each
+  workload & Gradient of hit or miss ratio in memory (capacity-marginal) &
+  Not a variable & Origin work of one more request at fixed capacity \\
+\addlinespace
+Breakwater, DAGOR, Protego, TopFull~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} &
+  Offered load & Latency and goodput under overload control &
+  No cache & Cache state; per-class origin cost \\
+\addlinespace
+This work & Offered rate of one class; width of its reachable set; mapping (shared or
+  separated) & Load-marginal origin cost; per-class miss ratio; human p99 &
+  Controlled (99.7\% or 2.1\%) &
+  One testbed, one eviction policy, a synthetic generator; no online estimator \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Working sets and characteristic time.}
+The working set of a program~\cite{denning1968}, the objects referenced within a window,
+is the concept behind our windowed working set; the variable we manipulate is the reachable
+set, from which such windows are drawn.
 The characteristic-time approximation of LRU is due to Fagin~\cite{fagin1977}, was
 rediscovered and named by Che et al.~\cite{che2002}, and was formalised by Fricker et
 al.~\cite{fricker2012}.
 We use it to interpret the ordering of our results, and its quantitative prediction on
 our testbed failed (\cref{sec:m-tc}).\claim{B3}\claim{B4}
-Stack algorithms~\cite{mattson1970} and their approximations, SHARDS~\cite{waldspurger2015shards}
-and Counter Stacks~\cite{wires2014counterstacks}, estimate the miss ratio as a function of
-cache size; we measure how the cost of one class changes with the
-composition of the traffic and the width of its working set.
 
 \paragraph{Delivery architectures for agents.}
 SemDN~\cite{hua2026semdn} proposes a hierarchical edge infrastructure that indexes and

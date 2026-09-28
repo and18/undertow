@@ -11,18 +11,18 @@ size, and absolute values such as origin rates and miss ratios are properties of
 testbed.
 All experiments use the cacheable chapter page; requests that no cache can absorb, such as
 full-text search, are outside this study.
-Of the three working-set sizes, only the smallest was replicated; the other two have one
+Of the three reachable-set sizes, only the smallest was replicated; the other two have one
 run per point.\claim{A1}
 
 \paragraph{A synthetic agentic class.}
-The generator matches the agentic clients of our honeypot in the width of the working set
-but not in its contiguity.\claim{C3}\claim{C5}
+The generator matches the agentic clients of our honeypot in the width of the windowed
+working set but not in its contiguity.\claim{C3}\claim{C5}
 Measured the same way on both sides, 66.9\% of consecutive request pairs within a session
 read adjacent chapters in the generator, against 4.25\% for honeypot agentic
 clients.\claim{C5}
 The unit of a session also differs: a k6 virtual user in the generator, a TCP connection
 on the honeypot.\claim{C5}
-The synthetic agentic class is therefore a controlled working set of a given width, not a
+The synthetic agentic class is therefore a controlled reachable set of a given width, not a
 model of how agentic clients read a site.
 
 \paragraph{One honeypot.}

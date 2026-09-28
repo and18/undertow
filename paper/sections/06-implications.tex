@@ -1,31 +1,41 @@
 \section{Implications for infrastructure}\label{sec:implications}
-% Section D of claims.md only. Every sentence states that it is a design implication, not a
-% validated technology. P1-P4 = D4-D7 (D7 weak). D8 is in Related Work.
+% Section D of claims.md only (D1b opens the section). Every sentence states that it is a
+% design implication, not a validated technology. P1-P3 = D4-D6 in the table; D7 (weak)
+% moved to Open questions. D8 is in Related Work.
 % No \claim inside the table (marginpar in a float): the claims of each row are in the
-% sentence that introduces the table. All sources of "current mechanism" verified on the
-% primary, 28 Sep 2026 (docs/VERIFICHE-chiuse.md).
+% sentence that introduces the table. All citations verified on the primary, 28 Sep 2026
+% (docs/VERIFICHE-chiuse.md).
 % Not written (candidate, NOT in claims.md): fixed per-request price (pay-per-crawl)
 % against a cost that changes sign. Enters only with a D row and a primary source.
-Everything in this section is a design implication that we draw from the measurements; none
-of it is a validated technology.\claim{D3}
+A traffic class does not have a stable marginal cost independent of the state of the
+shared cache.\claim{D1b}
+In our testbed this holds for the agentic class: its marginal cost changes sign with its
+reachable set, and its measured cost depends on the classes it shares the cache with.
+The exhaustive class, varied on its own volume, stays close to a constant, so the label does
+not guarantee stability either way (\cref{sec:results}).\claim{D1b}\claim{A1}\claim{A3}\claim{C4}\claim{A7}
+Everything that follows is a design implication that we draw from these measurements;
+none of it is a validated technology.\claim{D3}
 
 \paragraph{Classification during the transition.}
+If infrastructure wants to make class-sensitive decisions, identity alone can be
+insufficient, because the marginal effect of a class is state-dependent.\claim{D1}\claim{D3}
 Our data imply that classification remains necessary: at the knee of the testbed,
-blocking the exhaustive class by its identity lies on the frontier of served work and
-human latency (\cref{sec:r-frontier}).\claim{D2}
-They also imply that classification is not necessarily sufficient.\claim{D3}
-A policy that knows only that traffic is agentic does not necessarily hold enough
-information to estimate its marginal impact, since under the same label the marginal
-cost ranged from $-0.035$ to $+0.438$ origin requests per request
-(\cref{sec:r-sign}).\claim{D1}
+blocking the exhaustive class by its identity lies on the empirical work/latency frontier
+sampled at that operating point (\cref{sec:r-frontier}).\claim{D2}
+They also imply that it is not necessarily sufficient: a policy that knows only that
+traffic is agentic does not necessarily hold enough information to estimate its marginal
+impact, since under the same label the marginal cost ranged from $-0.035$ to $+0.438$
+origin requests per request (\cref{sec:r-sign}).\claim{D1}
 
 \paragraph{Three quantities beside the label.}
 As design implications, three quantities would complement the class label.\claim{D4}\claim{D5}\claim{D6}
 The first implication, and the one with the strongest support, is that infrastructure
-should be able to observe or derive the width of the working set of a class, since that
-width alone changed the sign of the marginal cost.\claim{D4}\claim{A1}
-The implication asks for a quantity that request logs already contain: we computed it
-over a short window for the clients of our honeypot (\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
+should be able to observe or derive how wide a class's set of requested objects is,
+since the width of the reachable set alone changed the sign of the marginal
+cost.\claim{D4}\claim{A1}
+What infrastructure can observe is the windowed working set, the counterpart of the
+reachable set in request logs: we computed it over a short window for the clients of our
+honeypot (\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
 The second implication is that it should know the marginal cost of the class in the
 current state of the shared cache, because at the operating point of the frontier one
 blocked exhaustive request frees about 0.82 origin requests and one agentic request about
@@ -33,32 +43,31 @@ blocked exhaustive request frees about 0.82 origin requests and one agentic requ
 The third implication is that it should know the effect of a class on the other
 workloads, because the human p99 rose by 37.0\,ms while the human miss ratio changed only
 by a factor of 1.06 (\cref{sec:m-human}).\claim{D6}\claim{B5}
-A fourth implication, weaker because our evidence for it is only indirect, concerns the
-state of the shared cache and the pressure on resources.\claim{D7}
 
 \paragraph{From evidence to properties.}
-\Cref{tab:bridge} restates these implications as four properties, P1 to P4, and sets
-each one against the evidence that motivates it, the mechanism in use today and where
-that mechanism falls short; it is a statement of implications, not an
-architecture.\claim{D4}\claim{D5}\claim{D6}\claim{D7}
+\Cref{tab:bridge} restates these implications as three properties, P1 to P3, and sets
+each one against the evidence that motivates it, the decision it would enable, the closest
+existing line of work and where that line of work falls short for our evidence; it is a
+statement of implications, not an architecture.\claim{D4}\claim{D5}\claim{D6}
 
 \begin{table}[t]
-\caption{Design implications, not validated technology: what infrastructure would need to
-know (P1--P4 = claims D4--D7; P4 is weakly supported), the evidence behind each, the
-mechanism in use today and where it falls short for the evidence we have.}
+\caption{Design implications, not validated technology (P1--P3 = claims D4--D6): the
+evidence behind each property, what infrastructure would need to know, the decision it
+would enable, the closest existing line of work and where it falls short for our evidence.}
 \label{tab:bridge}
 \centering\scriptsize
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X
   >{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X
-  >{\raggedright\arraybackslash}X@{}}
+  >{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
 \toprule
- & Evidence & What infrastructure would need to know & Mechanism in use today &
-   Where it falls short \\
+ & Evidence & What infrastructure would need to know & Decision enabled &
+   Closest existing line of work & Where it falls short \\
 \midrule
-P1 & Same class and volumes, marginal from $-0.035$ to $+0.438$ as only the working set
+P1 & Same class and volumes, marginal from $-0.035$ to $+0.438$ as only the reachable set
   widens (\cref{sec:r-sign}) &
-  Width of the class's working set over a window &
+  Width of the class's windowed working set &
+  Treat clients under one label differently when their width differs &
   Identity: declared or verified bot categories with per-category
   actions~\cite{cloudflare2026options}; signed requests~\cite{ietf-webbotauth} &
   The label is the same at both ends of the range \\
@@ -66,34 +75,45 @@ P1 & Same class and volumes, marginal from $-0.035$ to $+0.438$ as only the work
 P2 & Blocking frees ${\sim}0.82$ (exhaustive) and ${\sim}0.10$ (agentic) origin
   requests per request (\cref{sec:m-block}) &
   Marginal cost of the class in the current cache state &
-  Cache partitioning by the gradient of hit or miss ratio in allocated
-  memory~\cite{qureshi2006ucp,cidon2016cliffhanger} &
-  Varies allocation, not the composition of the traffic that shares the cache \\
+  Choose which class to block or defer at the current operating point &
+  Capacity-marginal cache management~\cite{qureshi2006ucp,cidon2016cliffhanger} &
+  Gives the value of more memory for a workload, not the origin work of one more request
+  of a class \\
 \addlinespace
 P3 & Human p99 $+37.0$\,ms with human miss ratio $\times 1.06$ (\cref{sec:m-human}) &
   Effect of a class on the other workloads &
+  Protect a workload whose tail latency degrades while its hit ratio does not &
   Hit ratio of human traffic as the measure of harm~\cite{zhang2025,cloudflare2026cache};
   a separate cache layer for AI traffic~\cite{cloudflare2026cache} &
   The harm arrives as origin load, which the human hit ratio barely shows \\
-\addlinespace
-P4 (weak) & Indirect only &
-  Shared state and pressure on resources &
-  Load- or latency-driven admission
-  control~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} &
-  Not measured in this paper \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-% Phase 2 of the simulator (docs/PREREG-simulatore-fase2.md) tests whether P1-P3 hold
-% beyond LRU and the synthetic sessions. Write only after its RISULTATO document and an S
-% row in claims.md; SIMULATO, never MISURATO.
+\subsection{Open questions}\label{sec:open}
+Two questions remain open, and we state them as such.
+The first is how to estimate P2 online, without the controlled experiments we used to
+measure it; capacity-marginal estimators such as miss-ratio curves answer a different
+question (\cref{sec:rw}).\claim{D5}
+The second is the weakest of our implications: that infrastructure would also need the
+state of the shared cache and the pressure on resources, which our evidence supports only
+indirectly; load- and latency-driven admission
+control~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} is the
+closest line of work, and we did not measure this property.\claim{D7}
+
+% Phase 2 of the simulator (docs/PREREG-simulatore-fase2.md, RISULTATO-simulatore-fase2.md,
+% claims S2-S6) tests whether P1-P3 hold beyond LRU and the synthetic sessions. Write only
+% from the S rows; SIMULATO, never MISURATO.
 \todo{simulator phase 2: do P1--P3 hold beyond this cache policy and generator?}
 
-\paragraph{An open question.}
-To our knowledge, the question these implications open has not been posed in this form:
-whether admission, placement and priority can move from deciding on identity to deciding
-on state and cost.\claim{D1}\claim{D3}
+% "We did not find prior work": docs/VERIFICHE-chiuse.md (systematic search, 2025-2026) and
+% docs/UNDERTOW-CONTESTO.md §7; not a claims.md row.
+We did not find prior work that jointly measures, in one shared cache, the marginal origin
+cost of one more request of a class, its dependence on the width of the class's reachable
+set, the overlap between classes as a controlled variable, and the effect on the tail
+latency of the other classes.
+Whether admission, placement and priority can move from deciding on identity to deciding
+on state and cost is the question these implications open.\claim{D1}\claim{D3}
 % Section E rows: "current architecture inadequate" and "new protocol or architecture
 % needed", both NON DIMOSTRATO.
 We do not claim that current infrastructure is inadequate or that a new protocol or

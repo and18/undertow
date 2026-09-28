@@ -2,6 +2,8 @@
 **Versione 3.6, 26 settembre 2026.** Sostituisce la v3.5, la v3.4, la v3.3, la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 
+**Aggiunto il 28 settembre (v3.6, revisione esterna del testo).** Riga **D1b**: la frase cardine «A traffic class does not have a stable marginal cost independent of the state of the shared cache», SOSTENUTO da A1, A3, C4, con A7 come limite dichiarato. Nessun numero nuovo, nessuno stato cambia. Nel paper la variabile manipolata si chiama *reachable set* (oggetti che il generatore puo' toccare), distinta dal working set osservato in finestra (C3) e dall'occupazione in byte.
+
 **Corretto il 28 settembre (v3.6, solo fonte).** Riga E su SemDN: «HotNets 2026» diventa «preprint arXiv:2609.22486»; la sede non e' confermata da fonti primarie (`docs/VERIFICHE-chiuse.md`, bibliografia del 28 settembre). Nessuno stato cambia.
 
 **Corretto il 28 settembre (v3.6, solo unita').** C2: oggetto medio **24,9 KiB**, non KB (`tools/cache_capacity.py` divide i byte occupati dello storage per il numero medio di oggetti e per 1024). Nessun valore cambia.
@@ -183,6 +185,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | # | claim | stato | evidenza | nota |
 |---|---|---|---|---|
 | D1 | Una politica che sa solo «questo e' traffico agentico» non possiede necessariamente informazione sufficiente a stimarne l'impatto marginale | **SFIDATO** | A1: stessa etichetta, marginale da −0,035 a +0,438 | **claim centrale del paper** |
+| D1b | **Frase cardine (D1 riformulata).** «A traffic class does not have a stable marginal cost independent of the state of the shared cache.» Va letta come esistenza, non come legge per ogni classe: nel banco la classe agentica, a parita' di etichetta, volumi, cache e corpus, ha un marginale che cambia segno col reachable set (A1), e il costo misurato di una classe dipende dalle altre classi che condividono la cache (A3, C4); la classe esaustiva, variata sul proprio volume, resta invece quasi piatta a ~0,98 (A7). Nel paper va sempre accompagnata da questo limite | **SOSTENUTO** | A1, A3, C4 (con A7 come limite: l'etichetta non garantisce la stabilita', non tutte le classi variano); B1 | da usare in apertura di Implications; non sostituisce D1 (SFIDATO) |
 | D2 | La classificazione resta necessaria e utile: al ginocchio il blocco per identita' della classe esaustiva e' sulla frontiera | **MISURATO** | politica B | impedisce la lettura «la classificazione fallisce» |
 | D3 | Durante la transizione la classificazione puo' essere necessaria ma **non e' necessariamente sufficiente** | **SOSTENUTO** | D1 + D2 | formulazione da usare, non piu' forte |
 | D4 | L'infrastruttura dovrebbe poter osservare o derivare l'**ampiezza dell'insieme di lavoro** di una classe | **IMPLICAZIONE** | A1 | la piu' sostenuta |

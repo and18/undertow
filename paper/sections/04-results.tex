@@ -2,7 +2,7 @@
 % Only MISURATO rows. Each subsection: one finding, stated first; the figure; the numbers
 % with SE; the caveat that prevents the wrong reading. No mechanism here.
 
-\subsection{The marginal cost of one class changes sign with its working set}\label{sec:r-sign}
+\subsection{The marginal cost of one class changes sign with its reachable set}\label{sec:r-sign}
 % Finding \claim{A1}: -0.0353 +/- 0.0053 -> +0.1605 +/- 0.0067 -> +0.4383 +/- 0.0055
 %   origin requests per added agentic request, same class, volumes, cache, corpus.
 % Replication (claims v3.6): the scope-0.02 point only, -0.0405 +/- 0.0061, t = -6.60.
@@ -11,20 +11,22 @@
 %   +0.392 +/- 0.158 [+0.0215, +0.7625] and +0.238 +/- 0.110 [-0.0601, +0.5361]
 %   (\claim{A9}) — "reduces origin work" is retracted (R2).
 % Honeypot placement by windowed working set (C3), details in Appendix.
-The marginal origin cost of the agentic class changes sign as its working set grows.
+In our testbed, under the separated mapping and the three scopes, the marginal origin
+cost of the agentic class changes sign as its reachable set grows.\claim{A1}
 When the agentic class is raised from 12 to 36 req/s, each added request costs
-$-0.0353 \pm 0.0053$ origin requests with a working set of 0.19$\times$ the cache,
+$-0.0353 \pm 0.0053$ origin requests with a reachable set of 0.19$\times$ the cache,
 $+0.1605 \pm 0.0067$ at 0.58$\times$, and $+0.4383 \pm 0.0055$ at 1.93$\times$
 (\cref{fig:sign}).\claim{A1}
 Class, volumes, cache and corpus are identical across the three configurations; only
-the working set changes.\claim{A1}
+the reachable set changes.\claim{A1}
 
-In our testbed, a working set is the set of objects from which our load generator draws
-the requests of a class, with sessions built as described in \cref{sec:m-classes}.
+The reachable set of a class is the set of objects from which our load generator can draw
+its requests (\cref{sec:m-classes}); it is neither the set of objects requested within a
+given window nor the bytes the class occupies in the cache.
 We set the agentic scope to 0.02, 0.06 and 0.20 of the corpus, that is 1,017, 3,051 and
 10,170 objects, against a measured cache capacity of 5,263 objects.\claim{A1}\claim{C2}
 At each scope the agentic rate goes from 12 to 36 req/s, the human and exhaustive classes
-stay at 55 and 28 req/s, working sets are mapped separately across classes, and each point
+stay at 55 and 28 req/s, reachable sets are mapped separately across classes, and each point
 is the mean of 5 runs.\claim{A1}
 The marginal cost is the change in origin req/s divided by the change in the configured
 offered rate of the class (\cref{sec:m-marginal}).
@@ -50,9 +52,9 @@ $+0.54$), an interval that contains zero.\claim{A9}
 A negative marginal cost therefore does not mean that agentic traffic lowers total origin
 work in this configuration: adding it is not a saving.\claim{A9}
 
-By working-set width alone, the smallest scope is closest to the agentic clients of our
-public honeypot: at 12 agentic req/s it touches about 693 distinct objects in a 143 s
-window, against a 90th percentile of 670 for honeypot agentic clients
+By windowed working set, the observed quantity rather than the reachable set, the smallest
+scope is closest to the agentic clients of our public honeypot: at 12 agentic req/s it
+touches about 693 distinct objects in a 143 s window, against a 90th percentile of 670 for honeypot agentic clients
 (Appendix, \cref{fig:a-honeypot}).\claim{C3}
 It is not close on contiguity.\claim{C5}
 Measured the same way on both sides, as the share of consecutive requests within one
@@ -62,7 +64,7 @@ on the honeypot and a k6 virtual user in the generator
 (\cref{sec:limitations}).\claim{C5}
 
 \Cref{sec:r-accounting} asks where this change of sign comes from, term by term.\claim{B2}
-\undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus working set}{fig:sign}
+\undertowfig{FIG-01_marginal-cost-vs-working-set}{Marginal origin cost versus reachable set}{fig:sign}
 
 \subsection{Where the change comes from}\label{sec:r-accounting}
 % \claim{B2}: in 12->36 the largest term is the agentic requests already present (-1.622);
@@ -95,7 +97,7 @@ second is not read alone: from 0 to 36 req/s, the net change in origin work is n
 negative (\cref{sec:r-sign}).\claim{A9}
 \undertowfig{FIG-05_accounting-decomposition}{Accounting decomposition of the change in origin work}{fig:accounting}
 
-\subsection{Composition moves one class, not the others}\label{sec:r-asymmetry}
+\subsection{Raising one class moves that class, not the others}\label{sec:r-asymmetry}
 % \claim{A2}: agentic 4.05x, exhaustive 1.03x, human 1.02x (13% -> 30% agentic share) at
 %   scope 0.02; agentic 1.62x and 1.16x at 0.06 and 0.20 (tools/class_miss_by_scope.py).
 %   Say explicitly that only the agentic volume moved (UNDERTOW-CONTESTO §4.2).
@@ -106,8 +108,9 @@ negative (\cref{sec:r-sign}).\claim{A9}
 %   "you varied only one class" objection.
 % Position against Zhang et al.: they vary composition and measure hit ratio; we measure
 %   marginal origin cost and compare three classes.
-When only the agentic volume grows, the per-request cost of the agentic class changes
-strongly and that of the other two classes barely changes.\claim{A2}
+When the offered rate of the agentic class increases while the others stay fixed, the
+per-request cost of the agentic class changes strongly and that of the other two classes
+barely changes.\claim{A2}
 Here the cost per request of a class is its miss ratio, the share of its requests that
 reaches the origin (\cref{sec:m-marginal}).\claim{A2}
 The runs are those of \cref{sec:r-sign}: only the agentic volume moves, from 12 to
@@ -142,23 +145,26 @@ Varied on its own volume, the exhaustive class stays almost flat.\claim{A7}
 The two series differ in mapping and window, so we compare the shape of their response,
 not its size.\claim{A7}
 
-Zhang et al.~\cite{zhang2025} already vary traffic composition and measure the cache hit
-ratio; what we add is the marginal origin cost and its comparison across three coexisting
-classes.\claim{A2}
-\undertowfig{FIG-02_class-asymmetry}{Sensitivity of per-request cost to composition, by class}{fig:asymmetry}
+Zhang et al.~\cite{zhang2025} already vary the share of AI traffic and measure the cache
+hit ratio; what we add is the marginal origin cost and its comparison across three
+coexisting classes.\claim{A2}
+Because the other classes stay fixed, the total offered rate grows with the class we
+raise; the design measures the response to one class's offered rate, not to its share at
+constant total.\claim{A2}
+\undertowfig{FIG-02_class-asymmetry}{Sensitivity of per-request cost to the offered rate of one class, by class}{fig:asymmetry}
 
-\subsection{A confounder: overlap between working sets}\label{sec:r-overlap}
+\subsection{A confounder: overlap between reachable sets}\label{sec:r-overlap}
 % \claim{A3}: +0.714 (t = 5.74) and +1.012 (t = 7.74) origin req/s when the agentic working
 %   set is decorrelated from the human popular head (different days); same-day
 %   replication +0.882 +/- 0.183 (t = 4.82) and +0.872 +/- 0.064 (t = 13.62). The
 %   difference between the two rates does not recur: no claim that the effect grows with
 %   the rate. Narrow wording: a bias in the experimental characterisation of a class's
 %   cost (not "we discovered free-riding").
-How cheap a class looks depends on how much its working set overlaps with the popular
+How cheap a class looks depends on how much its reachable set overlaps with the popular
 head of another class.\claim{A3}
-We measure the same configuration under two mappings of the agentic working set, with the
-same class volumes.\claim{A3}
-In the shared mapping, the agentic working set is drawn with the same permutation as the
+We measure the same configuration under two mappings of the agentic reachable set, with
+the same class volumes.\claim{A3}
+In the shared mapping, the agentic reachable set is drawn with the same permutation as the
 human one, so it coincides with the human popular head.\claim{A3}
 In the separated mapping, a different permutation removes most of this
 overlap.\claim{A3}
@@ -185,7 +191,7 @@ how much origin work a measurement attributes to the class.\claim{A3}
 It is not a property of the class, and we do not claim that it describes how agentic
 clients behave on the Web.\claim{A3}
 What it shows is that the cost measured for a class depends on a choice of the
-experiment that is easy to leave implicit: whether the working sets of different classes
+experiment that is easy to leave implicit: whether the reachable sets of different classes
 are drawn from the same popularity ranking.\claim{A3}
 For this reason the primary design of this paper uses the separated
 mapping.\claim{A1}
@@ -200,7 +206,7 @@ In the mixture of the primary design, at 13\% of the load, its miss ratio is
 0.180.\claim{C4}
 The cost of a class measured in isolation therefore does not predict its cost when it
 shares the cache with other classes.\claim{C4}
-\undertowfig{FIG-04_overlap-confounder}{Effect of working-set overlap on measured origin work}{fig:overlap}
+\undertowfig{FIG-04_overlap-confounder}{Effect of reachable-set overlap on measured origin work}{fig:overlap}
 
 \subsection{Consequence for admission policies}\label{sec:r-frontier}
 % \claim{A6}: blocking and deferring lie on one convex frontier (slopes 0.01 -> 102.25 ms
@@ -209,8 +215,8 @@ shares the cache with other classes.\claim{C4}
 %   more origin work than the other (A5, SOSTENUTO) is in Mechanism, not here.
 % The no-policy point (SE 48.6 ms) is not in claims.md: not stated in the text.
 At the knee of the testbed, blocking and deferring are not alternative policies: they
-lie on one convex frontier between requests served and human tail
-latency.\claim{A6}
+lie on one empirical work/latency frontier sampled at one operating point, between
+requests served and human tail latency.\claim{A6}
 We measure eight admission policies at 185 req/s, with 3 runs each
 (\cref{fig:frontier}).\claim{A6}\claim{A4}
 The policies are no policy, two blocking policies, and five budgets for deferring
@@ -218,7 +224,8 @@ exhaustive requests.\claim{A6}
 Ordered by requests served, the marginal slope of the frontier rises monotonically, from
 0.01 to 102.25 ms of human p99 per 1,000 additional requests served.\claim{A6}
 No point lies off the curve.\claim{A6}
-Blocking and deferring are therefore two parameterisations of the same trade-off.\claim{A6}
+At this operating point, blocking and deferring are therefore two parameterisations of
+the same trade-off.\claim{A6}
 
 The two blocking policies differ in requests served, not in measured latency.
 Policy B blocks the exhaustive class; policy C blocks the agentic class as

@@ -12,21 +12,24 @@ We also report the prediction that failed and the part of the mechanism that we 
 measure.
 
 \subsection{From access pattern to marginal cost}\label{sec:m-chain}
-Supported: the marginal cost of a class depends on how its volume and the width of its
-working set interact with the capacity of the shared cache, not on the label of the
-class.\claim{B1}
-We read it as a chain: the access pattern of a class sets the geometry of its working
-set, the geometry sets how the class interacts with the state of the shared cache, and
-that interaction sets the marginal cost.\claim{B1}
-The inference rests on three measurements taken together.\claim{B1}
-With the same label, volumes, cache and corpus, the agentic marginal changes sign as only
-the working set grows (\cref{sec:r-sign}).\claim{A1}
-The sensitivity of the agentic miss ratio to its own volume falls as the working set
-grows, while that of the other two classes stays small (\cref{sec:r-asymmetry}).\claim{A2}
-The exhaustive class, which never returns to a chapter before it has traversed the corpus,
-has a flat marginal of about 0.98 when its own volume is varied.\claim{A7}
-The chain would be falsified by a class with the same volume and the same working set
-that behaves differently.\claim{B1}
+% B1 is SOSTENUTO in claims.md; here only the two measured relations are stated as
+% supported, and the rest of the chain as interpretive (weaker than the row).
+The label alone does not determine marginal cost in this testbed.\claim{B1}
+Two relations are measured, and we state them as supported.\claim{B1}
+First, with the same label, volumes, cache and corpus, the agentic marginal changes sign as
+only the reachable set grows (\cref{sec:r-sign}).\claim{A1}
+Second, the per-request cost of a class responds to its own offered rate in a way that
+differs across classes: the sensitivity of the agentic miss ratio falls as the reachable
+set grows (\cref{sec:r-asymmetry}), while the exhaustive class, which never returns to a
+chapter before it has traversed the corpus, has a flat marginal of about 0.98 when its own
+offered rate is varied.\claim{A2}\claim{A7}
+The rest is interpretive: we read the two relations as parts of one chain, in which the
+access pattern of a class sets the geometry of its reachable set, the geometry sets how the
+class interacts with the state of the shared cache, and that interaction sets the marginal
+cost.\claim{B1}
+We did not measure the intermediate links separately.
+The chain would be falsified by a class with the same offered rate and the same reachable
+set that behaves differently.\claim{B1}
 
 The accounting of \cref{sec:r-accounting} shows where the change of sign sits.
 In the step from 12 to 36 agentic req/s at the smallest scope, the largest term is the
@@ -53,15 +56,15 @@ At scope 0.06 the observed value is 48\% below the prediction, outside the toler
 the quantitative prediction is rejected.\claim{B3}
 
 Interpretive: the same approximation explains the ordering qualitatively.\claim{B4}
-The wider the working set, the smaller the elasticity: 4.05 at scope 0.02, 1.62 at 0.06
+The wider the reachable set, the smaller the elasticity: 4.05 at scope 0.02, 1.62 at 0.06
 and 1.16 at 0.20, and below 2.0 at the widest scope.\claim{B4}
-In the terms of the approximation, a narrow working set lets more of a class's own
+In the terms of the approximation, a narrow reachable set lets more of a class's own
 requests return within $T_C$ as its volume grows, and a wide one less so.\claim{B4}
 This reading is consistent with the ordering but was not verified as a prediction; a
 configuration with non-monotone elasticities would contradict it.\claim{B4}
 
 \subsection{How the cost reaches the human class}\label{sec:m-human}
-Supported: when the agentic working set widens, the human class pays through origin load,
+Supported: when the agentic reachable set widens, the human class pays through origin load,
 not through lost cache hits.\claim{B5}
 At 30\% agentic share, with volumes and cache fixed, the human p99 latency rises from
 76.1 to 113.0\,ms as the scope grows from 0.02 to 0.20 ($+37.0 \pm 1.0$\,ms,
@@ -78,7 +81,7 @@ We infer the effect of load by exclusion and never measured the queue at each st
 we do not claim a channel (\cref{sec:limitations}).\claim{B6}
 
 \subsection{Why blocking by class works for one class}\label{sec:m-block}
-Supported: at the operating point of the frontier, blocking one exhaustive request frees
+Supported: at the operating point of the empirical frontier, blocking one exhaustive request frees
 about 0.82 origin requests, and blocking one agentic request about 0.10.\claim{A5}
 The inference combines the miss ratios measured at that point, the agentic marginal cost,
 and the flat marginal of about 0.98 that the exhaustive class shows when its own volume is
