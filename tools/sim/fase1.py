@@ -89,6 +89,8 @@ def sizes():
 
 
 def mean_se(v):
+    if any(math.isnan(x) for x in v):      # classe senza richieste (agentica a P0, β = 0)
+        return float("nan"), float("nan")
     return statistics.fmean(v), statistics.stdev(v) / math.sqrt(len(v))
 
 
