@@ -1,0 +1,4 @@
+# commit 79f5014; docs/PREREG-simulatore-fase2.md (emendamento 1); stato SIMULATO
+# fonte: nessun dato del lab: books.csv, chapter_sizes.csv, honeypot_contiguity.csv dal repository
+gate,rows,rows_ref,rows_different,verdict,stato
+R0,180,180,0,PASSA,SIMULATO

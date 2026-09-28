@@ -1,0 +1,7 @@
+# commit 79f5014; docs/PREREG-simulatore-fase2.md (emendamento 1); stato SIMULATO
+# fonte: nessun dato del lab: books.csv, chapter_sizes.csv, honeypot_contiguity.csv dal repository
+gate,quantity,sim,target,rule,verdict,stato
+G0-R,contiguous_pct_S12,4.2397,4.25,|x-4.25|<=0.5,PASSA,SIMULATO
+G0-R,repeated_pct_S12,19.6073,19.44,|x-19.44|<=1.0,PASSA,SIMULATO
+extra,k_share_0_1_2,0.3191;0.3555;0.3254,,senza soglia,,SIMULATO
+extra,distinct_agent_objects_seed1_REAL_GEN,979;1004,,senza soglia,,SIMULATO

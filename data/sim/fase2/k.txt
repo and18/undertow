@@ -1,0 +1,33 @@
+# commit 79f5014; docs/PREREG-simulatore-fase2.md (emendamento 1); stato SIMULATO
+# primo avvio (5c64713) fermato da MemoryError con chiavi-lettera nei test, prima di qualunque verdetto su W-TinyLFU; corretto in 79f5014
+== 1. tracce piccole, sequenze derivate a mano
+  PASSA  LRU canonica: atteso MMMHMMMM  ottenuto MMMHMMMM
+  PASSA  SIEVE lancetta e ritorno alla coda: atteso MMMHMMMHHHMMH  ottenuto MMMHMMMHHHMMH
+  PASSA  S3-FIFO visto una volta -> G, f>1 -> M: atteso MHHMMMM  ottenuto MHHMMMM
+  PASSA  S3-FIFO stato: M=[A] S=[C D E] G=[B]: atteso (['A'], ['C', 'D', 'E'], ['B'])  ottenuto (['A'], ['C', 'D', 'E'], ['B'])
+  PASSA  S3-FIFO ritorno dal fantasma in M: atteso MHHMHHMMMMM  ottenuto MHHMHHMMMMM
+  PASSA  S3-FIFO stato: M=[A B D] S=[F] G=[E]: atteso (['A', 'B', 'D'], ['F'], ['E'])  ottenuto (['A', 'B', 'D'], ['F'], ['E'])
+  PASSA  S3-FIFO reinserimento in M con freq-1: atteso HMMHM  ottenuto HMMHM
+  PASSA  W-TinyLFU respinto contro vittima piu' frequente: atteso MHMHMHMHM  ottenuto MHMHMHMHM
+  PASSA  W-TinyLFU dopo il rifiuto: E assente, A in protetta: atteso (False, True, ['B'])  ottenuto (False, True, ['B'])
+  PASSA  W-TinyLFU pareggio ammesso (>=), poi B rientra: atteso MM  ottenuto MM
+  PASSA  W-TinyLFU stato: prova=[B]: atteso ['B']  ottenuto ['B']
+  PASSA  W-TinyLFU scansione non sposta la protetta: atteso MHMHMHMMMMMMHHH  ottenuto MHMHMHMMMMMMHHH
+  PASSA  W-TinyLFU vittime aggregate (AV): atteso MHMMMM  ottenuto MHMMMM
+  PASSA  W-TinyLFU stato: Z assente, protetta [C A B]: atteso (False, ['C', 'A', 'B'])  ottenuto (False, ['C', 'A', 'B'])
+
+== 2. invarianti su tracce casuali (10 000 richieste, dimensioni reali)
+  PASSA  LRU capienza 5000000: violazioni 0, byte contati 4993303 = occupati 4993303
+  PASSA  SIEVE capienza 5000000: violazioni 0, byte contati 4984693 = occupati 4984693
+  PASSA  S3FIFO capienza 5000000: violazioni 0, byte contati 4997239 = occupati 4997239
+  PASSA  WTinyLFU capienza 5000000: violazioni 0, byte contati 4982890 = occupati 4982890
+  PASSA  LRU capienza 134217728: violazioni 0, byte contati 126098060 = occupati 126098060
+  PASSA  SIEVE capienza 134217728: violazioni 0, byte contati 126098060 = occupati 126098060
+  PASSA  S3FIFO capienza 134217728: violazioni 0, byte contati 126098060 = occupati 126098060
+  PASSA  WTinyLFU capienza 134217728: violazioni 0, byte contati 126098060 = occupati 126098060
+  PASSA  LRU capienza = tutto il corpus: miss 4870, obbligatori 4870
+  PASSA  SIEVE capienza = tutto il corpus: miss 4870, obbligatori 4870
+  PASSA  S3FIFO capienza = tutto il corpus: miss 4870, obbligatori 4870
+  PASSA  WTinyLFU capienza = tutto il corpus: miss 4870, obbligatori 4870
+
+CANCELLO K: PASSA
