@@ -2,8 +2,8 @@
 % Section D of claims.md only. Every sentence states that it is a design implication, not a
 % validated technology. P1-P4 = D4-D7 (D7 weak). D8 is in Related Work.
 % No \claim inside the table (marginpar in a float): the claims of each row are in the
-% sentence that introduces the table. \todo{verify} in "current mechanism" wherever the
-% source is not verified on the primary (docs/VERIFICHE-chiuse.md).
+% sentence that introduces the table. All sources of "current mechanism" verified on the
+% primary, 28 Sep 2026 (docs/VERIFICHE-chiuse.md).
 % Not written (candidate, NOT in claims.md): fixed per-request price (pay-per-crawl)
 % against a cost that changes sign. Enters only with a D row and a primary source.
 Everything in this section is a design implication that we draw from the measurements; none
@@ -60,7 +60,7 @@ P1 & Same class and volumes, marginal from $-0.035$ to $+0.438$ as only the work
   widens (\cref{sec:r-sign}) &
   Width of the class's working set over a window &
   Identity: declared or verified bot categories with per-category
-  actions~\cite{cloudflare2026options}; signed requests~\cite{ietf-webbotauth}\todo{verify} &
+  actions~\cite{cloudflare2026options}; signed requests~\cite{ietf-webbotauth} &
   The label is the same at both ends of the range \\
 \addlinespace
 P2 & Blocking frees ${\sim}0.82$ (exhaustive) and ${\sim}0.10$ (agentic) origin
@@ -78,8 +78,8 @@ P3 & Human p99 $+37.0$\,ms with human miss ratio $\times 1.06$ (\cref{sec:m-huma
 \addlinespace
 P4 (weak) & Indirect only &
   Shared state and pressure on resources &
-  Load- or latency-driven admission control (Breakwater, DAGOR, Protego, TopFull)
-  \todo{verify} &
+  Load- or latency-driven admission
+  control~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} &
   Not measured in this paper \\
 \bottomrule
 \end{tabularx}

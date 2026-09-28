@@ -1,19 +1,31 @@
 \section{Background and related work}\label{sec:related}
-% Sources: docs/VERIFICHE-chiuse.md (verified: Fagin, Che, Fricker, UCP, Cliffhanger,
-% FairRide, Zhang et al., Cloudflare taxonomy of 1 Jul 2026, IETF drafts) and
-% docs/UNDERTOW-CONTESTO.md §7. \todo{verify} marks every source not yet verified on the
-% primary: the proposals attributed to Zhang et al., the "unique URLs" framing of the
-% Cloudflare blog, SemDN (bib entry "check"). Cloudflare blog of 2 Apr 2026 (Wildani and
-% Ahmad): date, SIEVE/S3-FIFO "initial experiments" sentence and "separate cache layer for
-% AI traffic" (long term) verified on the page, docs/PREREG-simulatore-fase2.md, amendment 1.
-% Not in references.bib (no \cite until added and verified): Breakwater, DAGOR, Protego,
-% TopFull, Denning 1968, Mattson et al. 1970, SHARDS, Counter Stacks.
+% Sources: every cited entry verified on its primary source; outcomes and quotes in
+% docs/VERIFICHE-chiuse.md ("Bibliografia per il .bbl di PAM", 28 Sep 2026). Zhang et al.
+% remedies from the authors' PDF (sections 3.1, 3.2); Cloudflare posts of 2 Apr and 1 Jul
+% 2026 from the pages; SemDN from arXiv (venue not stated there: cited as a preprint).
 
 \subsection{Background}\label{sec:background}
-% Cloudflare taxonomy Search / Agent / Training (1 Jul 2026, cloudflare2026options,
-% verified); the 15 Sep 2026 change is an announcement, for new domains, on ad pages only
-% (section E: never "default block"). IETF webbotauth / aipref drafts (C6).
-\todo{background}
+% Section E: the 15 Sep 2026 change is an announcement for new domains and ad pages only;
+% never "default block". No confirmation that it took effect (VERIFICHE §7).
+Operators and standards bodies increasingly treat automated traffic by its declared
+purpose.
+Since 1 July 2026, Cloudflare lets site owners manage AI traffic by three use cases:
+Search; Agent, a fetcher that visits a site to complete a job, often with a person
+waiting; and Training~\cite{cloudflare2026options}.
+The same post announced that, from 15 September 2026, domains newly onboarding to
+Cloudflare would have the Training and Agent categories blocked on pages that display
+ads, with Search allowed.
+It is an announcement that concerns new domains and pages with ads, and we found no
+primary source confirming that it took effect.
+At the IETF, the Web Bot Auth working group specifies HTTP message signatures for
+automated traffic, built on RFC~9421 and carried in the \texttt{Signature-Agent} and
+\texttt{Signature-Input} headers~\cite{ietf-webbotauth}.
+The AI Preferences working group defines a vocabulary for preferences on AI training, AI
+use and search~\cite{ietf-aipref-vocab}.
+On our honeypot, 3.83\% of requests carry a Web Bot Auth signature, and none of them
+comes from the declared agents.\claim{C6}
+All these mechanisms act on who the traffic is and what it declares; this paper asks
+what that tells an operator about the cost of the traffic.\claim{D1}
 
 \subsection{Related work}\label{sec:rw}
 \paragraph{Automated traffic and web caches.}
@@ -22,12 +34,14 @@ Apache Traffic Server and Memcached, and measure the overall hit ratio and that 
 traffic.
 Their workloads fix the overlap between human and AI content, at about 20\% in the
 Wikimedia setup and 10\% in the synthetic trace, and do not vary it.
+They show that scan-resistant eviction policies such as SIEVE, S3-FIFO and ARC keep the
+hit ratio of human-like traffic high under AI interference, and propose a composable
+hierarchy of differentiated tiers for human and AI traffic, with a shared tier for the
+content that both request, instead of strict separation.
 A Cloudflare post~\cite{cloudflare2026cache} reports initial experiments in which SIEVE or
 S3-FIFO in place of LRU could let human traffic keep the same hit rate with or without AI
 traffic, and expects a separate cache layer for AI traffic to be the best way forward in the
 long term.
-Zhang et al. also discuss remedies such as newer eviction policies, learned caching and
-admission control\todo{verify}.
 We agree on the exhaustive class: varied on its own volume, it costs about 0.98 origin
 requests per added request in our testbed.\claim{A7}
 We add four things.
@@ -41,6 +55,13 @@ Third, the overlap that these workloads fix changes the measured cost of a class
 Fourth, in our testbed the hit ratio of the exhaustive class rises from 0.179 to 0.200 as
 the agentic share grows under the separated mapping, so isolating the agentic class in a
 separate cache would remove a measured benefit (supported).\claim{D8}
+The separate layer that Cloudflare envisions is organised differently: it routes human and
+AI traffic to distinct tiers and, for AI traffic, varies the handling by task and by the
+latency the task tolerates, from caches with moderate response times for
+retrieval-augmented generation to deep tiers near the origin, or delayed service, for
+training crawls~\cite{cloudflare2026cache}.
+Our evidence says only that, in our testbed, isolating the agentic class has a measured
+cost; it does not say that their design is wrong.\claim{D8}
 
 \paragraph{Allocation, sharing and feedback.}
 Utility-based cache partitioning~\cite{qureshi2006ucp} and Cliffhanger~\cite{cidon2016cliffhanger}
@@ -51,25 +72,26 @@ FairRide~\cite{pu2016fairride} treats free-riding in a shared cache as a problem
 fairness and incentives; we treat the overlap between working sets as a bias in the
 measured cost of a class.\claim{A3}
 Admission control driven by feedback on load or latency is well established, for example
-in Breakwater, DAGOR, Protego and TopFull \todo{add to references.bib and verify}.
+in Breakwater~\cite{cho2020breakwater}, DAGOR~\cite{zhou2018dagor},
+Protego~\cite{cho2023protego} and TopFull~\cite{park2024topfull}.
 Feedback control is not a contribution of this paper, and we do not propose a controller.
 
 \paragraph{Working sets, characteristic time and miss-ratio curves.}
-The working set of a program \todo{cite and verify: Denning 1968} is the concept we use
-for a class of traffic.
+The working set of a program~\cite{denning1968} is the concept we use for a class of
+traffic.
 The characteristic-time approximation of LRU is due to Fagin~\cite{fagin1977}, was
 rediscovered and named by Che et al.~\cite{che2002}, and was formalised by Fricker et
 al.~\cite{fricker2012}.
 We use it to interpret the ordering of our results, and its quantitative prediction on
 our testbed failed (\cref{sec:m-tc}).\claim{B3}\claim{B4}
-Stack algorithms and their sampled approximations, such as SHARDS
-\todo{cite and verify: Mattson et al. 1970, SHARDS, Counter Stacks}, estimate the miss
-ratio as a function of cache size; we measure how the cost of one class changes with the
+Stack algorithms~\cite{mattson1970} and their approximations, SHARDS~\cite{waldspurger2015shards}
+and Counter Stacks~\cite{wires2014counterstacks}, estimate the miss ratio as a function of
+cache size; we measure how the cost of one class changes with the
 composition of the traffic and the width of its working set.
 
 \paragraph{Delivery architectures for agents.}
-SemDN~\cite{hua2026semdn}\todo{verify} proposes a delivery architecture that retrieves
-and caches content at semantic granularity for LLM agents.
+SemDN~\cite{hua2026semdn} proposes a hierarchical edge infrastructure that indexes and
+caches web content at the granularity of chunks for LLM agents.
 We do not propose a delivery architecture, and we have not tested our findings on
 SemDN.
 We ask a different question: whether, inside a shared infrastructure, the cost of a class

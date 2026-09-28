@@ -176,3 +176,37 @@ occupato.
 | **C6** | aggiungere il riferimento `draft-ietf-webbotauth-httpsig-protocol-00`, 1 settembre 2026, RFC 9421 |
 | **nuova E** | «Il cambiamento Cloudflare del 15 settembre 2026 e' un blocco di default generalizzato» → **RESPINTO**: vale per i nuovi domini e solo sulle pagine con annunci, ed e' un annuncio senza conferma di entrata in vigore |
 | **nuova apertura** | «Nessun lavoro precedente misura il costo per classe al variare dell'insieme di lavoro» → **SOSTENUTO con riserva**: resta da leggere arXiv 2609.22486 |
+
+---
+
+## Bibliografia per il .bbl di PAM — verifiche del 28 settembre 2026
+
+PAM valida i riferimenti dal `.bbl`: ogni voce citata nel paper e' stata controllata sulla
+fonte primaria (autori, titolo, sede, anno, pagine, DOI). Fonti: Crossref (API `works`),
+pagine delle presentazioni USENIX, pagine dei post Cloudflare (metadati HTML), testo degli
+Internet-Draft su ietf.org, pagina arXiv, PDF dell'autore per Zhang et al. Nessuna voce e'
+stata aggiunta da memoria.
+
+| voce | esito | dettagli |
+|---|---|---|
+| `cho2020breakwater` | **VERIFICATA** (USENIX) | Cho, Saeed, Fried, Park, Alizadeh, Belay, «Overload Control for µs-scale RPCs with Breakwater», OSDI '20, pp. 299-314 |
+| `zhou2018dagor` | **VERIFICATA** (Crossref) | Zhou, Chen, Lin, Wang, She, Liu, Gu, Ooi, Yang, «Overload Control for Scaling WeChat Microservices», SoCC '18, pp. 149-161, doi 10.1145/3267809.3267823 |
+| `cho2023protego` | **VERIFICATA** (USENIX) | Cho, Saeed, Park, Alizadeh, Belay, «Protego: Overload Control for Applications with Unpredictable Lock Contention», NSDI '23, pp. 725-738 |
+| `park2024topfull` | **VERIFICATA** (Crossref) | Park, Park, Jung, Lim, Yeo, Han, «TopFull: An Adaptive Top-Down Overload Control for SLO-Oriented Microservices», SIGCOMM '24, pp. 876-890, doi 10.1145/3651890.3672253 |
+| `denning1968` | **VERIFICATA** (Crossref) | CACM 11(5):323-333, 1968, doi 10.1145/363095.363141 (esiste anche la versione SOSP '67; si cita la rivista) |
+| `mattson1970` | **VERIFICATA** (Crossref) | Mattson, Gecsei, Slutz, Traiger, IBM Systems Journal 9(2):78-117, 1970, doi 10.1147/sj.92.0078 |
+| `waldspurger2015shards` | **VERIFICATA** (USENIX) | Waldspurger, Park, Garthwaite, Ahmad, «Efficient MRC Construction with SHARDS», FAST '15, pp. 95-110 |
+| `wires2014counterstacks` | **VERIFICATA** (USENIX) | Wires, Ingram, Drudi, Harvey, Warfield, «Characterizing Storage Workloads with Counter Stacks», OSDI '14, pp. 335-349; l'abstract dice che produce MRC approssimate |
+| `cloudflare2026cache` | **VERIFICATA** (pagina) | titolo «Why we're rethinking cache for the AI era», 2 aprile 2026, autori **Avani Wildani e Suleman Ahmad** (metadati `blogAuthor`). Livello separato: «routes human and AI traffic to distinct tiers»; per l'AI «cache handling could vary by task type»: RAG e riassunti in tempo reale su cache con capienza maggiore e latenza moderata, crawl di training su tier profondi (SSD lato origine) o differiti. Anche: esperimenti su algoritmi basati su ML |
+| `cloudflare2026options` | **VERIFICATA** (pagina) | «Your site, your rules: new AI traffic options for all customers», 1 luglio 2026, autori Jin-Hee Lee e Bryan Becker. Il post stesso annuncia al futuro («we'll be setting») i default del 15 settembre: nuovi domini, Training e Agent bloccati sulle pagine con annunci, Search permesso. Conferma di entrata in vigore: non cercata di nuovo (resta quanto al §7) |
+| `ietf-webbotauth` | **VERIFICATA**, **titolo corretto** | «HTTP Message Signatures for automated traffic» (non «for Bots»), T. Meunier (Cloudflare), S. Major (Google), 1 settembre 2026; usa `Signature-Agent` e RFC 9421 |
+| `ietf-aipref-vocab` | **VERIFICATA**, **data corretta** | «A Vocabulary For Expressing AI Usage Preferences», P. Keller, M. Thomson (Ed.), **14 settembre 2026** (non 13, come scritto al §8); categorie AI Training, AI Use, Search |
+| `hua2026semdn` | **VERIFICATA come preprint**; **sede NON confermata** | Peichun Hua, Yunming Xiao, arXiv:2609.22486, 18 settembre 2026. La pagina arXiv **non indica HotNets** e la lista degli accettati di HotNets 2026 non e' pubblica: citato come preprint arXiv. La lacuna della sezione precedente e' chiusa per l'abstract (letto), non per il testo completo. **Da allineare:** la riga E di `claims.md` scrive «HotNets 2026» |
+| `zhang2025` | **VERIFICATA**, pagine aggiunte | SoCC '25, pp. 535-542. Rimedi letti nel PDF dell'autore (§3.1, §3.2): politiche resistenti alle scansioni (SIEVE, S3-FIFO, ARC) come filtri impliciti; gerarchia «composable» di tier differenziati con un tier condiviso per i contenuti richiesti da entrambi, «instead of strict separation»; controllori adattivi di admission, eviction e refresh. Il «learned caching» e' del blog Cloudflare, non di Zhang et al.: tolto da loro |
+| `fagin1977`, `che2002` | **VERIFICATE** (Crossref), DOI aggiunti | 10.1016/S0022-0000(77)80014-7; 10.1109/JSAC.2002.801752 |
+| `qureshi2006ucp` | **VERIFICATA**, **titolo completato** | «Utility-Based Cache Partitioning: A Low-Overhead, High-Performance, Runtime Mechanism to Partition Shared Caches», MICRO '06, pp. 423-432, doi 10.1109/MICRO.2006.49 |
+| `cidon2016cliffhanger`, `pu2016fairride` | **VERIFICATE** (USENIX), pagine aggiunte | NSDI '16, pp. 379-392 e 393-406 |
+| `fricker2012` | **PARZIALE** | autori, titolo e anno su arXiv 1202.3974; la sede ITC 24 resta quella della verifica precedente (§1-2) e **non e' stata riconfermata**: IEEE Xplore e dblp rifiutano l'accesso automatico, il PDF arXiv non la indica. Mancano pagine e DOI: **da completare da browser** |
+
+Voci del bib non citate nel paper, quindi assenti dal `.bbl`: `megiddo2003arc`, `jiang2002lirs`,
+`johnson1994twoq`, `liu2025somesite`, `tene-latency` (le ultime due ancora «check»).

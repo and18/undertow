@@ -1,50 +1,59 @@
-% Verified on primary sources: docs/VERIFICHE-chiuse.md and docs/UNDERTOW-CONTESTO.md §7.
-% Fields marked "check" still need page numbers or exact metadata before submission.
+% Verified on primary sources: docs/VERIFICHE-chiuse.md (sections "Letteratura" and
+% "Bibliografia per il .bbl di PAM", 28 Sep 2026) and docs/UNDERTOW-CONTESTO.md §7.
+% Entries still marked "check" are not cited in the paper and do not reach the .bbl.
 
 @article{fagin1977,
   author  = {Ronald Fagin},
   title   = {Asymptotic Miss Ratios over Independent References},
   journal = {Journal of Computer and System Sciences},
-  volume  = {14}, number = {2}, pages = {222--250}, year = {1977}}
+  volume  = {14}, number = {2}, pages = {222--250}, year = {1977},
+  doi     = {10.1016/S0022-0000(77)80014-7}}
 
 @article{che2002,
   author  = {Hao Che and Ye Tung and Zhijun Wang},
   title   = {Hierarchical Web Caching Systems: Modeling, Design and Experimental Results},
   journal = {IEEE Journal on Selected Areas in Communications},
-  volume  = {20}, number = {7}, pages = {1305--1314}, year = {2002}}
+  volume  = {20}, number = {7}, pages = {1305--1314}, year = {2002},
+  doi     = {10.1109/JSAC.2002.801752}}
 
 @inproceedings{fricker2012,
   author    = {Christine Fricker and Philippe Robert and James Roberts},
   title     = {A Versatile and Accurate Approximation for {LRU} Cache Performance},
   booktitle = {24th International Teletraffic Congress (ITC 24)},
   year      = {2012}, note = {arXiv:1202.3974}}
+% fricker2012: authors, title, year verified on arXiv (28 Sep 2026); venue ITC 24 from the
+% earlier verification (VERIFICHE §1-2), not reconfirmed: IEEE Xplore and dblp refuse
+% automated access. Pages and DOI still to add from a browser.
 
 @inproceedings{zhang2025,
   author    = {Yazhuo Zhang and Jinqing Cai and Avani Wildani and Ana Klimovic},
   title     = {Rethinking Web Cache Design for the {AI} Era},
-  booktitle = {ACM Symposium on Cloud Computing (SoCC '25)},
-  year      = {2025}, doi = {10.1145/3772052.3772255}}
+  booktitle = {Proceedings of the 2025 ACM Symposium on Cloud Computing (SoCC '25)},
+  pages     = {535--542}, year = {2025}, doi = {10.1145/3772052.3772255}}
 
-@inproceedings{hua2026semdn,
-  author    = {Hua and Xiao},
-  title     = {Semantics Delivery Network: Rethinking Web Retrieval Infrastructure for {LLM} Agents},
-  booktitle = {HotNets '26},
-  year      = {2026}, note = {arXiv:2609.22486. check: full author names}}
+@misc{hua2026semdn,
+  author       = {Peichun Hua and Yunming Xiao},
+  title        = {{Semantics Delivery Network}: Rethinking Web Retrieval Infrastructure for {LLM} Agents},
+  howpublished = {arXiv preprint arXiv:2609.22486},
+  year         = {2026}, note = {18 September 2026}}
 
 @inproceedings{qureshi2006ucp,
   author    = {Moinuddin K. Qureshi and Yale N. Patt},
-  title     = {Utility-Based Cache Partitioning},
-  booktitle = {MICRO 39}, year = {2006}}
+  title     = {Utility-Based Cache Partitioning: A Low-Overhead, High-Performance, Runtime Mechanism to Partition Shared Caches},
+  booktitle = {39th Annual IEEE/ACM International Symposium on Microarchitecture (MICRO '06)},
+  pages     = {423--432}, year = {2006}, doi = {10.1109/MICRO.2006.49}}
 
 @inproceedings{cidon2016cliffhanger,
   author    = {Asaf Cidon and Assaf Eisenman and Mohammad Alizadeh and Sachin Katti},
   title     = {Cliffhanger: Scaling Performance Cliffs in Web Memory Caches},
-  booktitle = {NSDI '16}, year = {2016}}
+  booktitle = {13th USENIX Symposium on Networked Systems Design and Implementation (NSDI '16)},
+  pages     = {379--392}, year = {2016}}
 
 @inproceedings{pu2016fairride,
   author    = {Qifan Pu and Haoyuan Li and Matei Zaharia and Ali Ghodsi and Ion Stoica},
   title     = {{FairRide}: Near-Optimal, Fair Cache Sharing},
-  booktitle = {NSDI '16}, year = {2016}}
+  booktitle = {13th USENIX Symposium on Networked Systems Design and Implementation (NSDI '16)},
+  pages     = {393--406}, year = {2016}}
 
 @inproceedings{megiddo2003arc,
   author    = {Nimrod Megiddo and Dharmendra S. Modha},
@@ -67,22 +76,79 @@
   booktitle = {IMC '25}, year = {2025}, note = {arXiv:2411.15091. check: authors}}
 
 @misc{cloudflare2026cache,
-  author = {{Cloudflare}}, title = {Why we're rethinking cache for the {AI} era},
-  howpublished = {Cloudflare blog}, year = {2026}, note = {2 April 2026}}
+  author = {Avani Wildani and Suleman Ahmad},
+  title  = {Why we're rethinking cache for the {AI} era},
+  howpublished = {Cloudflare blog, \url{https://blog.cloudflare.com/rethinking-cache-ai-humans/}},
+  year = {2026}, note = {2 April 2026}}
 
 @misc{cloudflare2026options,
-  author = {{Cloudflare}}, title = {Your site, your rules: new {AI} traffic options for all customers},
-  howpublished = {Cloudflare blog}, year = {2026}, note = {1 July 2026}}
+  author = {Jin-Hee Lee and Bryan Becker},
+  title  = {Your site, your rules: new {AI} traffic options for all customers},
+  howpublished = {Cloudflare blog, \url{https://blog.cloudflare.com/content-independence-day-ai-options/}},
+  year = {2026}, note = {1 July 2026}}
 
 @misc{ietf-webbotauth,
-  author = {{IETF webbotauth WG}}, title = {{HTTP} Message Signatures for Bots},
-  howpublished = {draft-ietf-webbotauth-httpsig-protocol-00}, year = {2026},
-  note = {1 September 2026. check: exact title}}
+  author = {Thibault Meunier and Sandor Major},
+  title  = {{HTTP Message Signatures} for automated traffic},
+  howpublished = {Internet-Draft draft-ietf-webbotauth-httpsig-protocol-00, IETF Web Bot Auth working group},
+  year = {2026}, note = {1 September 2026}}
 
 @misc{ietf-aipref-vocab,
-  author = {{IETF aipref WG}}, title = {A Vocabulary for Expressing {AI} Usage Preferences},
-  howpublished = {draft-ietf-aipref-vocab-08}, year = {2026}, note = {13 September 2026. check: exact title}}
+  author = {Paul Keller and Martin Thomson},
+  title  = {A Vocabulary For Expressing {AI} Usage Preferences},
+  howpublished = {Internet-Draft draft-ietf-aipref-vocab-08, IETF AI Preferences working group},
+  year = {2026}, note = {14 September 2026}}
 
 @misc{tene-latency,
   author = {Gil Tene}, title = {How {NOT} to Measure Latency},
   howpublished = {Talk}, note = {check: venue and year}}
+
+% ── added 28 Sep 2026, verified on primary sources (Crossref, USENIX pages) ──────────
+
+@inproceedings{cho2020breakwater,
+  author    = {Inho Cho and Ahmed Saeed and Joshua Fried and Seo Jin Park and Mohammad Alizadeh and Adam Belay},
+  title     = {Overload Control for $\mu$s-scale {RPCs} with {Breakwater}},
+  booktitle = {14th USENIX Symposium on Operating Systems Design and Implementation (OSDI '20)},
+  pages     = {299--314}, year = {2020}}
+
+@inproceedings{zhou2018dagor,
+  author    = {Hao Zhou and Ming Chen and Qian Lin and Yong Wang and Xiaobin She and Sifan Liu and Rui Gu and Beng Chin Ooi and Junfeng Yang},
+  title     = {Overload Control for Scaling {WeChat} Microservices},
+  booktitle = {Proceedings of the ACM Symposium on Cloud Computing (SoCC '18)},
+  pages     = {149--161}, year = {2018}, doi = {10.1145/3267809.3267823}}
+
+@inproceedings{cho2023protego,
+  author    = {Inho Cho and Ahmed Saeed and Seo Jin Park and Mohammad Alizadeh and Adam Belay},
+  title     = {Protego: Overload Control for Applications with Unpredictable Lock Contention},
+  booktitle = {20th USENIX Symposium on Networked Systems Design and Implementation (NSDI '23)},
+  pages     = {725--738}, year = {2023}}
+
+@inproceedings{park2024topfull,
+  author    = {Jinwoo Park and Jaehyeong Park and Youngmok Jung and Hwijoon Lim and Hyunho Yeo and Dongsu Han},
+  title     = {{TopFull}: An Adaptive Top-Down Overload Control for {SLO}-Oriented Microservices},
+  booktitle = {Proceedings of the ACM SIGCOMM 2024 Conference},
+  pages     = {876--890}, year = {2024}, doi = {10.1145/3651890.3672253}}
+
+@article{denning1968,
+  author  = {Peter J. Denning},
+  title   = {The Working Set Model for Program Behavior},
+  journal = {Communications of the ACM},
+  volume  = {11}, number = {5}, pages = {323--333}, year = {1968}, doi = {10.1145/363095.363141}}
+
+@article{mattson1970,
+  author  = {R. L. Mattson and J. Gecsei and D. R. Slutz and I. L. Traiger},
+  title   = {Evaluation Techniques for Storage Hierarchies},
+  journal = {IBM Systems Journal},
+  volume  = {9}, number = {2}, pages = {78--117}, year = {1970}, doi = {10.1147/sj.92.0078}}
+
+@inproceedings{waldspurger2015shards,
+  author    = {Carl A. Waldspurger and Nohhyun Park and Alexander Garthwaite and Irfan Ahmad},
+  title     = {Efficient {MRC} Construction with {SHARDS}},
+  booktitle = {13th USENIX Conference on File and Storage Technologies (FAST '15)},
+  pages     = {95--110}, year = {2015}}
+
+@inproceedings{wires2014counterstacks,
+  author    = {Jake Wires and Stephen Ingram and Zachary Drudi and Nicholas J. A. Harvey and Andrew Warfield},
+  title     = {Characterizing Storage Workloads with {Counter Stacks}},
+  booktitle = {11th USENIX Symposium on Operating Systems Design and Implementation (OSDI '14)},
+  pages     = {335--349}, year = {2014}}

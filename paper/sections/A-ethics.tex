@@ -1,0 +1,38 @@
+\section{Ethics}\label{app:ethics}
+% Facts from honeypot/static/robots.txt (Allow: / for all, AI crawlers listed by name),
+% honeypot/nginx/theslowshelf.conf (no rate limiting), honeypot/deploy.sh (logrotate:
+% daily, rotate 120), honeypot/static/about.html (what is logged, why, opt-out),
+% honeypot/nginx/00-agentic-log.conf (IP logged in clear for reverse-DNS checks),
+% tools/honeypot_aggregate.py (HMAC with a fresh random key, aggregates only),
+% .gitignore (data/hplogs/ never in the repository).
+
+\paragraph{Testbed.}
+All load experiments ran on infrastructure that we operate.
+The load generator sent requests only to our own cache and application, and no
+experiment sent traffic to third-party systems.
+
+\paragraph{Honeypot.}
+The honeypot is a public measurement site that serves static chapters of public-domain
+books.
+Its \texttt{robots.txt} explicitly allows all crawlers, including AI training and
+retrieval crawlers, which it lists by name, and the server applies no rate limiting: clients
+are not steered, restricted or slowed down, and every client receives the same pages.
+The site sets no cookies and runs no client-side scripts.
+A public page on the site states what is recorded and why, and offers to exclude the
+traffic of any crawler operator who asks.
+
+\paragraph{Personal data.}
+The web server records standard access-log fields, including the client IP address, which
+the site's public page discloses; the address is kept to check that clients claiming to be
+a known crawler come from that operator's published address ranges.
+The server rotates the log daily and keeps at most 120 rotated files; the snapshot used in
+this paper is kept by us and is not part of the released artifact.
+Our analysis reads IP addresses only in memory, as a grouping key through a keyed hash
+(HMAC) with a random key drawn anew at every run.
+It writes no address, hash or log line, and only per-class aggregates leave it.
+We do not identify, profile or contact individual visitors, and we do not publish the logs.
+\todo{institutional review: state whether it was required and obtained}
+
+\paragraph{Corpus.}
+The corpus consists of public-domain books from Project Gutenberg.
+We do not redistribute the texts: the artifact identifies the books by their identifiers.
