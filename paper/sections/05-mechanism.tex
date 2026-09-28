@@ -1,17 +1,104 @@
 \section{Mechanism}\label{sec:mechanism}
-% SOSTENUTO and INTERPRETATIVO only, each labelled in the sentence itself.
-% - \claim{B1} chain: access pattern -> working-set geometry -> interaction with shared
-%   state -> marginal cost (SOSTENUTO).
-% - \claim{B4} characteristic-time approximation explains direction and ordering
-%   (INTERPRETATIVO); \claim{B3} its quantitative prediction failed (RESPINTO) — report the
-%   prior prediction (written before the first results at scopes 0.06 and 0.20 were
-%   available, not independently timestamped), FIG-A2 in Appendix.
-% - \claim{B5} the cost reaches humans as origin load, not lost hits (SOSTENUTO), FIG-A1.
-% - \claim{B6} the exact upstream channel is NOT supported: say it was not measured.
-% - \claim{C4} isolated vs mixed cost of a class.
-% - Frontier (\cref{sec:r-frontier}): \claim{A5} blocking one exhaustive request frees
-%   ~0.82 origin requests, one agentic request ~0.10, at the operating point of the
-%   frontier (SOSTENUTO: measured miss ratios, agentic marginal, and A7 ~0.98 for the
-%   exhaustive class at its own volume). This is why class-identity blocking of the
-%   exhaustive class sits on the frontier.
-\todo{mechanism}
+% SOSTENUTO and INTERPRETATIVO only, each labelled in the sentence itself; B2 (MISURATO)
+% is recalled from Results, B3 (RESPINTO) and B6 (NON SOSTENUTO) are stated as such.
+% Not written here (not in the brief of 28 Sep): A5 (SOSTENUTO, why blocking the
+% exhaustive class sits on the frontier) and C4 (MISURATO, belongs to Results).
+% The simulator subsection uses only row S1 (SIMULATO): never evidence for A1 or A3.
+\Cref{sec:results} states what changes at the origin; this section asks why.
+Each statement carries its status.
+A \emph{supported} statement is a strict inference from the measurements, with a
+mechanism; an \emph{interpretive} one is consistent with the data but was not verified as
+a prediction.
+We also report the prediction that failed and the part of the mechanism that we did not
+measure.
+
+\subsection{From access pattern to marginal cost}\label{sec:m-chain}
+Supported: the marginal cost of a class depends on how its volume and the width of its
+working set interact with the capacity of the shared cache, not on the label of the
+class.\claim{B1}
+We read it as a chain: the access pattern of a class sets the geometry of its working
+set, the geometry sets how the class interacts with the state of the shared cache, and
+that interaction sets the marginal cost.\claim{B1}
+The inference rests on three measurements taken together.\claim{B1}
+With the same label, volumes, cache and corpus, the agentic marginal changes sign as only
+the working set grows (\cref{sec:r-sign}).\claim{A1}
+The sensitivity of the agentic miss ratio to its own volume falls as the working set
+grows, while that of the other two classes stays small (\cref{sec:r-asymmetry}).\claim{A2}
+The exhaustive class, which never returns to a chapter before it has traversed the corpus,
+has a flat marginal of about 0.98 when its own volume is varied.\claim{A7}
+The chain would be falsified by a class with the same volume and the same working set
+that behaves differently.\claim{B1}
+
+The accounting of \cref{sec:r-accounting} shows where the change of sign sits.
+In the step from 12 to 36 agentic req/s at the smallest scope, the largest term is the
+change on the 12 agentic req/s already present: $-1.622$ of a total of $-0.889$ origin
+req/s.\claim{B2}
+By construction this term is the offered rate already present times the change in the
+agentic miss ratio, which falls from 0.1796 to 0.0444 over the same step.\claim{B2}\claim{A2}
+The accounting states which term carries the change, not why that term takes its
+value.
+
+\subsection{The characteristic-time approximation}\label{sec:m-tc}
+The characteristic-time approximation of LRU caches, introduced by
+Fagin~\cite{fagin1977}, rediscovered and named by Che et al.~\cite{che2002} and
+formalised by Fricker et al.~\cite{fricker2012}, treats an object as a hit if it is
+requested again within a fixed time $T_C$ of its previous request.
+Before the first results at scopes 0.06 and 0.20 were available, we used it to predict
+the elasticity of the agentic miss ratio, that is, its miss ratio at 12 req/s over that
+at 36 req/s.\claim{B3}
+The prediction has no independent timestamp (\cref{sec:m-prereg}); we call it a prior
+prediction.\claim{B3}
+It gave 3.1 at scope 0.06 and 1.4 at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
+We observe 1.62 and 1.16 (\cref{fig:a-model}).\claim{B3}
+At scope 0.06 the observed value is 48\% below the prediction, outside the tolerance, so
+the quantitative prediction is rejected.\claim{B3}
+
+Interpretive: the same approximation explains the ordering qualitatively.\claim{B4}
+The wider the working set, the smaller the elasticity: 4.05 at scope 0.02, 1.62 at 0.06
+and 1.16 at 0.20, and below 2.0 at the widest scope.\claim{B4}
+In the terms of the approximation, a narrow working set lets more of a class's own
+requests return within $T_C$ as its volume grows, and a wide one less so.\claim{B4}
+This reading is consistent with the ordering but was not verified as a prediction; a
+configuration with non-monotone elasticities would contradict it.\claim{B4}
+
+\subsection{How the cost reaches the human class}\label{sec:m-human}
+Supported: when the agentic working set widens, the human class pays through origin load,
+not through lost cache hits.\claim{B5}
+At 30\% agentic share, with volumes and cache fixed, the human p99 latency rises from
+76.1 to 113.0\,ms as the scope grows from 0.02 to 0.20 ($+37.0 \pm 1.0$\,ms,
+$t = 37.3$; \cref{fig:a-human}).\claim{B5}
+Over the same range the human miss ratio changes only by a factor of 1.06, while the
+origin rate rises from 36.8 to 52.6 req/s.\claim{B5}
+A human hit ratio that fell in proportion to the p99 would contradict this
+reading.\claim{B5}
+
+Not supported: the channel through which origin load reaches human latency.\claim{B6}
+It could be Varnish, its connections to the application, or the application's thread
+pool.\claim{B6}
+We infer the effect of load by exclusion and never measured the queue at each stage, so
+we do not claim a channel (\cref{sec:limitations}).\claim{B6}
+
+\subsection{A simulator for what the testbed cannot vary}\label{sec:m-sim}
+% Status SIMULATO (claims.md, row S1). Every number in this subsection is simulated,
+% except the lab values it is compared with.
+To study configurations that the testbed cannot vary, we built a trace-driven simulator:
+a generator that reproduces the one of \cref{sec:m-classes} and an LRU cache with the
+byte capacity of the testbed's 128\,MiB.\claim{S1}
+Its first phase was pre-registered as a check against the testbed, with 20 seeds per
+point.\claim{S1}
+Within the pre-registered tolerances, it reproduces the per-class miss ratios (18 of 18
+within 0.02 of the testbed) and the origin rate (within 3\%, from $+0.37\%$ to
+$+0.92\%$).\claim{S1}
+It also reproduces the sign and size of the two differences of \cref{sec:results}.\claim{S1}
+The simulated agentic marginal at scope 0.02 is $-0.0451 \pm 0.0033$, against
+$-0.0405 \pm 0.0061$ measured in the replication ($t = -13.49$).\claim{S1}
+The simulated overlap effect is $+0.882$ and $+0.839$ origin req/s, against $+0.882$ and
+$+0.872$ measured ($t = +12.31$ and $+10.40$).\claim{S1}
+The simulated miss is slightly higher than the measured one almost everywhere: the origin
+rate is higher at all five points compared, although within the tolerance.\claim{S1}
+These are simulated values, not measurements, and they add no evidence to the results of
+\cref{sec:results}.\claim{S1}
+
+% Phase 2: pre-registration in docs/PREREG-simulatore-fase2.md; write results only after
+% its RISULTATO document and an S row in claims.md.
+\todo{simulator phase 2}

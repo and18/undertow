@@ -1,9 +1,55 @@
 \section{Limitations}\label{sec:limitations}
-% First item: contiguity, same pair metric on both sides: 4.25% observed (TCP connections)
-%   vs 66.9% generator (k6 VUs) \claim{C5}.
-% One testbed, one corpus, one cache technology, one generator; absolute numbers do not
-% transfer between hosts. One honeypot, 31 agent clients, one period (section E: "benign"
-% NOT SUPPORTED). CPU proxy valid on this testbed only (C1). A7/A8 from a secondary series
-% (shared mapping, 1,211 s). Configurations before 21 Sep 2026 not recorded (env.txt).
-% The 0 req/s point of the accounting is an inter-day baseline.
-\todo{limitations}
+% Rows: A1 (scope of the result), C5, C3, C6, C1, A7, A9, A3, B6; section E rows
+% "our synthetic agent represents real agents" (DA QUALIFICARE) and "origin RPS = backend
+% load in general" (DA QUALIFICARE). Never "benign" (section E: NOT SUPPORTED).
+
+\paragraph{One testbed.}
+All measurements come from one testbed: one virtual machine, one corpus, one cache
+technology with LRU eviction, and one synthetic generator.\claim{A1}
+We did not test other eviction policies or other hosts, the primary design uses one cache
+size, and absolute values such as origin rates and miss ratios are properties of this
+testbed.
+All experiments use the cacheable chapter page; requests that no cache can absorb, such as
+full-text search, are outside this study.
+Of the three working-set sizes, only the smallest was replicated; the other two have one
+run per point.\claim{A1}
+
+\paragraph{A synthetic agentic class.}
+The generator matches the agentic clients of our honeypot in the width of the working set
+but not in its contiguity.\claim{C3}\claim{C5}
+Measured the same way on both sides, 66.9\% of consecutive request pairs within a session
+read adjacent chapters in the generator, against 4.25\% for honeypot agentic
+clients.\claim{C5}
+The unit of a session also differs: a k6 virtual user in the generator, a TCP connection
+on the honeypot.\claim{C5}
+The synthetic agentic class is therefore a controlled working set of a given width, not a
+model of how agentic clients read a site.
+
+\paragraph{One honeypot.}
+The comparison with real clients rests on one public measurement site, one period and 31
+clients of the agentic class with at least 5 requests.\claim{C3}
+Clients are classed by their declared user agent, which we do not verify.
+The honeypot results describe that population in that period and do not characterise
+agentic traffic on the Web in general.\claim{C3}\claim{C6}
+
+\paragraph{Origin requests as a measure of cost.}
+The relation between origin requests and PostgreSQL CPU is established on this testbed
+only.\claim{C1}
+We do not claim that origin requests measure backend load in general.\claim{C1}
+We also did not measure where origin load turns into human latency: the queue at each
+stage was never measured (\cref{sec:m-human}).\claim{B6}
+
+\paragraph{Secondary series and shared mapping.}
+The series that varies the exhaustive volume comes from a campaign with shared mapping, a
+measurement window of 1,211\,s and 3 repetitions per point.\claim{A7}
+It is not paired with the primary design, so we compare the shape of its response, not
+its size (\cref{sec:r-asymmetry}).\claim{A7}
+
+\paragraph{Configurations before 21 September 2026.}
+Runs before 21 September 2026 do not store their configuration.
+For the shared-mapping runs and the run without agentic traffic used in
+\cref{sec:r-sign,sec:r-overlap}, the rates are reconstructed from the per-class request
+counts in the k6 output.\claim{A9}\claim{A3}
+These runs are also from a different day than the separated runs they are compared with.
+The replication bounds the drift between those days (\cref{sec:m-protocol}), but not
+between other days or within one night.\claim{A3}\claim{A9}
