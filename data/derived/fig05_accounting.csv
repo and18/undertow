@@ -19,3 +19,7 @@ step,term,value
 0-36,net_se,0.158
 0-36,net_ci95_lo,0.021
 0-36,net_ci95_hi,0.763
+0-36-replica,net,0.238
+0-36-replica,net_se,0.110
+0-36-replica,net_ci95_lo,-0.060
+0-36-replica,net_ci95_hi,0.536

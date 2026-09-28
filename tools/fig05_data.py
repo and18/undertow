@@ -25,6 +25,9 @@ points.csv). Scomposizione di Δ(Σ rate·miss) fra un punto basso (0) e uno alt
                                      non arrotondati
 Le righe 0-36 (net, net_se, net_ci95_lo/hi) sono lo stesso netto di tools/net_agentic.py
 (claim A9): SE combinato, IC 95% con il t di Student ai gradi di liberta' di Welch.
+Le righe 0-36-replica sono lo stesso netto nella replica pre-registrata nello stesso giorno
+(docs/PREREG-replica-20260924.md, R3; 25-26 set): P0 tre-20260926-013602 e S36
+tre-20260926-001550, λ da env.txt. I due netti non si uniscono (claim A9).
 
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
@@ -48,6 +51,8 @@ OUT_CSV = ROOT / "data" / "derived" / "fig05_accounting.csv"
 RUNS = {0: ("tre-20260920-102015", 83.0), 12: ("tre-20260921-150237", None),
         36: ("tre-20260921-162248", None)}
 STEPS = ((0, 12), (12, 36))
+# replica pre-registrata (R3): agentica nominale -> (run, λ da env.txt)
+REPLICA = {0: ("tre-20260926-013602", None), 36: ("tre-20260926-001550", None)}
 
 
 def read_run(run, lam):
@@ -95,16 +100,17 @@ def main():
         print(f"  {step}: " + "  ".join(f"{t} {v:+.4f}" for t, v in terms))
         print(f"        somma {total:+.4f}  misurato {meas:+.4f} +/- {se:.4f}  "
               f"scarto {100 * (total - meas) / abs(meas):+.1f}%")
-    a, b = r[0], r[36]
-    va, vb = a["var_mean"], b["var_mean"]
-    net, se = b["mean"] - a["mean"], math.sqrt(va + vb)
-    df = (va + vb) ** 2 / (va ** 2 / (a["n"] - 1) + vb ** 2 / (b["n"] - 1))
-    q = net_agentic.t_quantile(0.975, df)
-    out += [["0-36", "net", f"{net:.3f}"], ["0-36", "net_se", f"{se:.3f}"],
-            ["0-36", "net_ci95_lo", f"{net - q * se:.3f}"],
-            ["0-36", "net_ci95_hi", f"{net + q * se:.3f}"]]
-    print(f"  netto 0-36: {net:+.4f} +/- {se:.4f}  IC 95% [{net - q * se:+.4f}, "
-          f"{net + q * se:+.4f}]  (df di Welch {df:.2f})")
+    rep = {k: read_run(run, lam) for k, (run, lam) in REPLICA.items()}
+    for step, (a, b) in (("0-36", (r[0], r[36])), ("0-36-replica", (rep[0], rep[36]))):
+        va, vb = a["var_mean"], b["var_mean"]
+        net, se = b["mean"] - a["mean"], math.sqrt(va + vb)
+        df = (va + vb) ** 2 / (va ** 2 / (a["n"] - 1) + vb ** 2 / (b["n"] - 1))
+        q = net_agentic.t_quantile(0.975, df)
+        out += [[step, "net", f"{net:.3f}"], [step, "net_se", f"{se:.3f}"],
+                [step, "net_ci95_lo", f"{net - q * se:.3f}"],
+                [step, "net_ci95_hi", f"{net + q * se:.3f}"]]
+        print(f"  netto {step}: {net:+.4f} +/- {se:.4f}  IC 95% [{net - q * se:+.4f}, "
+              f"{net + q * se:+.4f}]  (df di Welch {df:.2f})")
     with OUT_CSV.open("w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["step", "term", "value"])

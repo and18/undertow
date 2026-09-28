@@ -191,6 +191,15 @@ For this reason the primary design of this paper uses the separated
 mapping.\claim{A1}
 Outside this comparison, series measured under the shared mapping are reported as
 secondary and labelled as such, as in \cref{sec:r-asymmetry}.\claim{A7}
+
+% \claim{C4}: isolated run tre-20260911-154109 (agentic class alone, warm cache) against the
+%   separated-mapping mixture of 21 Sep at 13% agentic share.
+The other classes shape the measured cost of a class in a second way.\claim{C4}
+Measured alone, with a warm cache, the agentic class has a miss ratio of 0.002.\claim{C4}
+In the mixture of the primary design, at 13\% of the load, its miss ratio is
+0.180.\claim{C4}
+The cost of a class measured in isolation therefore does not predict its cost when it
+shares the cache with other classes.\claim{C4}
 \undertowfig{FIG-04_overlap-confounder}{Effect of working-set overlap on measured origin work}{fig:overlap}
 
 \subsection{Consequence for admission policies}\label{sec:r-frontier}

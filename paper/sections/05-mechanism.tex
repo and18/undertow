@@ -1,8 +1,7 @@
 \section{Mechanism}\label{sec:mechanism}
 % SOSTENUTO and INTERPRETATIVO only, each labelled in the sentence itself; B2 (MISURATO)
 % is recalled from Results, B3 (RESPINTO) and B6 (NON SOSTENUTO) are stated as such.
-% Not written here (not in the brief of 28 Sep): A5 (SOSTENUTO, why blocking the
-% exhaustive class sits on the frontier) and C4 (MISURATO, belongs to Results).
+% A5 (SOSTENUTO) in its own subsection; C4 (MISURATO) is in Results, sec:r-overlap.
 % The simulator subsection uses only row S1 (SIMULATO): never evidence for A1 or A3.
 \Cref{sec:results} states what changes at the origin; this section asks why.
 Each statement carries its status.
@@ -77,6 +76,18 @@ It could be Varnish, its connections to the application, or the application's th
 pool.\claim{B6}
 We infer the effect of load by exclusion and never measured the queue at each stage, so
 we do not claim a channel (\cref{sec:limitations}).\claim{B6}
+
+\subsection{Why blocking by class works for one class}\label{sec:m-block}
+Supported: at the operating point of the frontier, blocking one exhaustive request frees
+about 0.82 origin requests, and blocking one agentic request about 0.10.\claim{A5}
+The inference combines the miss ratios measured at that point, the agentic marginal cost,
+and the flat marginal of about 0.98 that the exhaustive class shows when its own volume is
+varied.\claim{A5}\claim{A7}
+It explains the two blocking policies of \cref{sec:r-frontier}.
+Blocking the exhaustive class by its identity removes about 0.82 origin requests per
+blocked request, and that policy lies on the frontier.\claim{A5}\claim{D2}
+Blocking the agentic class as well removes about 0.10 per blocked request: it costs $2{,}807 \pm 185$ served requests and gives no difference in human p99 that we can
+measure.\claim{A4}\claim{A5}
 
 \subsection{A simulator for what the testbed cannot vary}\label{sec:m-sim}
 % Status SIMULATO (claims.md, row S1). Every number in this subsection is simulated,

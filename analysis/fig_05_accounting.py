@@ -17,7 +17,8 @@ DESIGN PASS
   Secondary term values on the bars; the net 0->36 effect as one line under the
             panels.
   Prevent   "adding agentic traffic reduces origin work" (retracted, R2): step a is
-            shown next to step b and the net 0->36 effect (+0.392) is printed.
+            shown next to step b and the net 0->36 effect is printed with both
+            measurements (A9: these runs and the same-day replication), never "positive".
 """
 import figure_style as S
 from figure_style import C, T, PT, SEMIBOLD
@@ -41,7 +42,8 @@ STEP_A, STEP_B = "0-12", "12-36"     # step keys in the CSV
 def _caption():
     """Every number in the caption is computed from the CSV the figure draws."""
     r = S.read_csv(DATA[0])
-    a, b, net = _vals(r, STEP_A), _vals(r, STEP_B), _vals(r, "0-36")
+    a, b = _vals(r, STEP_A), _vals(r, STEP_B)
+    net, rep = _vals(r, "0-36"), _vals(r, "0-36-replica")
     return (
         "Accounting decomposition of the change in origin work at the smallest agentic "
         "working set (scope 0.02, separated mapping), for the steps "
@@ -54,10 +56,13 @@ def _caption():
         "In step b the largest term is the change on the "
         f"{STEP_B.split('-')[0]} agentic req/s already present "
         f"({S.num(b['agentic requests already present'], 3, sign=True)}). The net effect "
-        f"from 0 to 36 req/s is not a saving, {S.num(net['net'], 3, sign=True)} ± "
-        f"{S.num(net['net_se'], 3)} (95% CI {S.num(net['net_ci95_lo'], 2, sign=True)} to "
-        f"{S.num(net['net_ci95_hi'], 2, sign=True)}); the 0 req/s point is an inter-day "
-        "baseline."
+        "from 0 to 36 req/s is not negative, in two measurements reported separately: "
+        f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} (95% CI "
+        f"{S.num(net['net_ci95_lo'], 2, sign=True)} to {S.num(net['net_ci95_hi'], 2, sign=True)}) "
+        "from the runs shown, where the 0 req/s point is an inter-day baseline, and "
+        f"{S.num(rep['net'], 3, sign=True)} ± {S.num(rep['net_se'], 3)} (95% CI "
+        f"{S.num(rep['net_ci95_lo'], 2, sign=True)} to {S.num(rep['net_ci95_hi'], 2, sign=True)}) "
+        "in a same-day pre-registered replication, an interval that contains zero."
     )
 
 TERMS = [("new agentic requests", "New agentic requests", "New agentic", C.agentic),
@@ -136,12 +141,12 @@ def render(variant):
     sp = S.Spec(variant)
     rows = S.read_csv(DATA[0])
     va_, vb_ = _vals(rows, STEP_A), _vals(rows, STEP_B)
-    net = _vals(rows, "0-36")
+    net, rep = _vals(rows, "0-36"), _vals(rows, "0-36-replica")
     key_w = sp.pick(0.82, 1.18, 1.34)
     rows_h = sp.pick(1.30, 1.40, 1.50)
     title_h = T.s(T.panel) * 1.2 * PT + 0.14
     axis_h = 0.05 + T.s(T.tick) * 1.25 * PT + 0.06 + T.s(T.axis) * 1.3 * PT
-    net_h = 0.10 + T.s(T.label) * 1.3 * PT
+    net_h = 0.10 + 2 * T.s(T.label) * 1.3 * PT
     if sp.narrow:
         body_h = 2 * (title_h + rows_h + axis_h) + 0.18 + net_h
     else:
@@ -167,7 +172,11 @@ def render(variant):
     for f in panels:
         f.xticks([-1, 0, 1, 2], [S.num(t, 0, sign=True) if t else "0" for t in (-1, 0, 1, 2)])
         f.xtitle("Change in origin req/s")
+    lh = T.s(T.label) * 1.3 * PT
     cv.text(L, y_net + 0.06, f"Net change from 0 to 36 agentic req/s: "
-            f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} origin req/s",
+            f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} origin req/s "
+            "(these runs)", T.label, color=C.ink_soft, ha="left", va="top")
+    cv.text(L, y_net + 0.06 + lh, f"{S.num(rep['net'], 3, sign=True)} ± "
+            f"{S.num(rep['net_se'], 3)} origin req/s in a same-day replication",
             T.label, color=C.ink_soft, ha="left", va="top")
     return cv.save(STEM)

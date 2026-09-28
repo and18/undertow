@@ -39,8 +39,9 @@ lavoro interagisce con lo stato condiviso della cache. È **D1** (SFIDATO), il c
 
 - **B1.** Pattern di accesso → geometria dell'insieme → interazione con lo stato
   condiviso → costo marginale.
-- **B2.** Fra 12 e 36 req/s a scope 0,02 domina l'auto-località delle agentiche già
-  presenti.
+- **B2** (misurato, contabile). Fra 12 e 36 req/s a scope 0,02 il termine più grande è
+  la variazione sulle 12 req/s agentiche già presenti (−1,622 su −0,889). Dice quale
+  termine, non perché: niente «domina» né «auto-località» (tolti in claims v3.4).
 - **B4** (interpretativo). Il tempo caratteristico spiega l'ordinamento.
 - **B3** è respinto come previsione quantitativa: dirlo se si citano Fagin e Che.
 - **B5.** Il p99 umano sale per carico all'origine, non per spostamento di cache.

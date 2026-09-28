@@ -7,18 +7,20 @@ CLAIMS    B3 (RESPINTO): quantitative prediction failed (criterion 3).
 DATA      data/derived/figA2_elasticity_model.csv
 SOURCES   docs/PREREGISTRAZIONE-scopesweep.md (a prediction written before the first
           results at scopes 0.06 and 0.20 were available, not independently timestamped);
-          docs/RISULTATO-scopesweep.md (post-hoc computation, labelled as such).
+          docs/RISULTATO-scopesweep.md. The post-hoc recomputation (column
+          posthoc_realdist of the CSV) is no longer drawn: it has no row in claims.md
+          (28 Sep 2026).
 
 DESIGN PASS
   Reader    observed elasticity falls with the working set, as the model said, but
             at 0.58x cache it falls outside the +/-30% tolerance stated with the prediction.
   Encoding  a dot plot per working set on a log axis (elasticity is a ratio):
             observed = filled, class colour; prior prediction = hollow, with its
-            tolerance as a wash band; post-hoc model = grey diamond.
+            tolerance as a wash band.
   Dominant  the observed dots against the tolerance bands.
   Secondary numeric values next to each mark; a verdict at the end of each row.
-  Prevent   passing the post-hoc curve off as a prediction (it is labelled post hoc
-            everywhere), and reading the model as validated (the failed row says so).
+  Prevent   showing values without a row in claims.md (the post-hoc recomputation),
+            and reading the model as validated (the failed row says so).
 """
 import figure_style as S
 from figure_style import C, T, PT, SEMIBOLD
@@ -32,8 +34,7 @@ RUNS = ["tre-20260921-150237", "tre-20260921-162248", "tre-20260921-214946",
 EDITORIAL = dict(
     headline="The prior model got the direction right\nand the size wrong",
     deck="Elasticity of the agentic miss ratio (miss at 12 req/s over miss at 36 req/s) at "
-         "three working-set\nsizes: observed, prior prediction, and a post-hoc "
-         "recomputation of the same model.",
+         "three working-set\nsizes: observed against the prior prediction of the model.",
     source="Source: Undertow testbed, mean of 5 runs; prior prediction of 21 Sep 2026, written "
            "before the first results\nat scopes 0.06 and 0.20 were available, not independently "
            "timestamped.",
@@ -53,9 +54,7 @@ def _caption():
         "uniform access approximation, written before the first results at scopes 0.06 and "
         "0.20 were available and not independently timestamped, with the \u00b130% tolerance "
         "stated with it (band); the first row was measured before the prediction was written "
-        "and serves as anchor. Grey "
-        "diamonds: post-hoc recomputation with the generator's actual access distribution, not a "
-        "prediction. Filled circles: observed, mean of 5 runs. The ordering predicted by the "
+        "and serves as anchor. Filled circles: observed, mean of 5 runs. The ordering predicted by the "
         f"model holds; the quantitative criterion fails at {S.num(float(r['W_over_capacity']), 2)}\u00d7 "
         f"cache ({S.num(obs, 2)} against {S.num(pri, 1)}, "
         f"{S.num(100 * (obs / pri - 1), 0)}%).")
@@ -70,14 +69,14 @@ def render(variant):
     key_w = sp.pick(0.62, 0.86, 0.96)
     ver_w = sp.pick(0.66, 0.92, 1.02)
     row_h = sp.pick(0.50, 0.52, 0.56)
-    leg_h = (2 if sp.narrow else 1) * T.s(T.sub) * 1.45 * PT + 0.14
+    leg_h = T.s(T.sub) * 1.45 * PT + 0.14
     below = 0.05 + T.s(T.tick) * 1.25 * PT + 0.06 + T.s(T.axis) * 1.3 * PT
     cv = S.Canvas(sp, leg_h + 3 * row_h + below, **EDITORIAL)
     top = cv.top
     fx = cv.left + key_w
     fw = cv.right - ver_w - fx
-    f = cv.frame(fx, top + leg_h, fw, 3 * row_h, (0.9, 11), (3 * row_h, 0), xlog=True)
-    xt = [1, 2, 3, 5, 10]
+    f = cv.frame(fx, top + leg_h, fw, 3 * row_h, (0.9, 6), (3 * row_h, 0), xlog=True)
+    xt = [1, 2, 3, 5]
     f.vgrid(xt)
     f.xticks(xt, [str(v) for v in xt])
     f.xtitle(sp.pick("Miss at 12 req/s ÷ miss at 36 req/s (log)",
@@ -86,7 +85,7 @@ def render(variant):
     ms = 5.6 * T.base / 8.4
     for i, r in enumerate(rows):
         yc = (i + 0.5) * row_h
-        obs, post = float(r["observed"]), float(r["posthoc_realdist"])
+        obs = float(r["observed"])
         pre = float(r["prior"]) if r["prior"] else None
         if pre:
             tol = float(r["tolerance"])
@@ -96,9 +95,6 @@ def render(variant):
             # the predicted value sits at the end of its own band, clear of the others
             f.label(pre * (1 + tol), yc, S.num(pre, 1), T.sub, dx=4, ha="left",
                     va="center", color=C.ink_faint)
-        f.dot(post, yc, C.neutral, marker="D", size=ms * 0.85)
-        f.label(post, yc, S.num(post, 2), T.sub, dy=-6, ha="center", va="top",
-                color=C.ink_faint)
         f.dot(obs, yc, C.agentic, size=ms * 1.15)
         f.label(obs, yc, S.num(obs, 2), T.value, dy=6, ha="center", va="bottom",
                 weight=SEMIBOLD)
@@ -116,12 +112,9 @@ def render(variant):
     # key
     ky = top + T.s(T.sub) * 0.7 * PT
     entries = [(C.agentic, "o", False, "observed"),
-               (C.ink_soft, "o", True, "prior prediction, ±30% band"),
-               (C.neutral, "D", False, "post-hoc recomputation")]
+               (C.ink_soft, "o", True, "prior prediction, ±30% band")]
     x = fx
-    for i, (col, mk, hollow, text) in enumerate(entries):
-        if sp.narrow and i == 2:
-            x, ky = fx, ky + T.s(T.sub) * 1.45 * PT
+    for col, mk, hollow, text in entries:
         cv.fig.add_artist(S.mpl.lines.Line2D(
             [cv.fx(x + 0.04)], [cv.fy(ky)], marker=mk, ms=4.6 * T.base / 8.4, ls="none",
             mfc=C.surface if hollow else col, mec=col, mew=1.2 if hollow else 0))
