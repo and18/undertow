@@ -206,6 +206,7 @@ stata aggiunta da memoria.
 | `fagin1977`, `che2002` | **VERIFICATE** (Crossref), DOI aggiunti | 10.1016/S0022-0000(77)80014-7; 10.1109/JSAC.2002.801752 |
 | `qureshi2006ucp` | **VERIFICATA**, **titolo completato** | «Utility-Based Cache Partitioning: A Low-Overhead, High-Performance, Runtime Mechanism to Partition Shared Caches», MICRO '06, pp. 423-432, doi 10.1109/MICRO.2006.49 |
 | `cidon2016cliffhanger`, `pu2016fairride` | **VERIFICATE** (USENIX), pagine aggiunte | NSDI '16, pp. 379-392 e 393-406 |
+| `dittrich2012menlo` | **VERIFICATA** (PDF del DHS) | «The Menlo Report: Ethical Principles Guiding Information and Communication Technology Research», U.S. Department of Homeland Security, Science and Technology Directorate, Cyber Security Division, 3 agosto 2012; «Co-Lead Author»: David Dittrich (University of Washington) ed Erin Kenneally (CAIDA, UC San Diego). Quattro principi: Respect for Persons, Beneficence, Justice, Respect for Law and Public Interest. PDF: `dhs.gov/sites/default/files/publications/CSD-MenloPrinciplesCORE-20120803_1.pdf` (oggi marcato «Archived Content») |
 | `fricker2012` | **PARZIALE** | autori, titolo e anno su arXiv 1202.3974; la sede ITC 24 resta quella della verifica precedente (§1-2) e **non e' stata riconfermata**: IEEE Xplore e dblp rifiutano l'accesso automatico, il PDF arXiv non la indica. Mancano pagine e DOI: **da completare da browser** |
 
 Voci del bib non citate nel paper, quindi assenti dal `.bbl`: `megiddo2003arc`, `jiang2002lirs`,

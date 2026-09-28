@@ -4,7 +4,8 @@
 % daily, rotate 120), honeypot/static/about.html (what is logged, why, opt-out),
 % honeypot/nginx/00-agentic-log.conf (IP logged in clear for reverse-DNS checks),
 % tools/honeypot_aggregate.py (HMAC with a fresh random key, aggregates only),
-% .gitignore (data/hplogs/ never in the repository).
+% .gitignore (data/hplogs/ never in the repository). Menlo Report verified on the DHS PDF
+% (docs/VERIFICHE-chiuse.md, 28 Sep 2026).
 
 \paragraph{Testbed.}
 All load experiments ran on infrastructure that we operate.
@@ -31,8 +32,16 @@ Our analysis reads IP addresses only in memory, as a grouping key through a keye
 (HMAC) with a random key drawn anew at every run.
 It writes no address, hash or log line, and only per-class aggregates leave it.
 We do not identify, profile or contact individual visitors, and we do not publish the logs.
-\todo{institutional review: state whether it was required and obtained}
 
 \paragraph{Corpus.}
 The corpus consists of public-domain books from Project Gutenberg.
 We do not redistribute the texts: the artifact identifies the books by their identifiers.
+
+\paragraph{Review.}
+This is independent research carried out without an institutional affiliation, so there
+was no ethical review board that we could consult.
+We followed the principles of the Menlo Report~\cite{dittrich2012menlo}: respect for
+persons, beneficence, justice, and respect for law and public interest.
+The measures above are how we applied them: disclosure and an opt-out for the operators
+whose traffic we observe, no load on third-party systems, no release of personal data, and
+transparency about what the site records.

@@ -2,6 +2,8 @@
 **Versione 3.6, 26 settembre 2026.** Sostituisce la v3.5, la v3.4, la v3.3, la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 
+**Corretto il 28 settembre (v3.6, solo fonte).** Riga E su SemDN: «HotNets 2026» diventa «preprint arXiv:2609.22486»; la sede non e' confermata da fonti primarie (`docs/VERIFICHE-chiuse.md`, bibliografia del 28 settembre). Nessuno stato cambia.
+
 **Corretto il 28 settembre (v3.6, solo unita').** C2: oggetto medio **24,9 KiB**, non KB (`tools/cache_capacity.py` divide i byte occupati dello storage per il numero medio di oggetti e per 1024). Nessun valore cambia.
 
 **Cambiato il 26 settembre (v3.6, replica nello stesso giorno).** Replica pre-registrata
@@ -210,7 +212,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | Soglia universale di utilizzazione ρ ≈ 0,9 | **RESPINTO** | il ginocchio varia con la configurazione |
 | **Il cambiamento Cloudflare del 15 settembre 2026 e' un blocco di default generalizzato** | **RESPINTO** | vale per i nuovi domini in onboarding e solo sulle pagine con annunci; **nessuna fonte primaria conferma l'entrata in vigore** |
 | **Cloudflare pubblica cifre di costo per classe** | **RESPINTO** | pubblica volumi e crawl-to-refer ratio |
-| **Proponiamo un'architettura di consegna alternativa** | **NON LO FACCIAMO** | e' cio' che fa SemDN (Hua & Xiao, HotNets 2026); noi studiamo la dipendenza del costo dallo stato condiviso. **Non affermare che il nostro criterio sia validato su SemDN: non l'abbiamo testato** |
+| **Proponiamo un'architettura di consegna alternativa** | **NON LO FACCIAMO** | e' cio' che fa SemDN (Hua & Xiao, preprint arXiv:2609.22486); noi studiamo la dipendenza del costo dallo stato condiviso. **Non affermare che il nostro criterio sia validato su SemDN: non l'abbiamo testato** |
 | origin RPS = carico di backend in generale | **DA QUALIFICARE** | C1 vale su questo banco |
 | Il nostro agente sintetico rappresenta gli agenti reali | **DA QUALIFICARE** | C3 regge sull'ampiezza, C5 no sulla contiguita' |
 
