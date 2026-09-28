@@ -87,6 +87,7 @@ for pt in $POINTS; do
                 -e AGENT_SCOPE="${AGENT_SCOPE:-0.02}" \
                 -e AGENT_SESSION="${AGENT_SESSION:-3}" \
                 -e AGENT_SKEW="${AGENT_SKEW:-0.6}" \
+                -e TRAV_MODE="${TRAV_MODE:-}" \
                 k6 run --quiet /scripts/workload.js < /dev/null > /dev/null 2>&1
             [[ "$t" == "w" ]] && rm -f "results/w-a$A-b$B-$rep.json"
         done

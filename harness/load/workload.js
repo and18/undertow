@@ -157,17 +157,55 @@ function agenticIndex(data) {
   return (agSession.base + agSession.k++) % data.total;
 }
 
+// TRAV_MODE: come la classe esaustiva sceglie il capitolo.
+//
+//   glob (default, TRAV_MODE assente)  come tutti i run fino al 28 settembre
+//        2026: un solo scenario; l'indice della traversata e' iterationInTest
+//        di quello scenario, che conta le iterazioni di TUTTE le classi. Lo
+//        stesso capitolo torna ogni N iterazioni totali, cioe' ogni N/RATE
+//        secondi: a parita' di ALPHA*RATE il percorso esaustivo dipende da RATE
+//        (fase 2b del simulatore, docs/PREREG-simulatore-fase2b.md).
+//   scen l'esaustiva e' uno scenario proprio a rate ALPHA*RATE: il suo
+//        iterationInTest conta solo le richieste esaustive, quindi lo stesso
+//        capitolo torna ogni N/(ALPHA*RATE) secondi qualunque sia RATE. Umana e
+//        agentica stanno nello scenario "load" a rate (1-ALPHA)*RATE, con
+//        agentica a probabilita' BETA/(1-ALPHA). Gli arrivi esaustivi diventano
+//        regolari invece che estratti a caso. docs/PREREG-lab-trav-own-20260928.md.
+//
+// constant-arrival-rate vuole un rate intero: in scen i rate sono espressi
+// per 10 000 s (scarto di arrotondamento < 1e-5 req/s).
+const TRAV_MODE = __ENV.TRAV_MODE || 'glob';
+if (TRAV_MODE !== 'glob' && TRAV_MODE !== 'scen') {
+  throw new Error(`TRAV_MODE=${TRAV_MODE}: valori ammessi glob, scen`);
+}
+const SCEN = TRAV_MODE === 'scen' && MODEL === 'mix' && ALPHA > 0;
+if (TRAV_MODE === 'scen' && !SCEN) {
+  throw new Error('TRAV_MODE=scen richiede MODEL=mix e ALPHA > 0');
+}
+const SCEN_UNIT = 10000;
+const RATE_TRAV = Math.round(ALPHA * RATE * SCEN_UNIT);
+const RATE_REST = Math.round((1 - ALPHA) * RATE * SCEN_UNIT);
+
+function arrival(rate, timeUnit, perSecond, exec) {
+  const s = {
+    executor: 'constant-arrival-rate',     // open loop, obbligatorio
+    rate: rate,
+    timeUnit: timeUnit,
+    duration: DURATION,
+    preAllocatedVUs: Math.min(Math.max(Math.ceil(perSecond * 2), 200), 4000),
+    maxVUs: Math.min(Math.max(perSecond * 20, 2000), 20000),
+    gracefulStop: '20s',
+  };
+  if (exec) s.exec = exec;
+  return s;
+}
+
 export const options = {
-  scenarios: {
-    load: {
-      executor: 'constant-arrival-rate',   // open loop, obbligatorio
-      rate: RATE,
-      timeUnit: '1s',
-      duration: DURATION,
-      preAllocatedVUs: Math.min(Math.max(Math.ceil(RATE * 2), 200), 4000),
-      maxVUs: Math.min(Math.max(RATE * 20, 2000), 20000),
-      gracefulStop: '20s',
-    },
+  scenarios: SCEN ? {
+    load: arrival(RATE_REST, `${SCEN_UNIT}s`, RATE_REST / SCEN_UNIT),
+    trav: arrival(RATE_TRAV, `${SCEN_UNIT}s`, RATE_TRAV / SCEN_UNIT, 'trav'),
+  } : {
+    load: arrival(RATE, '1s', RATE),
   },
   discardResponseBodies: true,
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'p(99.9)', 'max'],
@@ -282,13 +320,25 @@ function traversalIndex(data) {
 export default function (data) {
   // Un solo sorteggio per la ripartizione a tre vie: due sorteggi
   // indipendenti introdurrebbero correlazione fra le classi.
+  // Con TRAV_MODE=scen questo scenario porta solo umana e agentica.
   const u = Math.random();
   const cls = MODEL === 'traversal' ? 'trav'
             : MODEL === 'agent'     ? 'agent'
             : MODEL === 'zipf'      ? 'zipf'
+            : SCEN                  ? (u < BETA / (1 - ALPHA) ? 'agent' : 'zipf')
             : u < ALPHA             ? 'trav'
             : u < ALPHA + BETA      ? 'agent'
             :                         'zipf';
+  request(data, cls);
+}
+
+// Scenario "trav" di TRAV_MODE=scen: ogni iterazione e' una richiesta
+// esaustiva; traversalIndex legge l'iterationInTest di questo scenario.
+export function trav(data) {
+  request(data, 'trav');
+}
+
+function request(data, cls) {
   const agentic = cls === 'trav';
 
   let url;
