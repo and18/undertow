@@ -20,8 +20,12 @@ COME
     - risposta di chapter() in app.py: {book_id, n, title, body, book, toc, related},
       serializzata come jsonify di Flask 3.0 fuori da debug (ensure_ascii, sort_keys,
       separatori compatti, "\\n" finale). related: excerpt = body[:400] (left(c.body, 400));
-      preview di ts_headline NON riproducibile senza PostgreSQL: stimata con le prime 30
-      parole del capitolo di destinazione (MaxWords=30).
+      preview di ts_headline NON riproducibile senza PostgreSQL: stimata con le prime 15
+      parole del capitolo di destinazione. PostgreSQL 16.15, wparser_def.c, righe 2433-2445:
+      con MaxFragments > 0 e nessuna corrispondenza mostra le prime min_words parole, default
+      15 (riga 2624). Con una corrispondenza il frammento arriva a MaxWords = 30 piu' i tag
+      <b>: qui non modellato, quindi la stima e' per difetto (Emendamento 1 della
+      pre-registrazione; fino ad allora 30 parole).
     - stampa solo `book_id,n,bytes`. Nessun testo esce dal lab; nulla viene scritto sul lab.
   In locale: controlla che libri e numero di capitoli coincidano con data/corpus/books.csv
   e scrive data/derived/chapter_sizes.csv, nell'ordine di books.csv (quello di locate()).
@@ -78,7 +82,7 @@ def remote(root):
     for src in all_ch:
         links[src] = [d for d in rng.sample(all_ch, lc.LINKS_PER_CHAPTER) if d != src]
 
-    preview = {k: " ".join(v[1].split()[:30]) for k, v in chapters.items()}
+    preview = {k: " ".join(v[1].split()[:15]) for k, v in chapters.items()}
     book_by_id = {b["id"]: b for b in books}
     out = csv.writer(sys.stdout, lineterminator="\n")
     out.writerow(["book_id", "n", "bytes"])

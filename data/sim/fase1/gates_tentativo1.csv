@@ -1,0 +1,6 @@
+# commit 66b2818; docs/PREREG-simulatore-fase1.md; stato SIMULATO
+gate,quantity,sim,lab,rule,verdict,stato
+G0,contiguity_pct_S12,66.8661,66.9,|x-66.9|<=0.5,PASSA,SIMULATO
+G1,n_object_S12_020,4982.9466,5263,|x/5263-1|<=0.05,NON PASSA,SIMULATO
+G1,n_object_S36_020,5001.9191,5263,|x/5263-1|<=0.05,PASSA,SIMULATO
+G2,bytes_per_req_S12,26304.4242,25249.3382,|x/lab-1|<=0.05,PASSA,SIMULATO

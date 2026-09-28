@@ -172,3 +172,52 @@ per capitolo, che il repository non ha. Opzioni:
   (C2). Equivale a un LRU a numero di oggetti; perde la coda pesante.
 - (c) Interrogare PostgreSQL sul lab: richiede di avviare il container del database, quindi
   e' una modifica dello stato del lab. Esclusa.
+
+## Emendamento 1 — 26 settembre 2026
+
+Scritto dopo il primo tentativo dei cancelli e **prima** di qualunque calcolo di T1–T3 e
+M1–M2. Il testo sopra non e' modificato.
+
+**Esito dei cancelli al primo tentativo** (commit `66b2818`, H = 512, intestazioni 250 byte;
+file `data/sim/fase1/gates_tentativo1.csv`):
+
+| cancello | simulato | lab | scarto | esito |
+|---|---|---|---|---|
+| G0 contiguita' a S12 | 66,87% | 66,9% | −0,03 punti | PASSA |
+| G1 oggetti in cache, scope 0,20, quota 13% | 4 982,9 | 5 263 | −5,32% | **NON PASSA** |
+| G1 oggetti in cache, scope 0,20, quota 30% | 5 001,9 | 5 263 | −4,96% | PASSA |
+| G2 byte per richiesta a S12 | 26 304,4 | 25 249,3 | +4,18% | PASSA |
+
+G1 e G2 indicano nella stessa direzione oggetti simulati piu' grandi di quelli veri
+(circa 1,1–1,4 KB per oggetto). Il confronto non e' stato eseguito.
+
+**Causa, verificata nel sorgente.**
+- `harness/app/app.py`, righe 343-345 e 350: l'anteprima dei capitoli collegati e'
+  `ts_headline('english', c.body, plainto_tsquery('english', <titolo del capitolo di
+  origine>), 'MaxFragments=1, MaxWords=30')`; `MinWords` non e' impostato.
+- `harness/docker-compose.yml`, riga 93: `image: postgres:16-alpine`; l'immagine sul lab ha
+  `PG_VERSION=16.15` (`docker image inspect`, nessun container avviato).
+- PostgreSQL `REL_16_15`, `src/backend/tsearch/wparser_def.c` (sha256
+  `c2444e298418977c0487405059dc9072df53b6087fe045e6c118dd9da28b6f4c`):
+  righe 2624-2627, default `min_words = 15`, `max_words = 35`, `max_fragments = 0`;
+  righe 2706-2711, con `MaxFragments` > 0 si usa `mark_hl_fragments`;
+  righe 2433-2445, se nessun frammento corrisponde alla query si mostrano **le prime
+  `min_words` = 15 parole**; righe 2366-2409, se un frammento corrisponde, si estende fino a
+  `max_words` (qui 30) e le parole trovate sono racchiuse in `<b>`…`</b>`.
+- La ricostruzione usava 30 parole in ogni caso: sovrastima l'anteprima quando la query non
+  trova corrispondenze.
+
+**Correzione.** `tools/sim/object_sizes.py`: anteprima = prime **15** parole del capitolo di
+destinazione. Il caso con corrispondenza (fino a 30 parole piu' tag) non e' modellato: la
+stima e' per difetto in quei casi. `data/derived/chapter_sizes.csv` si rigenera sul lab in
+sola lettura dopo il push di questo emendamento.
+
+**Costanti invariate:** H = 512 byte, intestazioni 250 byte. Nessun altro parametro cambia.
+
+**Vincolo sulla ricalibrazione ancora disponibile.** La ricalibrazione unica dei controlli
+preliminari vale solo se i valori ricalibrati restano fisicamente plausibili:
+**H fra 0 e 4 096 byte**, **intestazioni fra 100 e 1 000 byte**. Se per far passare i
+cancelli servissero valori fuori da questi intervalli, il modello e' sbagliato: ci si ferma
+e il simulatore non e' validato.
+
+**T1–T3 e M1–M2 non sono stati calcolati.**
