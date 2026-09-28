@@ -1,13 +1,76 @@
 \section{Background and related work}\label{sec:related}
-% Positioning, verified on primary sources (docs/VERIFICHE-chiuse.md):
-% - Characteristic-time approximation: Fagin 1977 -> Che et al. 2002 -> Fricker et al. 2012.
-%   Always cite all three.
-% - UCP, Cliffhanger: d(miss)/d(allocation), not d(cost)/d(composition).
-% - FairRide: free-riding as fairness, not as measurement bias.
-% - Zhang et al. SoCC'25: vary composition, measure hit ratio, overlap fixed at 10-20%.
-%   Restricts A2; leaves A1 intact; strengthens A3. No polemical tone.
-% - SemDN (HotNets'26): delivery architecture for agents; we do not propose one and do not
-%   claim our criterion is validated on SemDN.
-% - Cloudflare taxonomy (1 Jul 2026); 15 Sep 2026 change = announcement, new domains, ad
-%   pages only. IETF webbotauth / aipref drafts (C6).
-\todo{related work}
+% Sources: docs/VERIFICHE-chiuse.md (verified: Fagin, Che, Fricker, UCP, Cliffhanger,
+% FairRide, Zhang et al., Cloudflare taxonomy of 1 Jul 2026, IETF drafts) and
+% docs/UNDERTOW-CONTESTO.md §7. \todo{verify} marks every source not yet verified on the
+% primary: the proposals attributed to Zhang et al., the "unique URLs" framing of the
+% Cloudflare blog, SemDN (bib entry "check"). Cloudflare blog of 2 Apr 2026 (Wildani and
+% Ahmad): date, SIEVE/S3-FIFO "initial experiments" sentence and "separate cache layer for
+% AI traffic" (long term) verified on the page, docs/PREREG-simulatore-fase2.md, amendment 1.
+% Not in references.bib (no \cite until added and verified): Breakwater, DAGOR, Protego,
+% TopFull, Denning 1968, Mattson et al. 1970, SHARDS, Counter Stacks.
+
+\subsection{Background}\label{sec:background}
+% Cloudflare taxonomy Search / Agent / Training (1 Jul 2026, cloudflare2026options,
+% verified); the 15 Sep 2026 change is an announcement, for new domains, on ad pages only
+% (section E: never "default block"). IETF webbotauth / aipref drafts (C6).
+\todo{background}
+
+\subsection{Related work}\label{sec:rw}
+\paragraph{Automated traffic and web caches.}
+Zhang et al.~\cite{zhang2025} vary the share of AI traffic from 0\% to 100\% on Varnish,
+Apache Traffic Server and Memcached, and measure the overall hit ratio and that of human
+traffic.
+Their workloads fix the overlap between human and AI content, at about 20\% in the
+Wikimedia setup and 10\% in the synthetic trace, and do not vary it.
+A Cloudflare post~\cite{cloudflare2026cache} reports initial experiments in which SIEVE or
+S3-FIFO in place of LRU could let human traffic keep the same hit rate with or without AI
+traffic, and expects a separate cache layer for AI traffic to be the best way forward in the
+long term.
+Zhang et al. also discuss remedies such as newer eviction policies, learned caching and
+admission control\todo{verify}.
+We agree on the exhaustive class: varied on its own volume, it costs about 0.98 origin
+requests per added request in our testbed.\claim{A7}
+We add four things.
+First, we measure the marginal cost at the origin and compare it across three coexisting
+classes, rather than the hit ratio.\claim{A2}
+Second, for the agentic class the sign of that cost depends on the width of the class's
+working set (\cref{sec:r-sign}), and the agentic clients of our honeypot sit near the
+narrow end by that measure.\claim{A1}\claim{C3}
+Third, the overlap that these workloads fix changes the measured cost of a class
+(\cref{sec:r-overlap}).\claim{A3}
+Fourth, in our testbed the hit ratio of the exhaustive class rises from 0.179 to 0.200 as
+the agentic share grows under the separated mapping, so isolating the agentic class in a
+separate cache would remove a measured benefit (supported).\claim{D8}
+
+\paragraph{Allocation, sharing and feedback.}
+Utility-based cache partitioning~\cite{qureshi2006ucp} and Cliffhanger~\cite{cidon2016cliffhanger}
+steer cache space by the gradient of the hit or miss ratio with respect to the memory
+allocated to a workload.
+We vary the composition of the traffic that shares a fixed cache, not the allocation.
+FairRide~\cite{pu2016fairride} treats free-riding in a shared cache as a problem of
+fairness and incentives; we treat the overlap between working sets as a bias in the
+measured cost of a class.\claim{A3}
+Admission control driven by feedback on load or latency is well established, for example
+in Breakwater, DAGOR, Protego and TopFull \todo{add to references.bib and verify}.
+Feedback control is not a contribution of this paper, and we do not propose a controller.
+
+\paragraph{Working sets, characteristic time and miss-ratio curves.}
+The working set of a program \todo{cite and verify: Denning 1968} is the concept we use
+for a class of traffic.
+The characteristic-time approximation of LRU is due to Fagin~\cite{fagin1977}, was
+rediscovered and named by Che et al.~\cite{che2002}, and was formalised by Fricker et
+al.~\cite{fricker2012}.
+We use it to interpret the ordering of our results, and its quantitative prediction on
+our testbed failed (\cref{sec:m-tc}).\claim{B3}\claim{B4}
+Stack algorithms and their sampled approximations, such as SHARDS
+\todo{cite and verify: Mattson et al. 1970, SHARDS, Counter Stacks}, estimate the miss
+ratio as a function of cache size; we measure how the cost of one class changes with the
+composition of the traffic and the width of its working set.
+
+\paragraph{Delivery architectures for agents.}
+SemDN~\cite{hua2026semdn}\todo{verify} proposes a delivery architecture that retrieves
+and caches content at semantic granularity for LLM agents.
+We do not propose a delivery architecture, and we have not tested our findings on
+SemDN.
+We ask a different question: whether, inside a shared infrastructure, the cost of a class
+of traffic can be treated as a stable property of that class.\claim{D1}
