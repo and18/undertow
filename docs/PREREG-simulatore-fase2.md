@@ -344,3 +344,39 @@ e' fissata dai paper: resta 4 × 32 768.
 **Nessun altro cambiamento**: combinazioni, grandezze, criteri, previsioni, semi, cancelli (K,
 R0, calibrazione, G0-R) e regole restano quelli scritti sopra. Le previsioni per W-TinyLFU non
 si riscrivono.
+
+## Emendamento 2 — 29 settembre 2026 (riesecuzione con la traversata esaustiva in scenario proprio)
+
+Scritto e committato **prima** di eseguire la riesecuzione. Il testo sopra, l'emendamento 1 e
+l'esito originale (`docs/RISULTATO-simulatore-fase2.md`, `data/sim/fase2/`) non si modificano:
+l'esito nuovo si scrive **accanto** a quello originale. *Nota:* a differenza del testo originale,
+questo emendamento non e' stato pushato prima dell'esecuzione (push fatto da Andrea dopo); fa
+fede l'ordine dei commit.
+
+**Motivo.** Il generatore della fase 2 sceglie il capitolo esaustivo dall'indice globale di
+iterazione (`workload.js:276-278`), quindi il percorso esaustivo dipende da λ totale
+(fase 2b, `docs/PREREG-simulatore-fase2b.md`). Il rilancio sul lab del 28 settembre con
+`TRAV_MODE=scen` (`docs/RISULTATO-lab-trav-own-20260928.md`) ha superato V1-V5: la variante SCEN
+del simulatore e' quella implementata e misurata.
+
+**Cosa cambia.** Solo il generatore: in tutte le 8 combinazioni la traversata esaustiva segue lo
+schema SCEN di `tools/sim/esplora_artefatto.py` (`phase_scen`: esaustiva in uno scenario proprio
+a α·λ req/s, arrivi regolari, indice = contatore proprio + int(300·λ·α) nella misura; umana e
+agentica in uno scenario a (1 − α)·λ, agentica con probabilita' β/(1 − α), VU in giro su quel
+solo scenario). Per Q-REAL la catena di sessione (p_r, p_c) si applica alle richieste agentiche
+di quel secondo scenario, con la stessa estrazione nuova di `fase2.phase_real`.
+
+**Cosa resta uguale.** Politiche (codice di `79f5014`), capienza, H, oggetti, warm-up e misura,
+semi 1…20, punti, grandezze, criteri di lettura e regola di risposta; **p_r = 0,190751953 e
+p_c = 0,037933502 non si ricalibrano**. Le previsioni originali restano quelle scritte sopra e si
+confrontano anche con l'esito nuovo.
+
+**Cancelli della riesecuzione, nell'ordine:**
+- **K** gia' passato (politiche invariate), non si ripete.
+- **R0-SCEN.** LRU × Q-GEN con SCEN deve riprodurre **esattamente** richieste e miss per classe
+  delle righe SCEN dei 9 punti in `data/sim/esplorativo-artefatto/reps.csv` (stesso codice,
+  stessi semi). Se non passa ci si ferma.
+- **G0-R-SCEN.** Con p_r e p_c fissati, semi 1…5, S12, SCEN: contiguita' 4,25% ± 0,5 punti e
+  ripetizioni 19,44% ± 1,0 punti. Se non passa, (b) e (c) non si valutano con SCEN.
+
+Poi le 8 combinazioni in un solo lancio. Uscite in `data/sim/fase2-scen/`, stato SIMULATO.
