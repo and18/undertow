@@ -1,0 +1,5 @@
+# commit 318b1c5; docs/PREREG-simulatore-fase2.md emendamento 2 (SCEN); stato SIMULATO
+# fonte: nessun dato del lab: books.csv, chapter_sizes.csv, honeypot_contiguity.csv dal repository; Q-REAL p_r 0.190751953 p_c 0.037933502 (fase 2, non ricalibrati)
+gate,quantity,sim,target,rule,verdict,stato
+G0-R-SCEN,contiguous_pct_S12,4.1178,4.25,|x-4.25|<=0.5,PASSA,SIMULATO
+G0-R-SCEN,repeated_pct_S12,19.4293,19.44,|x-19.44|<=1.0,PASSA,SIMULATO
