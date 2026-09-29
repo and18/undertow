@@ -161,3 +161,101 @@ Riportate come osservazioni SIMULATE, **senza meccanismo verificato**.
 - Gli effetti che dipendono dalla politica (segno a 0,02 con SIEVE, d₃₆, netto) non hanno un
   meccanismo verificato.
 - Il miss simulato leggermente piu' alto del lab (limite della fase 1) vale anche qui.
+
+---
+
+## Esito con la traversata esaustiva in scenario proprio (emendamento 2, 29 settembre)
+
+Stesso protocollo, generatore SCEN (`tools/sim/fase2scen.py`, commit `318b1c5`, emendamento 2
+committato prima in `8d0b02c`/`3cf467d`, non pushato prima dell'esecuzione). Uscite in
+`data/sim/fase2-scen/`. **SIMULATO.** L'esito originale sopra resta com'era: era prodotto con la
+traversata a indice globale, che il rilancio sul lab del 28 settembre ha mostrato essere in
+parte un artefatto (`docs/RISULTATO-lab-trav-own-20260928.md`).
+
+**Cancelli.** K non ripetuto (politiche invariate). **R0-SCEN PASSA**: LRU × Q-GEN riproduce 180
+righe su 180 di `data/sim/esplorativo-artefatto/reps.csv` (SCEN). **G0-R-SCEN PASSA**: contigue
+4,12% (4,25 ± 0,5), ripetute 19,43% (19,44 ± 1,0), con p_r e p_c non ricalibrati.
+
+| combinazione | m₀,₀₂ (t) | m₀,₀₆ (t) | m₀,₂₀ | segno a 0,02 | dipendenza | cambio di segno | d₁₂ (t) | d₃₆ (t) | A3 | netto P0 → 36, IC 95% | netto |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LRU × GEN | −0,0308 (−13,8) | +0,1500 (66,7) | +0,4308 | regge | regge | regge | +0,888 (19,8) | +0,852 (14,9) | regge | +1,198 [+1,084, +1,312] | non negativo |
+| SIEVE × GEN | −0,0273 (−11,7) | −0,0045 (−1,5) | +0,3405 | **regge** | regge | **regge** | +0,321 (5,0) | +0,065 (1,7) | indeterminato | −0,417 [−0,518, −0,316] | negativo |
+| S3-FIFO × GEN | −0,0463 (−18,4) | **−0,0255 (−10,0)** | +0,3420 | regge | regge | regge | +0,315 (5,2) | −0,035 (−0,6) | **indeterminato** | −1,052 [−1,180, −0,924] | negativo |
+| W-TinyLFU × GEN | +0,0044 (+2,0) | +0,0016 (+0,8) | +0,3084 | **indeterminato** | **non regge** | **non regge** | +0,252 (4,5) | +0,076 (1,6) | indeterminato | **+0,558** [+0,460, +0,656] | non negativo |
+| LRU × REAL | −0,0165 (−8,1) | +0,1440 (54,7) | +0,3531 | regge | regge | regge | +0,832 (17,8) | +0,899 (18,0) | regge | +1,429 [+1,326, +1,531] | non negativo |
+| SIEVE × REAL | −0,0246 (−11,7) | −0,0118 (−5,1) | +0,3135 | **regge** | regge | **regge** | +0,293 (6,0) | +0,056 (1,2) | indeterminato | −0,424 [−0,537, −0,312] | negativo |
+| S3-FIFO × REAL | −0,0431 (−20,7) | −0,0121 (−5,0) | +0,2777 | regge | regge | regge | +0,321 (6,4) | −0,016 (−0,4) | **indeterminato** | −0,989 [−1,111, −0,867] | negativo |
+| W-TinyLFU × REAL | +0,0013 (+0,7) | +0,0132 (+5,5) | +0,2808 | **indeterminato** | regge | **non regge** | +0,308 (6,9) | +0,059 (1,3) | indeterminato | **+0,576** [+0,475, +0,677] | non negativo |
+
+In neretto cio' che cambia rispetto all'esito originale.
+
+**Miss umano con e senza traffico agentico (SCEN)**, Δ_h contro P0, SE ≈ 0,0008-0,0010:
+
+| combinazione | miss_h(P0) | 0,02 a 12 | 0,02 a 36 | 0,06 a 36 | 0,20 a 36 |
+|---|---|---|---|---|---|
+| LRU × GEN | 0,2260 | +0,0050 | +0,0079 | +0,0158 | +0,0231 |
+| SIEVE × GEN | 0,1823 | +0,0052 | +0,0055 | +0,0170 | +0,0232 |
+| S3-FIFO × GEN | 0,1964 | **−0,0021** | **−0,0048** | +0,0046 | +0,0103 |
+| W-TinyLFU × GEN | 0,1674 | +0,0055 | +0,0101 | +0,0186 | +0,0203 |
+| LRU × REAL | 0,2260 | +0,0050 | +0,0076 | +0,0143 | +0,0202 |
+| SIEVE × REAL | 0,1823 | +0,0052 | +0,0055 | +0,0163 | +0,0281 |
+| S3-FIFO × REAL | 0,1964 | **−0,0016** | **−0,0043** | +0,0040 | +0,0096 |
+| W-TinyLFU × REAL | 0,1674 | +0,0061 | +0,0101 | +0,0192 | +0,0214 |
+
+**Risposta alla domanda con SCEN** (stessa regola: regge = segno di A1, dipendenza e A3):
+- **(a) altre politiche, sessioni del generatore — regge in parte.** SIEVE e S3-FIFO: segno a
+  0,02, dipendenza e cambio di segno reggono; **A3 indeterminato** (d₃₆ non distinguibile da
+  zero). W-TinyLFU: segno a 0,02 indeterminato, dipendenza e cambio di segno non reggono.
+- **(b) LRU, sessioni realistiche — regge** (m₀,₀₂ −0,0165, t −8,1; A3 +0,83 / +0,90).
+- **(c) entrambe — regge in parte:** SIEVE e S3-FIFO come in (a); W-TinyLFU: dipendenza regge,
+  segno a 0,02 indeterminato, cambio di segno no.
+
+**Cosa cambia rispetto all'esito originale (indice globale).**
+- **SIEVE:** il segno negativo a 0,02 prima era indeterminato, ora **regge** (−0,027); il cambio
+  di segno ora regge.
+- **S3-FIFO:** segno e cambio di segno reggono come prima; **A3 diventa indeterminato** (d₃₆ da
+  +0,42 a −0,035); il marginale a scope 0,06 e' **negativo** (−0,0255, t −10,0); il netto resta
+  negativo ma si dimezza (da −2,17 a −1,05).
+- **W-TinyLFU:** il segno negativo a 0,02 (prima −0,021) **non regge piu'** (+0,0044, t +2,0); con
+  le sessioni del generatore la dipendenza non regge (m₀,₀₆ < m₀,₀₂, t −0,9); il netto passa da
+  circa zero a **+0,56**.
+- **LRU:** il netto sale da +0,33 a +1,20 (GEN) e da +0,57 a +1,43 (REAL), in linea con il lab
+  (+1,10, `scen`).
+- **Dipendenza dall'insieme di lavoro:** regge in **7 combinazioni su 8** (non in W-TinyLFU × GEN).
+- **Miss umano con S3-FIFO:** a scope 0,02 **scende** con il traffico agentico (−0,0048 ± 0,0010 a
+  36 req/s, GEN; −0,0043, REAL). Prima era circa zero.
+
+**Scomposizione del netto negativo con S3-FIFO × GEN (SCEN)**, dai miss per classe a scope 0,02:
+esaustiva 0,8370 → 0,8059 (circa −0,87 req/s su 28), umana 0,1964 → 0,1915 (circa −0,27 su 55),
+agentica +0,09 (36 × 0,0024). Con la traversata corretta il netto negativo viene ancora dalla
+riduzione dei miss delle altre classi; il meccanismo non e' verificato.
+
+**Previsioni originali contro l'esito SCEN.** La previsione centrale («il segno negativo a 0,02 e'
+una proprieta' dell'LRU sotto scansione») resta **smentita** per SIEVE e S3-FIFO (il segno
+regge); per W-TinyLFU era «positivo» e l'esito e' indeterminato (+0,0044, t +2,0), quindi
+nemmeno li' e' confermata. La previsione su A3 («positivo, piu' piccolo») e'
+sbagliata per SIEVE, S3-FIFO e W-TinyLFU (indeterminato); il netto positivo previsto e' giusto
+solo per W-TinyLFU e LRU.
+
+**Proposta per le righe S2-S6 di `claims.md` (non applicata; da decidere).** Le righe attuali
+descrivono l'esito con la traversata a indice globale. Proposta: sostituirle con l'esito SCEN
+(il generatore corretto, lo stesso del lab dal 28 settembre) e spostare le versioni attuali in
+una nota storica.
+- **S2.** Nel simulatore, con la traversata esaustiva in scenario proprio, la dipendenza del
+  marginale agentico dall'ampiezza dell'insieme di lavoro regge in **7 combinazioni su 8** (non con
+  W-TinyLFU e sessioni del generatore); m₀,₂₀ fra +0,28 e +0,43.
+- **S3.** Il segno negativo a scope 0,02 regge con LRU (−0,031 / −0,017), SIEVE (−0,027 / −0,025) e
+  S3-FIFO (−0,046 / −0,043), tutti t ≤ −8,1; con W-TinyLFU e' indeterminato (+0,004 / +0,001). Il
+  cambio di segno regge in 6 combinazioni su 8 (non con W-TinyLFU). La previsione «il segno
+  negativo e' una proprieta' dell'LRU sotto scansione» e' smentita.
+- **S4.** L'effetto della sovrapposizione a 12 req/s e' positivo in 8 combinazioni su 8 (d₁₂ da
+  +0,25 a +0,89, t ≥ 4,4); a 36 req/s regge solo con LRU (+0,85 / +0,90) e non e' distinguibile da
+  zero con SIEVE, S3-FIFO e W-TinyLFU (d₃₆ da −0,035 a +0,076, |t| ≤ 1,74).
+- **S5.** Il netto P0 → 36 a scope 0,02 dipende dalla politica: positivo con LRU (+1,20 / +1,43,
+  coerente con il lab `scen`, +1,10) e W-TinyLFU (+0,56 / +0,58), negativo con SIEVE (−0,42 /
+  −0,42) e S3-FIFO (−1,05 / −0,99). Con S3-FIFO viene dalla riduzione dei miss esaustivi (circa
+  −0,87 req/s) e umani (circa −0,27). Non e' un risparmio dimostrato ne' un'affermazione sul Web;
+  la riga E ritirata resta ritirata.
+- **S6.** Il miss umano con e senza traffico agentico cresce con scope e tasso agentico con LRU,
+  SIEVE e W-TinyLFU (fino a +0,020…+0,028 a scope 0,20 con 36 req/s); con S3-FIFO **scende** a
+  scope 0,02 (−0,0048 ± 0,0010 a 36 req/s) e cresce meno altrove (fino a +0,010).
