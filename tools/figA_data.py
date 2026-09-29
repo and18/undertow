@@ -20,6 +20,10 @@ data/derived/cache_capacity.csv):
       posthoc_realdist     ricalcolo a posteriori con la distribuzione reale del generatore
                            (docs/RISULTATO-scopesweep.md, righe 33-35): costanti copiate
 
+Run: quelli primari di scope_ttest.RUNS (TRAV_MODE=scen, claims v3.8), scritti nelle colonne
+run (A1) e run_lo / run_hi (A2); W_over_capacity con i capitoli distinti del reachable set
+(scope_ttest.reachable).
+
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
 Uso:
@@ -63,25 +67,27 @@ def main():
     a1, a2 = [], []
     for scope, (lo_id, hi_id) in st.RUNS.items():
         lo, hi = points(lo_id), points(hi_id)
-        w = max(1, math.floor(st.CORPUS * float(scope))) * st.SESSION_DEFAULT
+        env = st.read_env(lo_id)
+        _, w = st.reachable(scope, int(env.get("AGENT_MUL", st.AGENT_MUL_DEFAULT)),
+                            int(env.get("AGENT_SESSION", st.SESSION_DEFAULT)))
         ratio = f"{w / cap:.4f}"
         p99, p99_se = mean_se([float(r["p99_zipf"]) for r in hi])
         hit = statistics.fmean(float(r["h_zipf"]) for r in hi)
         org, org_se = mean_se([float(r["origin_rps"]) for r in hi])
         a1.append([scope, ratio, f"{p99:.3f}", f"{p99_se:.3f}", f"{hit:.4f}",
-                   f"{org:.4f}", f"{org_se:.4f}"])
+                   f"{org:.4f}", f"{org_se:.4f}", hi_id])
         miss_lo = statistics.fmean(1 - float(r["h_agent"]) for r in lo)
         miss_hi = statistics.fmean(1 - float(r["h_agent"]) for r in hi)
         obs = miss_lo / miss_hi
-        a2.append([scope, ratio, f"{obs:.4f}", *MODEL[scope]])
+        a2.append([scope, ratio, f"{obs:.4f}", *MODEL[scope], lo_id, hi_id])
         print(f"  scope {scope}: W/cap {ratio}  p99 umano {p99:.3f} +/- {p99_se:.3f}  "
               f"hit umano {hit:.4f}  origin {org:.4f} +/- {org_se:.4f}  "
               f"miss agentico {miss_lo:.4f} -> {miss_hi:.4f}  elasticita' {obs:.4f}")
     for path, header, rows in (
         (OUT_A1, ["scope", "W_over_capacity", "human_p99_ms", "human_p99_se", "human_hit",
-                  "origin_rps", "origin_se"], a1),
+                  "origin_rps", "origin_se", "run"], a1),
         (OUT_A2, ["scope", "W_over_capacity", "observed", "prior", "tolerance",
-                  "posthoc_realdist", "role"], a2),
+                  "posthoc_realdist", "role", "run_lo", "run_hi"], a2),
     ):
         with path.open("w", newline="") as f:
             wr = csv.writer(f, lineterminator="\n")

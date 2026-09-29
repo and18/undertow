@@ -1,14 +1,14 @@
 """
-FIG-A1 — Human latency rises with the agentic working set; the human hit ratio barely moves.
+FIG-A1 — Human latency rises with the agentic reachable set; the human hit ratio barely moves.
 
-CLAIM     B5 (SOSTENUTO): p99 76.1 -> 113.0 ms (+37.0 +/- 1.0, t = 37.3), human miss
-          1.06x, origin 36.8 -> 52.6 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
+CLAIM     B5 (SOSTENUTO, claims v3.8): p99 72.9 -> 99.6 ms (+26.7 +/- 1.3, t = 20.3), human
+          miss 1.07x, origin 37.4 -> 52.4 req/s. B6 (the exact upstream channel) is NOT SUPPORTED and
           the figure does not name one.
 DATA      data/derived/figA1_human_externality.csv (agentic share 30%)
-RUNS      as FIG-01.
+RUNS      as FIG-01 (TRAV_MODE=scen), the 30% runs; CSV column run.
 
 DESIGN PASS
-  Reader    as the agentic working set grows, human p99 climbs while the human hit
+  Reader    as the agentic reachable set grows, human p99 climbs while the human hit
             ratio stays put and origin load rises: the cost reaches humans as load,
             not as lost cache hits.
   Encoding  three small multiples on the same x, each with an honest axis from zero,
@@ -25,12 +25,12 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-A1_human-externality"
 CLAIMS = "B5 (SOSTENUTO); B6 not supported, not drawn"
 DATA = ["figA1_human_externality.csv"]
-RUNS = ["tre-20260921-162248", "tre-20260921-230947", "tre-20260922-015010"]
+RUNS = ["tre-20260928-162206", "tre-20260929-080424", "tre-20260929-104448"]
 
 EDITORIAL = dict(
-    headline="Human latency rises with the agentic working set\nwhile the human hit ratio barely moves",
+    headline="Human latency rises with the agentic reachable set\nwhile the human hit ratio barely moves",
     deck="Human p99 latency, human cache hit ratio and origin load at 30% agentic share, "
-         "for three\nagentic working-set sizes. Volumes and cache are held fixed.",
+         "for three\nagentic reachable-set sizes. Volumes and cache are held fixed.",
     source="Source: Undertow testbed, mean of 5 runs per point, whiskers ± 1 SE.",
 )
 
@@ -43,7 +43,7 @@ def _caption():
     se = math.hypot(float(r[0]["human_p99_se"]), float(r[-1]["human_p99_se"]))
     m0, m2 = 1 - float(r[0]["human_hit"]), 1 - float(r[-1]["human_hit"])
     return (
-        "Effect of the agentic working set on the human class, at 30% agentic share with "
+        "Effect of the agentic reachable set on the human class, at 30% agentic share with "
         f"volumes and cache fixed. (a) Human p99 latency rises from {S.num(p0, 1)} to "
         f"{S.num(p2, 1)} ms ({S.num(d, 1, sign=True)} \u00b1 {S.num(se, 1)} ms, "
         f"t = {S.num(d / se, 1)}). (b) The human miss ratio changes by a factor of "
@@ -103,13 +103,13 @@ def render(variant):
     if sp.narrow:
         for i, spec in enumerate(PANELS):
             f = _panel(cv, sp, L, top + i * (ph + 0.16), W, ph, rows, spec, i == 2)
-        f.xtitle("Agentic working set / cache capacity")
+        f.xtitle("Agentic reachable set / cache capacity")
     else:
         gap = sp.pick(None, 0.16, 0.24)
         pw = (W - 2 * gap) / 3
         fr = [_panel(cv, sp, L + i * (pw + gap), top, pw, ph, rows, spec, True)
               for i, spec in enumerate(PANELS)]
         cv.text(L + W / 2, fr[0].bottom + 0.05 + T.s(T.tick) * 1.25 * PT + 0.06,
-                "Agentic working set / cache capacity (log scale)", T.axis,
+                "Agentic reachable set / cache capacity (log scale)", T.axis,
                 color=C.ink_soft, ha="center", va="top")
     return cv.save(STEM)

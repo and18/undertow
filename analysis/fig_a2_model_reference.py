@@ -12,9 +12,9 @@ SOURCES   docs/PREREGISTRAZIONE-scopesweep.md (a prediction written before the f
           (28 Sep 2026).
 
 DESIGN PASS
-  Reader    observed elasticity falls with the working set, as the model said, but
+  Reader    observed elasticity falls with the reachable set, as the model said, but
             at 0.58x cache it falls outside the +/-30% tolerance stated with the prediction.
-  Encoding  a dot plot per working set on a log axis (elasticity is a ratio):
+  Encoding  a dot plot per reachable set on a log axis (elasticity is a ratio):
             observed = filled, class colour; prior prediction = hollow, with its
             tolerance as a wash band.
   Dominant  the observed dots against the tolerance bands.
@@ -28,13 +28,13 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-A2_model-reference"
 CLAIMS = "B3 (RESPINTO); B4 (INTERPRETATIVO)"
 DATA = ["figA2_elasticity_model.csv"]
-RUNS = ["tre-20260921-150237", "tre-20260921-162248", "tre-20260921-214946",
-        "tre-20260921-230947", "tre-20260922-002958", "tre-20260922-015010"]
+RUNS = ["tre-20260928-150154", "tre-20260928-162206", "tre-20260929-064412",
+        "tre-20260929-080424", "tre-20260929-092436", "tre-20260929-104448"]
 
 EDITORIAL = dict(
     headline="The prior model got the direction right\nand the size wrong",
     deck="Elasticity of the agentic miss ratio (miss at 12 req/s over miss at 36 req/s) at "
-         "three working-set\nsizes: observed against the prior prediction of the model.",
+         "three reachable-set\nsizes: observed against the prior prediction of the model.",
     source="Source: Undertow testbed, mean of 5 runs; prior prediction of 21 Sep 2026, written "
            "before the first results\nat scopes 0.06 and 0.20 were available, not independently "
            "timestamped.",
@@ -53,8 +53,9 @@ def _caption():
         "ratio at 12 req/s over that at 36 req/s. Hollow circles: a prior prediction with a "
         "uniform access approximation, written before the first results at scopes 0.06 and "
         "0.20 were available and not independently timestamped, with the \u00b130% tolerance "
-        "stated with it (band); the first row was measured before the prediction was written "
-        "and serves as anchor. Filled circles: observed, mean of 5 runs. The ordering predicted by the "
+        "stated with it (band); the first row is the anchor: that scope had already been "
+        "measured, in earlier runs, when the prediction was written. Filled circles: observed "
+        "with the exhaustive class in its own k6 scenario, mean of 5 runs. The ordering predicted by the "
         f"model holds; the quantitative criterion fails at {S.num(float(r['W_over_capacity']), 2)}\u00d7 "
         f"cache ({S.num(obs, 2)} against {S.num(pri, 1)}, "
         f"{S.num(100 * (obs / pri - 1), 0)}%).")

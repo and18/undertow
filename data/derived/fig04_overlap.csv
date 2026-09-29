@@ -1,5 +1,5 @@
-agent_rps,mapping,overlap_pct,human_mass_pct,origin_rps,origin_se,agent_hit,effect,effect_se,t,rep_effect,rep_effect_se,rep_t
-12,shared,99.7,59.8,36.950,0.091,0.881,,,,,,
-12,separated,2.1,1.0,37.664,0.085,0.820,0.714,0.124,5.74,0.882,0.183,4.82
-36,shared,99.7,59.8,35.806,0.091,0.973,,,,,,
-36,separated,2.1,1.0,36.818,0.094,0.956,1.012,0.131,7.74,0.872,0.064,13.62
+agent_rps,mapping,overlap_pct,human_mass_pct,origin_rps,origin_se,agent_hit,effect,effect_se,t,prev_effect,prev_effect_se,prev_t,prev_runs,run
+12,shared,99.7,59.8,37.302,0.057,0.882,,,,,,,,tre-20260928-134141
+12,separated,2.1,1.0,38.228,0.078,0.817,0.926,0.096,9.63,0.882,0.183,4.82,tre-20260925-213527 tre-20260925-225538,tre-20260928-150154
+36,shared,99.7,59.8,36.594,0.038,0.973,,,,,,,,tre-20260928-190230
+36,separated,2.1,1.0,37.394,0.069,0.955,0.800,0.079,10.14,0.872,0.064,13.62,tre-20260926-025613 tre-20260926-001550,tre-20260928-162206

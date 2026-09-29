@@ -1,9 +1,89 @@
 \section{Introduction}\label{sec:intro}
-% Written after Implications. Spine (docs/UNDERTOW-CONTESTO.md §1B):
-%   PROBLEM -> HYPOTHESIS -> DISCOVERY -> MECHANISM -> GENERAL PRINCIPLE ->
-%   CURRENT LIMIT -> TRANSITION -> TO-BE PROPERTIES -> CRITERION -> NOVELTY -> CONTRIBUTIONS
-% Lead with A1 (the sign change), not with A2 (partly anticipated by Zhang et al.).
-% Contributions (UNDERTOW-CONTESTO §6): (1) empirical characterisation, A1 + A4;
-% (2) a measurement confounder, quantified, A3 — narrow wording, not "we discovered
-% free-riding"; (3) a triage criterion, D4-D5 — a criterion, not a component.
-\todo{introduction}
+% claims.md v3.8. Order: problem -> question -> design -> finding (A1) -> what it is not (A9)
+% -> the other classes (A2, A7) -> measurement confounder (A3, C4) -> human class (B5) ->
+% consequence at the knee (A4, A6) -> key sentence (D1b) -> implications (D3, D4-D6, labelled)
+% -> contributions -> how the evidence was checked (pre-registration, R7) -> outline.
+Automated traffic is a growing share of what web servers and caches handle, and operators
+now decide how to treat it by its class.
+Content-delivery networks let site owners allow or block search crawlers, training
+crawlers and AI agents as separate categories~\cite{cloudflare2026options}, and the IETF is
+standardising how automated clients sign their requests and how sites state their
+preferences~\cite{ietf-webbotauth,ietf-aipref-vocab}.
+Behind these mechanisms sits an assumption that is rarely tested: that a class of traffic
+has a cost, so that knowing the class tells the operator what admitting more of it will
+do to the infrastructure.
+
+We test that assumption where it matters most for a web origin, in the work that a shared
+cache lets through.
+On a testbed with a Varnish cache in front of a database-backed site, three classes share
+the cache: a human class with Zipf-like popularity, an exhaustive class that traverses the
+corpus like a crawler, and an agentic class that reads short sessions of related
+pages (\cref{sec:method}).
+We measure the \emph{load-marginal} cost of a class: the origin requests caused by one more
+request of that class, when its offered rate increases while the others stay
+fixed.\claim{A1}
+We vary one property of the agentic class at a time, in particular its \emph{reachable
+set}, the set of objects its requests can touch.\claim{A1}
+
+The main result is that the marginal cost of a class changes sign with its reachable
+set.\claim{A1}
+With the same label, volumes, cache and corpus, one more agentic request costs $-0.035$
+origin requests when the reachable set is 0.19 times the cache capacity, $+0.143$ at 0.58
+times and $+0.421$ at 1.90 times (\cref{sec:r-sign}).\claim{A1}
+A negative marginal is not a saving: at the smallest reachable set, adding the agentic
+class from 0 to 36 requests per second still costs $1.10$ origin requests per
+second.\claim{A9}
+The other two classes behave differently: the per-request cost of the exhaustive class is
+flat when its own rate varies, and neither class moves much when the agentic rate
+grows.\claim{A2}\claim{A7}
+The measured cost of a class also depends on the others: how much the agentic reachable set
+overlaps with the human popular head changes its measured cost by 0.80 to 0.93 origin
+requests per second, and its miss ratio measured alone does not predict the one in the
+mixture.\claim{A3}\claim{C4}
+The human class pays for a wider agentic reachable set through origin load rather than
+lost cache hits: its tail latency rises while its miss ratio barely
+moves.\claim{B5}
+At the operating point we measured, blocking the agentic class in addition to the
+exhaustive one costs served requests without a latency difference that we can
+measure.\claim{A4}
+
+Taken together, these measurements support one statement: a traffic class does not have a
+stable marginal cost independent of the state of the shared cache.\claim{D1b}
+In our testbed this holds for the agentic class; the exhaustive class, varied on its own
+volume, stays close to a constant, so the label guarantees stability in neither
+direction.\claim{D1b}\claim{A7}
+It follows, as a design implication rather than a validated technology, that if
+infrastructure wants to make class-sensitive decisions, identity alone can be
+insufficient, because the marginal effect of a class is
+state-dependent.\claim{D3}
+Classification remains necessary: blocking the exhaustive class by its identity lies on the
+empirical frontier of served work and human latency that we sampled.\claim{D2}
+What identity leaves out, in our data, is the width of the class's reachable set, its
+marginal cost in the current cache state, and its effect on the other
+workloads.\claim{D4}\claim{D5}\claim{D6}
+
+This paper makes four contributions.
+\begin{itemize}
+\item A measurement of the load-marginal origin cost of three coexisting classes of web
+  traffic, with the reachable set of one class as the manipulated variable, showing a
+  change of sign under a fixed label (\cref{sec:r-sign,sec:r-asymmetry}).\claim{A1}\claim{A2}
+\item A measurement confounder, quantified: the overlap between the reachable sets of
+  different classes changes the cost measured for a class, a choice that experiments on
+  mixed traffic easily leave implicit (\cref{sec:r-overlap}).\claim{A3}
+\item A statement of what infrastructure would need to know beyond identity, set against
+  the closest existing lines of work, as implications and open questions rather than a
+  component (\cref{sec:implications}).\claim{D4}\claim{D5}\claim{D6}
+\item A record of how the evidence was checked: pre-registered reruns of the
+  configurations behind the main results, a public honeypot to place the synthetic agentic class against real
+  clients, and a simulator that found, and a rerun corrected, an artefact of our own load
+  generator (\cref{sec:m-prereg,sec:m-honeypot}).\claim{A1}\claim{A9}\claim{C3}
+\end{itemize}
+
+The honeypot places the synthetic class but does not validate it: by the number of
+distinct objects requested within a short window, our smallest reachable set is close to
+the agentic clients we observed, while their requests are far less contiguous than our
+sessions.\claim{C3}\claim{C5}
+\Cref{sec:related} places this work against related work, \cref{sec:method} describes the
+testbed, \cref{sec:results} reports the measurements, \cref{sec:mechanism} separates what
+they support from what they only suggest, \cref{sec:implications} states the implications,
+and \cref{sec:limitations} their limits.

@@ -1,25 +1,24 @@
 step,term,value
-0-12,new agentic requests,2.155
+0-12,new agentic requests,2.196
 0-12,agentic requests already present,0.000
-0-12,human class,0.132
-0-12,exhaustive class,-1.030
-0-12,sum of terms,1.257
-0-12,measured,1.238
-0-12,measured_se,0.153
-0-12,closure_pct,1.57
-12-36,new agentic requests,1.066
-12-36,agentic requests already present,-1.622
-12-36,human class,0.263
-12-36,exhaustive class,-0.596
-12-36,sum of terms,-0.889
-12-36,measured,-0.846
-12-36,measured_se,0.126
-12-36,closure_pct,5.10
-0-36,net,0.392
-0-36,net_se,0.158
-0-36,net_ci95_lo,0.021
-0-36,net_ci95_hi,0.763
-0-36-replica,net,0.238
-0-36-replica,net_se,0.110
-0-36-replica,net_ci95_lo,-0.060
-0-36-replica,net_ci95_hi,0.536
+0-12,human class,0.363
+0-12,exhaustive class,-0.615
+0-12,sum of terms,1.944
+0-12,measured,1.936
+0-12,measured_se,0.088
+0-12,closure_pct,0.39
+12-36,new agentic requests,1.075
+12-36,agentic requests already present,-1.658
+12-36,human class,0.032
+12-36,exhaustive class,-0.288
+12-36,sum of terms,-0.838
+12-36,measured,-0.834
+12-36,measured_se,0.104
+12-36,closure_pct,0.54
+0-36,net,1.102
+0-36,net_se,0.080
+0-36,net_ci95_lo,0.909
+0-36,net_ci95_hi,1.295
+runs,0 req/s,tre-20260928-174217
+runs,12 req/s,tre-20260928-150154
+runs,36 req/s,tre-20260928-162206

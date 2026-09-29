@@ -33,10 +33,10 @@ set that behaves differently.\claim{B1}
 
 The accounting of \cref{sec:r-accounting} shows where the change of sign sits.
 In the step from 12 to 36 agentic req/s at the smallest scope, the largest term is the
-change on the 12 agentic req/s already present: $-1.622$ of a total of $-0.889$ origin
-req/s.\claim{B2}
+change on the 12 agentic req/s already present: $-1.658$ of a measured total of $-0.834$
+origin req/s.\claim{B2}
 By construction this term is the offered rate already present times the change in the
-agentic miss ratio, which falls from 0.1796 to 0.0444 over the same step.\claim{B2}\claim{A2}
+agentic miss ratio, which falls from 0.1830 to 0.0448 over the same step.\claim{B2}\claim{A2}
 The accounting states which term carries the change, not why that term takes its
 value.
 
@@ -51,13 +51,14 @@ at 36 req/s.\claim{B3}
 The prediction has no independent timestamp (\cref{sec:m-prereg}); we call it a prior
 prediction.\claim{B3}
 It gave 3.1 at scope 0.06 and 1.4 at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
-We observe 1.62 and 1.16 (\cref{fig:a-model}).\claim{B3}
-At scope 0.06 the observed value is 48\% below the prediction, outside the tolerance, so
-the quantitative prediction is rejected.\claim{B3}
+We observe 1.66 and 1.15 (\cref{fig:a-model}).\claim{B3}
+At scope 0.06 the observed value is 47\% below the prediction, outside the tolerance, so
+the quantitative prediction is rejected; the earlier sweep, with the shared traversal
+counter, gave the same verdict (1.62, 48\% below).\claim{B3}
 
 Interpretive: the same approximation explains the ordering qualitatively.\claim{B4}
-The wider the reachable set, the smaller the elasticity: 4.05 at scope 0.02, 1.62 at 0.06
-and 1.16 at 0.20, and below 2.0 at the widest scope.\claim{B4}
+The wider the reachable set, the smaller the elasticity: 4.08 at scope 0.02, 1.66 at 0.06
+and 1.15 at 0.20, and below 2.0 at the widest scope.\claim{B4}
 In the terms of the approximation, a narrow reachable set lets more of a class's own
 requests return within $T_C$ as its volume grows, and a wide one less so.\claim{B4}
 This reading is consistent with the ordering but was not verified as a prediction; a
@@ -67,10 +68,10 @@ configuration with non-monotone elasticities would contradict it.\claim{B4}
 Supported: when the agentic reachable set widens, the human class pays through origin load,
 not through lost cache hits.\claim{B5}
 At 30\% agentic share, with volumes and cache fixed, the human p99 latency rises from
-76.1 to 113.0\,ms as the scope grows from 0.02 to 0.20 ($+37.0 \pm 1.0$\,ms,
-$t = 37.3$; \cref{fig:a-human}).\claim{B5}
-Over the same range the human miss ratio changes only by a factor of 1.06, while the
-origin rate rises from 36.8 to 52.6 req/s.\claim{B5}
+72.9 to 99.6\,ms as the scope grows from 0.02 to 0.20 ($+26.7 \pm 1.3$\,ms,
+$t = 20.3$; \cref{fig:a-human}).\claim{B5}
+Over the same range the human miss ratio changes only by a factor of 1.07, while the
+origin rate rises from 37.4 to 52.4 req/s.\claim{B5}
 A human hit ratio that fell in proportion to the p99 would contradict this
 reading.\claim{B5}
 
@@ -93,8 +94,8 @@ Blocking the agentic class as well removes about 0.10 per blocked request: it co
 measure.\claim{A4}\claim{A5}
 
 \subsection{A simulator for what the testbed cannot vary}\label{sec:m-sim}
-% Status SIMULATO (claims.md, row S1). Every number in this subsection is simulated,
-% except the lab values it is compared with.
+% Status SIMULATO (claims.md, rows S1-S6). Every number in this subsection is simulated,
+% except the lab values it is compared with. Never evidence for A1 or A3.
 To study configurations that the testbed cannot vary, we built a trace-driven simulator:
 a generator that reproduces the one of \cref{sec:m-classes} and an LRU cache with the
 byte capacity of the testbed's 128\,MiB.\claim{S1}
@@ -112,7 +113,31 @@ The simulated miss is slightly higher than the measured one almost everywhere: t
 rate is higher at all five points compared, although within the tolerance.\claim{S1}
 These are simulated values, not measurements, and they add no evidence to the results of
 \cref{sec:results}.\claim{S1}
+Phase 1 compared simulator and testbed with the shared traversal counter; with the counter
+corrected, the simulator's predictions for the reruns of 28 and 29 September fell within
+their intervals (\cref{sec:m-prereg}).\claim{A1}\claim{A9}
 
-% Phase 2: pre-registration in docs/PREREG-simulatore-fase2.md; write results only after
-% its RISULTATO document and an S row in claims.md.
-\todo{simulator phase 2}
+% docs/PREREG-simulatore-fase2.md (amendment 2), docs/RISULTATO-simulatore-fase2.md, rows
+% S2-S6 of claims.md v3.8 (SCEN). Only S rows here.
+The second phase, also pre-registered, asked whether these dependences are specific to LRU
+and to our synthetic sessions.\claim{S2}
+It crossed four eviction policies, LRU, SIEVE, S3-FIFO and W-TinyLFU, with two session
+models, the generator's and sessions calibrated on the honeypot, using the corrected
+traversal.\claim{S2}
+In the simulator, the dependence of the agentic marginal on the reachable set holds in 7
+of the 8 combinations, the exception being W-TinyLFU with the generator's
+sessions.\claim{S2}
+The negative sign at scope 0.02 holds with LRU, SIEVE and S3-FIFO and is indeterminate with
+W-TinyLFU; our prior prediction that it is a property of LRU under scans is
+refuted.\claim{S3}
+The overlap effect is positive at 12 agentic req/s in all 8 combinations, and at 36 req/s it
+holds only with LRU.\claim{S4}
+The net effect of adding the agentic class depends on the policy: positive with LRU and
+W-TinyLFU, negative with SIEVE and S3-FIFO, where it comes from fewer misses of the other
+classes; this is not a demonstrated saving and says nothing about the Web.\claim{S5}
+The human miss ratio grows with the agentic reachable set and rate under every policy
+except S3-FIFO at the smallest scope, where it falls.\claim{S6}
+In the simulator, then, what one more request of a class costs depends both on the state of
+the cache and on its eviction policy.\claim{S2}\claim{S5}
+These are simulated results for policies that were not validated on the testbed, and they
+are not evidence for the measured results of \cref{sec:results}.\claim{S2}

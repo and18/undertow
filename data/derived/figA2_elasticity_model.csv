@@ -1,4 +1,4 @@
-scope,W_over_capacity,observed,prior,tolerance,posthoc_realdist,role
-0.02,0.1932,4.0450,,,7.75,anchor (measured before the prediction was written)
-0.06,0.5797,1.6240,3.10,0.30,2.06,prediction
-0.20,1.9324,1.1616,1.40,0.30,1.29,prediction
+scope,W_over_capacity,observed,prior,tolerance,posthoc_realdist,role,run_lo,run_hi
+0.02,0.1932,4.0848,,,7.75,anchor (measured before the prediction was written),tre-20260928-150154,tre-20260928-162206
+0.06,0.5797,1.6571,3.10,0.30,2.06,prediction,tre-20260929-064412,tre-20260929-080424
+0.20,1.9039,1.1535,1.40,0.30,1.29,prediction,tre-20260929-092436,tre-20260929-104448

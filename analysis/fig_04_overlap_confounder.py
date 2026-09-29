@@ -3,11 +3,12 @@ FIG-04 — Sharing the popular head with human traffic makes the agentic class l
 
 CLAIM     A3 (MISURATO).
 DATA      data/derived/fig04_overlap.csv
-RUNS      shared mapping: tre-20260920-114026 / -130038 of 20 Sep (AGENT_MUL not passed to
-          k6, so the default permutation: same permutation as the human class; before env.txt)
-          separated mapping: tre-20260921-150237 / -162248 (AGENT_MUL=3266489917)
-          caption only: same-day pre-registered replication of 25-26 Sep,
-          tre-20260925-213527 / -225538 / tre-20260926-001550 / -025613 (rep_* columns)
+RUNS      primary (claims v3.8, TRAV_MODE=scen, 28 Sep, same day): shared mapping
+          tre-20260928-134141 / -190230 (AGENT_MUL=2654435761), separated mapping
+          tre-20260928-150154 / -162206 (AGENT_MUL=3266489917); CSV column run.
+          caption only: previous measurement, the same-day replication of 25-26 Sep with the
+          global traversal counter (R7), tre-20260925-213527 / -225538 / tre-20260926-001550 /
+          -025613 (prev_* columns)
 
 DESIGN PASS
   Reader    removing the overlap raises measured origin work at both agentic loads:
@@ -27,14 +28,14 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-04_overlap-confounder"
 CLAIMS = "A3 (MISURATO)"
 DATA = ["fig04_overlap.csv"]
-RUNS = ["tre-20260920-114026", "tre-20260920-130038", "tre-20260921-150237",
-        "tre-20260921-162248",
-        "caption only (replication): tre-20260925-213527", "tre-20260925-225538",
+RUNS = ["tre-20260928-134141", "tre-20260928-190230", "tre-20260928-150154",
+        "tre-20260928-162206",
+        "caption only (previous, global traversal): tre-20260925-213527", "tre-20260925-225538",
         "tre-20260926-001550", "tre-20260926-025613"]
 
 EDITORIAL = dict(
     headline="Sharing the popular head with human traffic\nmakes the agentic class look cheaper",
-    deck="Origin requests per second with the agentic working set inside the human popular "
+    deck="Origin requests per second with the agentic reachable set inside the human popular "
          "head\n(shared) and decorrelated from it (separated), at two agentic loads.",
     source="Source: Undertow testbed, mean of 5 runs per point, whiskers ± 1 SE; "
            "human 55 req/s and exhaustive 28 req/s fixed.",
@@ -52,7 +53,7 @@ def _caption():
     h = {k: S.num(float(_row(r, *k)["agent_hit"]), 3)
          for k in ((12, "shared"), (12, "separated"), (36, "shared"), (36, "separated"))}
     return (
-        "Effect of working-set overlap on measured origin work. Shared: the agentic working "
+        "Effect of reachable-set overlap on measured origin work. Shared: the agentic reachable "
         "set is drawn with the same permutation as the human one, so its bases coincide with "
         f"the human popular head (overlap {S.num(float(sh['overlap_pct']), 1)}%; the human "
         "generator never draws rank 0); "
@@ -64,14 +65,13 @@ def _caption():
         f"at 12 agentic req/s and {S.num(float(e36['effect']), 3, sign=True)} req/s "
         f"(t = {S.num(float(e36['t']), 2)}) at 36, and lowers the agentic hit ratio from "
         f"{h[(12, 'shared')]} to {h[(12, 'separated')]} and from {h[(36, 'shared')]} to "
-        f"{h[(36, 'separated')]}. Mean of 5 runs; whiskers ± 1 SE. The shared runs are of "
-        "20 Sep 2026, the separated runs of 21 Sep. In a pre-registered replication with "
-        "both mappings measured in the same night (25–26 Sep, not drawn), the increase is "
-        f"{S.num(float(e12['rep_effect']), 3, sign=True)} ± {S.num(float(e12['rep_effect_se']), 3)} "
-        f"req/s (t = {S.num(float(e12['rep_t']), 2)}) at 12 and "
-        f"{S.num(float(e36['rep_effect']), 3, sign=True)} ± {S.num(float(e36['rep_effect_se']), 3)} "
-        f"req/s (t = {S.num(float(e36['rep_t']), 2)}) at 36; the difference between the two "
-        "rates does not recur. The overlap is a bias of the "
+        f"{h[(36, 'separated')]}. Mean of 5 runs, all four points measured on 28 Sep 2026 "
+        "with the exhaustive class in its own k6 scenario; whiskers ± 1 SE. The previous "
+        "measurement, with a traversal counter shared by all classes (not drawn), gave "
+        f"{S.num(float(e12['prev_effect']), 3, sign=True)} ± {S.num(float(e12['prev_effect_se']), 3)} "
+        f"req/s (t = {S.num(float(e12['prev_t']), 2)}) at 12 and "
+        f"{S.num(float(e36['prev_effect']), 3, sign=True)} ± {S.num(float(e36['prev_effect_se']), 3)} "
+        f"req/s (t = {S.num(float(e36['prev_t']), 2)}) at 36. The overlap is a bias of the "
         "experimental characterisation of a class's cost, not a property of the class."
     )
 

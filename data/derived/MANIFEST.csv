@@ -1,16 +1,16 @@
 file,script,run
 cache_capacity.csv,tools/cache_capacity.py,tre-20260922-002958 tre-20260922-015010 (VictoriaMetrics)
 chapter_sizes.csv,tools/sim/object_sizes.py,nessun run: testi in ~/undertow/cache sul lab (sola lettura)
-class_miss_by_scope.csv,tools/class_miss_by_scope.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010
-fig01_marginal_vs_workingset.csv,tools/fig01_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
-fig02a_miss_by_class.csv,tools/class_miss_by_scope.py,tre-20260921-150237 tre-20260921-162248
+class_miss_by_scope.csv,tools/class_miss_by_scope.py,"tre-20260928-150154 tre-20260928-162206 tre-20260929-064412 tre-20260929-080424 tre-20260929-092436 tre-20260929-104448 (TRAV_MODE=scen, claims v3.8)"
+fig01_marginal_vs_workingset.csv,tools/fig01_data.py,"tre-20260928-150154 tre-20260928-162206 tre-20260929-064412 tre-20260929-080424 tre-20260929-092436 tre-20260929-104448 (TRAV_MODE=scen, claims v3.8)"
+fig02a_miss_by_class.csv,tools/class_miss_by_scope.py,"tre-20260928-150154 tre-20260928-162206 (TRAV_MODE=scen, claims v3.8)"
 fig02b_exhaustive_marginal.csv,tools/fig02b_data.py,tre-20260916-013722 tre-20260916-025527 tre-20260916-041332 tre-20260916-053137
 fig03_frontier.csv,tools/fig03_data.py,tre-20260919-072040 tre-20260919-080920 tre-20260919-085754 tre-20260919-094627 tre-20260919-103501 tre-20260920-061512 tre-20260920-070346 tre-20260920-075220
-fig04_overlap.csv,tools/fig04_data.py,tre-20260920-114026 tre-20260920-130038 tre-20260921-150237 tre-20260921-162248 tre-20260925-213527 tre-20260925-225538 tre-20260926-001550 tre-20260926-025613
-fig05_accounting.csv,tools/fig05_data.py,tre-20260920-102015 tre-20260921-150237 tre-20260921-162248 tre-20260926-013602 tre-20260926-001550
+fig04_overlap.csv,tools/fig04_data.py,"tre-20260928-134141 tre-20260928-150154 tre-20260928-162206 tre-20260928-190230 (TRAV_MODE=scen, claims v3.8); prev_*: tre-20260925-213527 tre-20260925-225538 tre-20260926-001550 tre-20260926-025613 (traversata globale, R7)"
+fig05_accounting.csv,tools/fig05_data.py,"tre-20260928-174217 tre-20260928-150154 tre-20260928-162206 (TRAV_MODE=scen, claims v3.8)"
 fig06_cpu_validation.csv,tools/cpu_validation.py,tre-20260919-072040 tre-20260919-080920 tre-20260919-085754 tre-20260919-094627 tre-20260919-103501 (VictoriaMetrics)
-figA1_human_externality.csv,tools/figA_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
-figA2_elasticity_model.csv,tools/figA_data.py,tre-20260921-150237 tre-20260921-162248 tre-20260921-214946 tre-20260921-230947 tre-20260922-002958 tre-20260922-015010 + cache_capacity.csv
+figA1_human_externality.csv,tools/figA_data.py,"tre-20260928-162206 tre-20260929-080424 tre-20260929-104448 (TRAV_MODE=scen, claims v3.8)"
+figA2_elasticity_model.csv,tools/figA_data.py,"tre-20260928-150154 tre-20260928-162206 tre-20260929-064412 tre-20260929-080424 tre-20260929-092436 tre-20260929-104448 (TRAV_MODE=scen, claims v3.8)"
 honeypot_window.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
 honeypot_contiguity.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)
 honeypot_signed.csv,tools/honeypot_aggregate.py,honeypot snapshot data/hplogs/snapshot-20260924 (impronte in honeypot_snapshot.sha256), finestra [2026-08-12T00:00:00+00:00, 2026-09-22T00:00:00+00:00)

@@ -79,12 +79,10 @@ The classes differ only in which chapters they request.
   $\lfloor \mathrm{scope} \cdot N \rfloor$ ranks, mapped to a chapter by
   $(r \cdot m_A + s) \bmod N$.
   We call the chapters that the generator can request for the class its \emph{reachable
-  set}: $3\lfloor \mathrm{scope} \cdot N \rfloor$ chapters, that is 1,017, 3,051 and
-  10,170 at scopes 0.02, 0.06 and 0.20, or 0.19$\times$, 0.58$\times$ and 1.93$\times$
-  the cache capacity.\claim{A1}\claim{C2}
-  % CHECK with the A1 update: at scope 0.20 the 10,170 positions contain 10,020 distinct
-  % chapters (sessions of adjacent bases overlap), i.e. 1.90x; at 0.02 and 0.06 the counts
-  % are exact. claims.md A1 says 10,170 and 1.93x: not changed here.
+  set}: the distinct chapters among $3\lfloor \mathrm{scope} \cdot N \rfloor$ positions,
+  that is 1,017, 3,051 and 10,020 at scopes 0.02, 0.06 and 0.20, or 0.19$\times$,
+  0.58$\times$ and 1.90$\times$ the cache capacity; at the widest scope some sessions
+  overlap, so 10,170 positions hold 10,020 distinct chapters.\claim{A1}\claim{C2}
 \end{itemize}
 We keep three quantities apart.
 The \emph{reachable set} is the variable we manipulate: it is fixed by the generator's
@@ -99,10 +97,13 @@ because the capacity itself was measured as a number of objects and every class 
 the same kind of object, with a mean of 24.9\,KiB of storage per object.\claim{C2}
 To change the volume of one class while the others stay fixed in absolute terms, we
 change $\lambda$, $\alpha$ and $\beta$ together.\claim{A1}
+In the primary design the human and exhaustive classes are offered 55 and 28 req/s, and
+the agentic class 12 or 36 req/s (configured values 11.9985 and 35.9975).\claim{A1}
 
 \paragraph{An artefact of the exhaustive traversal, and its correction.}
 % docs/retractions.md R7; docs/PREREG-lab-trav-own-20260928.md (204459c);
-% docs/RISULTATO-lab-trav-own-20260928.md; claims.md v3.7 (A3, A9, B2, D8).
+% docs/RISULTATO-lab-trav-own-20260928.md, docs/RISULTATO-lab-trav-own-scope-20260929.md;
+% claims.md v3.8 (A1, A2, A3, A9, B2, D8).
 In the runs before 28 September 2026, the exhaustive class took its position in the
 traversal from an iteration counter shared by all three classes.
 Its path through the corpus therefore depended on the total offered rate $\lambda$, which
@@ -113,13 +114,15 @@ its previous size.\claim{D8}
 We corrected the generator by running the exhaustive class as a separate k6 scenario with
 its own counter, which also makes its arrivals regular instead of randomly
 interleaved.
-A pre-registered rerun of the five configurations at scope 0.02, on 28 September 2026,
-confirmed the predicted shifts; at that scope these runs are primary, and the earlier runs
-are kept as a previous measurement.\claim{A3}\claim{A9}\claim{D8}
+Two pre-registered reruns with the corrected generator, on 28 and 29 September 2026,
+measured again the five configurations at scope 0.02 and the two wider scopes of A1
+(\cref{sec:m-prereg}); all primary results at these configurations come from them, and the
+earlier runs are kept as a previous measurement.\claim{A1}\claim{A3}\claim{A9}\claim{D8}
 The artefact moved the net effect of the agentic class and the size of the exhaustive
-drop; it did not move the overlap effect beyond its errors.\claim{A9}\claim{D8}\claim{A3}
-In the primary design the human and exhaustive classes are offered 55 and 28 req/s, and
-the agentic class 12 or 36 req/s (configured values 11.9985 and 35.9975).\claim{A1}
+drop; it did not move the sign or the ordering of the agentic marginal, or the overlap
+effect beyond its errors.\claim{A1}\claim{A9}\claim{D8}\claim{A3}
+The admission-policy frontier and the exhaustive series of \cref{sec:r-asymmetry} were not
+rerun and keep the shared counter.
 
 \paragraph{Shared and separated mapping.}
 The multiplier $m_A$ decides where the agentic reachable set lies with respect to human
@@ -222,26 +225,32 @@ Contiguity is the share of consecutive request pairs within one session that rea
 adjacent chapters of the same book.\claim{C5}
 A session is a TCP connection on the honeypot and a k6 virtual user in the generator.\claim{C5}
 
-\subsection{Pre-registered replication}\label{sec:m-prereg}
-The three results that rest on one run per point or on runs from different days (A1 at
-scope 0.02, the overlap effect and the net effect) were measured again in one night, on
-25--26 September 2026.\claim{A1}\claim{A3}\claim{A9}
-The protocol was committed to the repository before launch, and its version is recorded
-in the configuration of every run.\claim{A1}
-It fixed the five configurations, identical to the original runs; their order, chosen so
-that a linear drift during the night least affects the comparisons for A1 and the net
-effect; the formulas; and the criteria.
-% Thresholds of R1-R3 are in docs/PREREG-replica-20260924.md, NOT in claims.md:
-%   R1 m < 0 and t <= -3; R2 d > 0 and t >= 3 at both rates; R3 t > -2.
-% Re-enter them only with a note in claims.md.
-R1: the marginal at scope 0.02 is negative, distinguishable from zero, and within three
-combined standard errors of the original.\claim{A1}
-R2: removing the overlap raises the origin rate at both agentic rates.\claim{A3}
-R3: the net effect is not significantly negative.\claim{A9}
-R4: the drift between days, reported without a threshold.
-The analysis script was tested on the original runs before the new runs were read.
-All five runs passed the gate; none was repeated, and nothing deviated from the
-protocol.\claim{A1}\claim{A3}\claim{A9}
+\subsection{Pre-registered checks}\label{sec:m-prereg}
+% docs/PREREG-replica-20260924.md + RISULTATO (25-26 Sep); docs/PREREG-lab-trav-own-20260928.md
+% + RISULTATO (V1-V5); docs/PREREG-lab-trav-own-scope-20260929.md + RISULTATO (W1-W4).
+% Numeric thresholds are in the PREREG files, not in claims.md: stated here in words.
+Three checks were pre-registered: each protocol was committed to the repository before
+launch, and its version is recorded in the configuration of every run.\claim{A1}\claim{A3}\claim{A9}
+Each fixed the configurations, their order, the formulas and the pass criteria, and each
+reports every criterion whatever its outcome.
+The first, on 25--26 September 2026, measured again in one night the five configurations
+behind A1 at scope 0.02, the overlap effect and the net effect, which had rested on one run
+per point or on runs from different days; its criteria required the marginal to stay
+negative and close to the original, the overlap effect to stay positive at both rates, and
+the net effect not to be significantly negative.\claim{A1}\claim{A3}\claim{A9}
+All three held, and a fourth quantity, the drift between days, was reported without a
+threshold.\claim{A3}\claim{A9}
+The second, on 28 September, repeated the same five configurations with the corrected
+exhaustive traversal (\cref{sec:m-classes}), against predictions from the simulator for the
+marginal, the overlap effect, the net effect and the exhaustive drop; all four fell within
+the predicted intervals.\claim{A1}\claim{A3}\claim{A9}\claim{D8}
+The third, on 29 September, measured the two wider scopes of A1 with the corrected
+traversal; its criteria on the sign, the ordering and the predicted values all
+held.\claim{A1}
+In all three, every run passed the gate, none was repeated, and nothing deviated from the
+protocol; the analysis scripts were tested on earlier runs before the new ones were read.
+For the third, the analysis script was committed after the launch and before the end of
+the campaign, without any result having been read.\claim{A1}
 The prediction tested in \cref{sec:mechanism} is different: it was written before the
 first results at scopes 0.06 and 0.20 were available, but it has no independent
 timestamp, so we call it a prior prediction.\claim{B3}

@@ -3,9 +3,9 @@ FIG-05 — Where the change in origin work comes from, term by term.
 
 CLAIM     B2 (MISURATO). Supports A1 (sign of the 12->36 step) without restating it.
 DATA      data/derived/fig05_accounting.csv
-RUNS      tre-20260921-150237 / -162248 (separated mapping, scope 0.02) and the
-          agentic = 0 baseline tre-20260920-102015 of 20 Sep (inter-day, see caption;
-          beta = 0, so the AGENT_MUL defect of that campaign does not apply).
+RUNS      primary (claims v3.8, TRAV_MODE=scen, 28 Sep, same day): tre-20260928-174217
+          (agentic = 0), tre-20260928-150154 / -162206 (separated mapping, scope 0.02);
+          rows with step "runs" in the CSV.
 
 DESIGN PASS
   Reader    in the second step the largest term is the agentic requests already
@@ -17,8 +17,8 @@ DESIGN PASS
   Secondary term values on the bars; the net 0->36 effect as one line under the
             panels.
   Prevent   "adding agentic traffic reduces origin work" (retracted, R2): step a is
-            shown next to step b and the net 0->36 effect is printed with both
-            measurements (A9: these runs and the same-day replication), never "positive".
+            shown next to step b and the net 0->36 effect (A9: adding the class costs)
+            is printed under the panels.
 """
 import figure_style as S
 from figure_style import C, T, PT, SEMIBOLD
@@ -26,13 +26,13 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-05_accounting-decomposition"
 CLAIMS = "B2 (MISURATO)"
 DATA = ["fig05_accounting.csv"]
-RUNS = ["tre-20260920-102015", "tre-20260921-150237", "tre-20260921-162248"]
+RUNS = ["tre-20260928-174217", "tre-20260928-150154", "tre-20260928-162206"]
 
 EDITORIAL = dict(
     headline="Past 12 req/s, the largest term is the agentic requests\nalready present becoming cheaper",
     deck="Change in origin requests per second, split by the class that causes it, for two "
-         "steps of\nagentic load at the smallest working set. Terms add up to the measured change.",
-    source="Source: Undertow testbed, separated working sets, scope 0.02; measured change: mean "
+         "steps of\nagentic load at the smallest reachable set. Terms add up to the measured change.",
+    source="Source: Undertow testbed, separated reachable sets, scope 0.02; measured change: mean "
            "of 5 runs, whisker ± 1 SE.",
 )
 
@@ -43,33 +43,30 @@ def _caption():
     """Every number in the caption is computed from the CSV the figure draws."""
     r = S.read_csv(DATA[0])
     a, b = _vals(r, STEP_A), _vals(r, STEP_B)
-    net, rep = _vals(r, "0-36"), _vals(r, "0-36-replica")
+    net = _vals(r, "0-36")
     return (
         "Accounting decomposition of the change in origin work at the smallest agentic "
-        "working set (scope 0.02, separated mapping), for the steps "
+        "reachable set (scope 0.02, separated mapping), for the steps "
         f"{STEP_A.replace('-', ' → ')} and {STEP_B.replace('-', ' → ')} "
         "agentic req/s with human and exhaustive volumes fixed. Each bar is the contribution "
         "of one term to the change in origin requests per second and starts where the "
         "previous one ends; the grey bar is their sum and the marker the measured change "
-        "(mean of 5 runs, ± 1 SE). The sum matches the measurement to within "
+        "(mean of 5 runs, all three points measured on 28 Sep 2026 with the exhaustive class "
+        "in its own k6 scenario; ± 1 SE). The sum matches the measurement to within "
         f"{S.num(a['closure_pct'], 1)}% (step a) and {S.num(b['closure_pct'], 1)}% (step b). "
         "In step b the largest term is the change on the "
         f"{STEP_B.split('-')[0]} agentic req/s already present "
-        f"({S.num(b['agentic requests already present'], 3, sign=True)}). The net effect "
-        "from 0 to 36 req/s is not negative, in two measurements reported separately: "
-        f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} (95% CI "
-        f"{S.num(net['net_ci95_lo'], 2, sign=True)} to {S.num(net['net_ci95_hi'], 2, sign=True)}) "
-        "from the runs shown, where the 0 req/s point is an inter-day baseline, and "
-        f"{S.num(rep['net'], 3, sign=True)} ± {S.num(rep['net_se'], 3)} (95% CI "
-        f"{S.num(rep['net_ci95_lo'], 2, sign=True)} to {S.num(rep['net_ci95_hi'], 2, sign=True)}) "
-        "in a same-day pre-registered replication, an interval that contains zero."
+        f"({S.num(b['agentic requests already present'], 3, sign=True)}). Adding the agentic "
+        "class from 0 to 36 req/s costs "
+        f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} origin req/s (95% CI "
+        f"{S.num(net['net_ci95_lo'], 2, sign=True)} to {S.num(net['net_ci95_hi'], 2, sign=True)})."
     )
 
 TERMS = [("new agentic requests", "New agentic requests", "New agentic", C.agentic),
          ("agentic requests already present", "Agentic already present", "Agentic present", C.agentic),
          ("human class", "Human class", "Human", C.human),
          ("exhaustive class", "Exhaustive class", "Exhaustive", C.exhaustive)]
-XLIM = (-1.25, 2.75)
+XLIM = (-1.25, 3.25)
 
 
 def _vals(rows, step):
@@ -141,12 +138,12 @@ def render(variant):
     sp = S.Spec(variant)
     rows = S.read_csv(DATA[0])
     va_, vb_ = _vals(rows, STEP_A), _vals(rows, STEP_B)
-    net, rep = _vals(rows, "0-36"), _vals(rows, "0-36-replica")
+    net = _vals(rows, "0-36")
     key_w = sp.pick(0.82, 1.18, 1.34)
     rows_h = sp.pick(1.30, 1.40, 1.50)
     title_h = T.s(T.panel) * 1.2 * PT + 0.14
     axis_h = 0.05 + T.s(T.tick) * 1.25 * PT + 0.06 + T.s(T.axis) * 1.3 * PT
-    net_h = 0.10 + 2 * T.s(T.label) * 1.3 * PT
+    net_h = 0.10 + T.s(T.label) * 1.3 * PT
     if sp.narrow:
         body_h = 2 * (title_h + rows_h + axis_h) + 0.18 + net_h
     else:
@@ -170,13 +167,9 @@ def render(variant):
                              "12 → 36 agentic req/s", False, 0))
         y_net = top + title_h + rows_h + axis_h + 0.04
     for f in panels:
-        f.xticks([-1, 0, 1, 2], [S.num(t, 0, sign=True) if t else "0" for t in (-1, 0, 1, 2)])
+        f.xticks([-1, 0, 1, 2, 3], [S.num(t, 0, sign=True) if t else "0" for t in (-1, 0, 1, 2, 3)])
         f.xtitle("Change in origin req/s")
-    lh = T.s(T.label) * 1.3 * PT
     cv.text(L, y_net + 0.06, f"Net change from 0 to 36 agentic req/s: "
-            f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} origin req/s "
-            "(these runs)", T.label, color=C.ink_soft, ha="left", va="top")
-    cv.text(L, y_net + 0.06 + lh, f"{S.num(rep['net'], 3, sign=True)} ± "
-            f"{S.num(rep['net_se'], 3)} origin req/s in a same-day replication",
+            f"{S.num(net['net'], 3, sign=True)} ± {S.num(net['net_se'], 3)} origin req/s",
             T.label, color=C.ink_soft, ha="left", va="top")
     return cv.save(STEM)

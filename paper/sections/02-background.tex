@@ -52,8 +52,9 @@ reachable set (\cref{sec:r-sign}), and by windowed working set the agentic clien
 honeypot sit near the narrow end.\claim{A1}\claim{C3}
 Third, the overlap that these workloads fix changes the measured cost of a class
 (\cref{sec:r-overlap}).\claim{A3}
-Fourth, in our testbed the hit ratio of the exhaustive class rises from 0.179 to 0.200 when
-the agentic offered rate increases while the others stay fixed, under the separated mapping, so isolating the agentic class in a
+Fourth, in our testbed the miss ratio of the exhaustive class falls from 0.858 to 0.825
+when the agentic class is added from 0 to 36 req/s under the separated mapping, so
+isolating the agentic class in a
 separate cache would remove a measured benefit (supported).\claim{D8}
 The separate layer that Cloudflare envisions is organised differently: it routes human and
 AI traffic to distinct tiers and, for AI traffic, varies the handling by task and by the

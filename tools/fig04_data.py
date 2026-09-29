@@ -2,11 +2,13 @@
 """
 fig04_data.py — genera data/derived/fig04_overlap.csv (FIG-04, claim A3).
 
-Prima il CSV era scritto a mano. Quattro run a scope 0,02, 5 ripetizioni ciascuno:
-  mappatura condivisa  tre-20260920-114026 (12 req/s), -130038 (36 req/s): AGENT_MUL non
-                       passato a k6, quindi permutazione di default (registry)
-  mappatura separata   tre-20260921-150237 (12 req/s), -162248 (36 req/s):
+Quattro run primari a scope 0,02, 5 ripetizioni ciascuno, stesso giorno (28 set), traversata
+esaustiva in scenario proprio (TRAV_MODE=scen, claims v3.8; docs/RISULTATO-lab-trav-own-20260928.md):
+  mappatura condivisa  tre-20260928-134141 (12 req/s), tre-20260928-190230 (36 req/s):
+                       AGENT_MUL=2654435761
+  mappatura separata   tre-20260928-150154 (12 req/s), tre-20260928-162206 (36 req/s):
                        AGENT_MUL=3266489917
+La colonna run dice da quale run viene ogni riga.
 Colonne:
   origin_rps / origin_se  media e SE (stdev / sqrt(n)) di origin_rps da points.csv
   agent_hit               media di h_agent da points.csv
@@ -23,11 +25,12 @@ Colonne:
 Stampa anche, per confronto, l'effetto separata − condivisa con SE combinato e t, e le due
 grandezze con le definizioni precedenti (testa = ranghi 0..338, Zipf(1) esatta con 1/(k·H_N)).
 Il file e' letto da FIG-04 anche per la didascalia: ci sono anche effect / effect_se / t.
-  rep_effect / rep_effect_se / rep_t  stesso effetto nella replica pre-registrata nello
-                          stesso giorno (docs/PREREG-replica-20260924.md, R2; 25-26 set):
+  prev_effect / prev_effect_se / prev_t  stesso effetto nella misura precedente, la replica
+                          pre-registrata del 25-26 set con la traversata a indice globale (R7):
                           C12 tre-20260925-213527, S12 tre-20260925-225538,
-                          S36 tre-20260926-001550, C36 tre-20260926-025613. La figura disegna
-                          solo i run del 20-21 set; la replica entra solo nella didascalia.
+                          S36 tre-20260926-001550, C36 tre-20260926-025613 (prev_runs). La
+                          figura disegna solo i run primari; la misura precedente entra solo
+                          nella didascalia.
 
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
@@ -51,12 +54,12 @@ HUMAN_MUL = 2654435761         # permute() di workload.js, anche default di AGEN
 SEPARATED_MUL = 3266489917
 # (agentica nominale, mappatura) -> (run, moltiplicatore agentico)
 RUNS = {
-    (12, "shared"): ("tre-20260920-114026", HUMAN_MUL),
-    (12, "separated"): ("tre-20260921-150237", SEPARATED_MUL),
-    (36, "shared"): ("tre-20260920-130038", HUMAN_MUL),
-    (36, "separated"): ("tre-20260921-162248", SEPARATED_MUL),
+    (12, "shared"): ("tre-20260928-134141", HUMAN_MUL),
+    (12, "separated"): ("tre-20260928-150154", SEPARATED_MUL),
+    (36, "shared"): ("tre-20260928-190230", HUMAN_MUL),
+    (36, "separated"): ("tre-20260928-162206", SEPARATED_MUL),
 }
-# replica pre-registrata nello stesso giorno (R2): (agentica nominale, mappatura) -> run
+# misura precedente: replica pre-registrata del 25-26 set, traversata globale (R7)
 REPLICA = {
     (12, "shared"): "tre-20260925-213527",
     (12, "separated"): "tre-20260925-225538",
@@ -125,17 +128,18 @@ def main():
         print(f"  effetto a {load} req/s: {d:+.4f} +/- {se:.4f}  t = {d / se:.2f}")
         ra, rb = rep[(load, "shared")], rep[(load, "separated")]
         rd, rse = rb["mean"] - ra["mean"], math.sqrt(ra["var_mean"] + rb["var_mean"])
-        print(f"  replica a {load} req/s: {rd:+.4f} +/- {rse:.4f}  t = {rd / rse:.2f}")
+        print(f"  precedente (globale) a {load} req/s: {rd:+.4f} +/- {rse:.4f}  t = {rd / rse:.2f}")
+        prev_runs = f"{REPLICA[(load, 'shared')]} {REPLICA[(load, 'separated')]}"
         for mapping in ("shared", "separated"):
             eff = ([f"{d:.3f}", f"{se:.3f}", f"{d / se:.2f}",
-                    f"{rd:.3f}", f"{rse:.3f}", f"{rd / rse:.2f}"]
-                   if mapping == "separated" else [""] * 6)
-            rows.append(out[(load, mapping)] + eff)
+                    f"{rd:.3f}", f"{rse:.3f}", f"{rd / rse:.2f}", prev_runs]
+                   if mapping == "separated" else [""] * 7)
+            rows.append(out[(load, mapping)] + eff + [RUNS[(load, mapping)][0]])
     with OUT_CSV.open("w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["agent_rps", "mapping", "overlap_pct", "human_mass_pct", "origin_rps",
                     "origin_se", "agent_hit", "effect", "effect_se", "t",
-                    "rep_effect", "rep_effect_se", "rep_t"])
+                    "prev_effect", "prev_effect_se", "prev_t", "prev_runs", "run"])
         w.writerows(rows)
     print(f"scritto {OUT_CSV}")
 

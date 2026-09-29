@@ -1,8 +1,8 @@
 # Undertow — la tesi in una pagina
 
 Bussola per ogni sessione di scrittura. **Non aggiunge claim**: ogni frase del paper resta
-vincolata a `docs/claims.md` (v3.6). Questo file dice *cosa* raccontiamo e *in che ordine*.
-28 settembre 2026.
+vincolata a `docs/claims.md` (v3.8). Questo file dice *cosa* raccontiamo e *in che ordine*.
+29 settembre 2026 (aggiornato con la traversata corretta, voce R7 di `docs/retractions.md`).
 
 ## La frase
 
@@ -15,19 +15,20 @@ lavoro interagisce con lo stato condiviso della cache. È **D1** (SFIDATO), il c
 
 ## Cosa abbiamo misurato — Results (solo MISURATO)
 
-1. **A1.** Il marginale agentico cambia segno col working set: −0,035 / +0,160 / +0,438
-   richieste all'origine per richiesta, a 0,19× / 0,58× / 1,93× la cache. Il punto a
-   0,02 è replicato con pre-registrazione nello stesso giorno: −0,0405 ± 0,0061.
-2. **A9.** Marginale negativo non vuol dire risparmio: il netto 0 → 36 req/s **non è
-   negativo** (+0,392 ± 0,158; replica +0,238 ± 0,110, IC che contiene lo zero). Mai
-   scrivere «positivo».
+1. **A1.** Il marginale agentico cambia segno col reachable set: −0,035 / +0,143 / +0,421
+   richieste all'origine per richiesta, a 0,19× / 0,58× / 1,90× la cache, tutti con la
+   traversata esaustiva in scenario proprio (`TRAV_MODE=scen`, 28-29 set). Lo sweep del
+   21-22 set (−0,035 / +0,161 / +0,438) resta come misura precedente.
+2. **A9.** Marginale negativo non vuol dire risparmio: **l'aggiunta della classe agentica
+   costa**, +1,102 ± 0,080 req/s da 0 a 36 req/s, IC 95% [+0,909, +1,295]. Le misure
+   precedenti (+0,392 e +0,238) erano abbassate dall'artefatto R7.
 3. **A2 + A7.** Le classi reagiscono in modo opposto al proprio volume: l'agentica è
-   sensibile 4,05×, l'esaustiva è piatta a ~0,98.
+   sensibile 4,08×, l'esaustiva è piatta a ~0,98.
 4. **A8.** Per richiesta, l'esaustiva degrada il miss umano più dell'agentica. È
    misurata la direzione; il fattore ~7× non è appaiato.
 5. **A3 + C4.** Il costo misurato di una classe dipende dalle altre. La sovrapposizione
-   con la testa umana vale ~0,9 req/s (replicato). In isolamento il miss è 0,002, in
-   mistura 0,180.
+   con la testa umana vale +0,93 e +0,80 req/s. In isolamento il miss è 0,002, in
+   mistura 0,183.
 6. **A6 + A4.** Blocco e rinvio stanno sulla stessa frontiera. Bloccare anche gli agenti
    costa 2 807 richieste servite, con una Δ p99 non misurabile.
 7. **C3 + C5 + C6 (honeypot).**
@@ -91,24 +92,21 @@ non la conclusione.
   S3-FIFO.
 
 **Altri riferimenti:**
-- **SemDN** (Hua e Xiao, HotNets '26) propone un'architettura alternativa; noi no.
+- **SemDN** (Hua e Xiao, preprint arXiv:2609.22486) propone un'architettura alternativa; noi no.
 - **Breakwater, DAGOR, Protego, TopFull:** il controllo in retroazione non è una novità.
 - **Denning 1968** (working set); **Fagin 1977, Che 2002, Fricker 2012** (tempo
   caratteristico); **Mattson 1970, SHARDS, Counter Stacks** (curve di miss).
 
 ## Pubblicazione
 
-- **Venue:** PAM 2027, long paper (deciso il 28 settembre, al posto dello short paper).
-- **Formato:** ≤ 24 pagine LNCS di contenuto, più ≤ 5 per appendici e bibliografia.
-  **Obiettivo circa 16 pagine**, non 24. Classe `llncs` (v2.26, in `~/texmf` da CTAN),
-  bibliografia `splncs04`.
-- **Revisione:** doppio cieco.
-- **Obbligatori:**
-  - appendice «Ethics»;
-  - dichiarazione dell'uso di GenAI nei ringraziamenti;
-  - file `.bbl`.
-- **Scadenze:** abstract 30 ottobre 2026, paper 6 novembre 2026.
-- **arXiv:** dopo l'endorsement, e compatibilmente con le regole di anonimato di PAM.
+- **Venue:** **arXiv** (deciso il 29 settembre; PAM non e' piu' la sede). Sede di conferenza
+  da scegliere dopo, come previsto in `CLAUDE.md`.
+- **Formato:** si tiene LNCS (`llncs` v2.26 in `~/texmf`, bibliografia `splncs04`),
+  circa 16 pagine di contenuto piu' appendici.
+- **Anonimato:** non piu' necessario per arXiv; il sorgente oggi e' ancora anonimo (autore,
+  ringraziamenti, `\anonrepo`) e va reso nominativo prima dell'invio.
+- **Da tenere:** appendice «Ethics», dichiarazione dell'uso di GenAI, riferimenti verificati.
+- **arXiv:** dopo l'endorsement.
 
 ## Ordine di scrittura
 

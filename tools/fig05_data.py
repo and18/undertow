@@ -5,12 +5,14 @@ fig05_data.py — genera data/derived/fig05_accounting.csv (FIG-05, claim B2, A9
 Prima il CSV era scritto a mano, con miss arrotondati a 3 decimali e rate nominali
 (12 / 24 / 55 / 28 req/s). Ora dalle medie non arrotondate e dai rate configurati.
 
-Tre run a scope 0,02, 5 ripetizioni ciascuno:
-  0 req/s agentici   tre-20260920-102015 (β = 0; anteriore a env.txt: λ = 83 come
-                     ricostruito in tools/net_agentic.py dai conteggi per classe dei JSON
-                     di k6, controllato qui entro l'1%)
-  12 req/s           tre-20260921-150237 (mappatura separata, λ da env.txt)
-  36 req/s           tre-20260921-162248 (mappatura separata, λ da env.txt)
+Tre run primari a scope 0,02, 5 ripetizioni ciascuno, stesso giorno (28 set), traversata
+esaustiva in scenario proprio (TRAV_MODE=scen, claims v3.8; docs/RISULTATO-lab-trav-own-20260928.md),
+λ da env.txt:
+  0 req/s agentici   tre-20260928-174217 (β = 0)
+  12 req/s           tre-20260928-150154 (mappatura separata)
+  36 req/s           tre-20260928-162206 (mappatura separata)
+Le righe con step "runs" dicono da quale run viene ogni punto. Le misure precedenti, con la
+traversata a indice globale (R7), non sono piu' in questo file: sono in claims.md (A9, B2).
 
 Per ogni run: rate configurato di classe (umana (1−α−β)·λ, esaustiva α·λ, agentica β·λ)
 e miss medio di classe m = media(1 − h) sulle ripetizioni (h_zipf, h_trav, h_agent di
@@ -25,9 +27,6 @@ points.csv). Scomposizione di Δ(Σ rate·miss) fra un punto basso (0) e uno alt
                                      non arrotondati
 Le righe 0-36 (net, net_se, net_ci95_lo/hi) sono lo stesso netto di tools/net_agentic.py
 (claim A9): SE combinato, IC 95% con il t di Student ai gradi di liberta' di Welch.
-Le righe 0-36-replica sono lo stesso netto nella replica pre-registrata nello stesso giorno
-(docs/PREREG-replica-20260924.md, R3; 25-26 set): P0 tre-20260926-013602 e S36
-tre-20260926-001550, λ da env.txt. I due netti non si uniscono (claim A9).
 
 Il lab resta in sola lettura: solo `ssh lab cat`.
 
@@ -48,11 +47,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_CSV = ROOT / "data" / "derived" / "fig05_accounting.csv"
 
 # agentica nominale -> (run, λ configurato o None per leggerlo da env.txt)
-RUNS = {0: ("tre-20260920-102015", 83.0), 12: ("tre-20260921-150237", None),
-        36: ("tre-20260921-162248", None)}
+RUNS = {0: ("tre-20260928-174217", None), 12: ("tre-20260928-150154", None),
+        36: ("tre-20260928-162206", None)}
 STEPS = ((0, 12), (12, 36))
-# replica pre-registrata (R3): agentica nominale -> (run, λ da env.txt)
-REPLICA = {0: ("tre-20260926-013602", None), 36: ("tre-20260926-001550", None)}
 
 
 def read_run(run, lam):
@@ -100,8 +97,7 @@ def main():
         print(f"  {step}: " + "  ".join(f"{t} {v:+.4f}" for t, v in terms))
         print(f"        somma {total:+.4f}  misurato {meas:+.4f} +/- {se:.4f}  "
               f"scarto {100 * (total - meas) / abs(meas):+.1f}%")
-    rep = {k: read_run(run, lam) for k, (run, lam) in REPLICA.items()}
-    for step, (a, b) in (("0-36", (r[0], r[36])), ("0-36-replica", (rep[0], rep[36]))):
+    for step, (a, b) in (("0-36", (r[0], r[36])),):
         va, vb = a["var_mean"], b["var_mean"]
         net, se = b["mean"] - a["mean"], math.sqrt(va + vb)
         df = (va + vb) ** 2 / (va ** 2 / (a["n"] - 1) + vb ** 2 / (b["n"] - 1))
@@ -115,6 +111,7 @@ def main():
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["step", "term", "value"])
         w.writerows(out)
+        w.writerows([["runs", f"{k} req/s", run] for k, (run, _) in RUNS.items()])
     print(f"scritto {OUT_CSV}")
 
 

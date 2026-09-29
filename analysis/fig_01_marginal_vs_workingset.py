@@ -1,15 +1,16 @@
 """
-FIG-01 — The marginal origin cost of the agentic class changes sign with its working set.
+FIG-01 — The marginal origin cost of the agentic class changes sign with its reachable set.
 
 CLAIM     A1 (MISURATO). Cross-references C2 (capacity), C3 (honeypot).
 DATA      data/derived/fig01_marginal_vs_workingset.csv
-RUNS      tre-20260921-150237/-162248 (scope 0.02) · tre-20260921-214946/-230947 (0.06)
-          tre-20260922-002958/-015010 (0.20); AGENT_MUL=3266489917 in env.txt.
+RUNS      primary (claims v3.8, TRAV_MODE=scen): tre-20260928-150154/-162206 (scope 0.02),
+          tre-20260929-064412/-080424 (0.06), tre-20260929-092436/-104448 (0.20);
+          AGENT_MUL=3266489917 in env.txt. The CSV names the run of every row.
 
 DESIGN PASS
   Reader    the same traffic class costs the origin less, then more, as only its
-            working set grows.
-  Encoding  a ladder: one row per working set (each step ~x3), a bar from a zero
+            reachable set grows.
+  Encoding  a ladder: one row per reachable set (each step ~x3), a bar from a zero
             line, keys left and values right. Sign is read from the side of the
             zero line before any number is read.
   Dominant  the zero line and the three bars.
@@ -19,7 +20,7 @@ DESIGN PASS
   Prevent   "agentic traffic reduces origin work" (retracted, R2): the bar is the
             12->36 req/s marginal, the axis says "marginal, not net", the header
             names the direction of the origin rate and not "work"; the net 0->36
-            effect (A9, two measurements) is in the text, and the caption says so. No line joins the rows (3 points, no functional form).
+            effect (A9) is in the text, and the caption says so. No line joins the rows (3 points, no functional form).
             No "working set = capacity" boundary (retracted, R4).
 """
 import figure_style as S
@@ -28,30 +29,30 @@ from figure_style import C, T, PT, SEMIBOLD
 STEM = "FIG-01_marginal-cost-vs-working-set"
 CLAIMS = "A1 (MISURATO); refs C2, C3"
 DATA = ["fig01_marginal_vs_workingset.csv"]
-RUNS = ["tre-20260921-150237", "tre-20260921-162248", "tre-20260921-214946",
-        "tre-20260921-230947", "tre-20260922-002958", "tre-20260922-015010"]
+RUNS = ["tre-20260928-150154", "tre-20260928-162206", "tre-20260929-064412",
+        "tre-20260929-080424", "tre-20260929-092436", "tre-20260929-104448"]
 
 EDITORIAL = dict(
-    headline="What an extra agentic request costs the origin\ndepends on its working set",
-    deck="Origin requests caused by each added agentic request, at three working-set sizes. "
-         "Traffic\nvolumes, cache and corpus are held fixed; only the working set changes.",
+    headline="What an extra agentic request costs the origin\ndepends on its reachable set",
+    deck="Origin requests caused by each added agentic request, at three reachable-set sizes. "
+         "Traffic\nvolumes, cache and corpus are held fixed; only the reachable set changes.",
     source="Source: Undertow testbed, mean of 5 runs per row, whiskers ± 1 SE; agentic "
            "load raised from 12 to 36 req/s.\nReal agents: theslowshelf.org honeypot, p90 of "
            "distinct objects per 143 s window, 12 Aug – 21 Sep 2026.",
 )
 
 CAPTION = (
-    "Marginal origin cost of the agentic class at three working-set sizes. In each row the "
+    "Marginal origin cost of the agentic class at three reachable-set sizes. In each row the "
     "agentic class is raised from 12 to 36 req/s (13% to 30% of load) while the human and "
     "exhaustive classes stay fixed at 55 and 28 req/s; only the scope from which agentic "
-    "sessions are drawn changes. Rows give the working set (the objects the generator "
-    "can draw: scope × corpus session starts, rounded down, × 3 contiguous chapters) as a "
-    "multiple of the measured cache capacity of 5,263 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
+    "sessions are drawn changes. Rows give the reachable set (the distinct chapters the "
+    "generator can request for the class) as a multiple of the measured cache capacity of "
+    "5,263 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
     "values are marginal between 12 and 36 req/s, not the net effect of adding the class, "
-    "which is reported in the text. The tag marks the row closest to real agents by windowed working "
-    "set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for that "
-    "row), not by the size of the whole working set. Working sets are decorrelated across classes "
-    "(AGENT_MUL = 3266489917)."
+    "which is reported in the text. The tag marks the row closest to real agents by windowed "
+    "working set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for "
+    "that row), not by the size of the reachable set. Reachable sets are separated across "
+    "classes (AGENT_MUL = 3266489917); the exhaustive class runs as its own k6 scenario."
 )
 
 XMIN, XMAX = -0.10, 0.50
@@ -85,7 +86,7 @@ def render(variant):
     # header: column heads, and the direction of the axis flanking its zero line
     y_head = top + T.s(T.sub) * 0.95 * PT
     hd = dict(color=C.ink_soft, va="baseline")
-    cv.text(cv.left, y_head, "Working set", T.sub, weight=SEMIBOLD, ha="left", **hd)
+    cv.text(cv.left, y_head, "Reachable set", T.sub, weight=SEMIBOLD, ha="left", **hd)
     cv.text(cv.right, y_head, "Mean ± SE", T.sub, weight=SEMIBOLD, ha="right", **hd)
     cv.text(x0 - 0.06, y_head, sp.pick("lower", "lower origin rate"), T.sub,
             ha="right", **hd)

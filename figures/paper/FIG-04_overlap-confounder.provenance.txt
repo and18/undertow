@@ -1,17 +1,17 @@
 figure     FIG-04_overlap-confounder
 claims     A3 (MISURATO)
 data
-           data/derived/fig04_overlap.csv  sha256:83bfa5f73f06eec0
+           data/derived/fig04_overlap.csv  sha256:3d27948f830280e3
 runs
-           tre-20260920-114026
-           tre-20260920-130038
-           tre-20260921-150237
-           tre-20260921-162248
-           caption only (replication): tre-20260925-213527
+           tre-20260928-134141
+           tre-20260928-190230
+           tre-20260928-150154
+           tre-20260928-162206
+           caption only (previous, global traversal): tre-20260925-213527
            tre-20260925-225538
            tre-20260926-001550
            tre-20260926-025613
-script     analysis/fig_04_overlap_confounder.py  sha256:d85a00d75a726275
+script     analysis/fig_04_overlap_confounder.py  sha256:91a9e54236b28b9e
 style      analysis/figure_style.py  sha256:5ced2797acd85eab
 targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
 toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3

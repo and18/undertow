@@ -24,7 +24,7 @@ blocking the exhaustive class by its identity lies on the empirical work/latency
 sampled at that operating point (\cref{sec:r-frontier}).\claim{D2}
 They also imply that it is not necessarily sufficient: a policy that knows only that
 traffic is agentic does not necessarily hold enough information to estimate its marginal
-impact, since under the same label the marginal cost ranged from $-0.035$ to $+0.438$
+impact, since under the same label the marginal cost ranged from $-0.035$ to $+0.421$
 origin requests per request (\cref{sec:r-sign}).\claim{D1}
 
 \paragraph{Three quantities beside the label.}
@@ -41,8 +41,8 @@ current state of the shared cache, because at the operating point of the frontie
 blocked exhaustive request frees about 0.82 origin requests and one agentic request about
 0.10.\claim{D5}\claim{A5}
 The third implication is that it should know the effect of a class on the other
-workloads, because the human p99 rose by 37.0\,ms while the human miss ratio changed only
-by a factor of 1.06 (\cref{sec:m-human}).\claim{D6}\claim{B5}
+workloads, because the human p99 rose by 26.7\,ms while the human miss ratio changed only
+by a factor of 1.07 (\cref{sec:m-human}).\claim{D6}\claim{B5}
 
 \paragraph{From evidence to properties.}
 \Cref{tab:bridge} restates these implications as three properties, P1 to P3, and sets
@@ -64,7 +64,7 @@ would enable, the closest existing line of work and where it falls short for our
  & Evidence & What infrastructure would need to know & Decision enabled &
    Closest existing line of work & Where it falls short \\
 \midrule
-P1 & Same class and volumes, marginal from $-0.035$ to $+0.438$ as only the reachable set
+P1 & Same class and volumes, marginal from $-0.035$ to $+0.421$ as only the reachable set
   widens (\cref{sec:r-sign}) &
   Width of the class's windowed working set &
   Treat clients under one label differently when their width differs &
@@ -80,7 +80,7 @@ P2 & Blocking frees ${\sim}0.82$ (exhaustive) and ${\sim}0.10$ (agentic) origin
   Gives the value of more memory for a workload, not the origin work of one more request
   of a class \\
 \addlinespace
-P3 & Human p99 $+37.0$\,ms with human miss ratio $\times 1.06$ (\cref{sec:m-human}) &
+P3 & Human p99 $+26.7$\,ms with human miss ratio $\times 1.07$ (\cref{sec:m-human}) &
   Effect of a class on the other workloads &
   Protect a workload whose tail latency degrades while its hit ratio does not &
   Hit ratio of human traffic as the measure of harm~\cite{zhang2025,cloudflare2026cache};
@@ -101,10 +101,16 @@ indirectly; load- and latency-driven admission
 control~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} is the
 closest line of work, and we did not measure this property.\claim{D7}
 
-% Phase 2 of the simulator (docs/PREREG-simulatore-fase2.md, RISULTATO-simulatore-fase2.md,
-% claims S2-S6) tests whether P1-P3 hold beyond LRU and the synthetic sessions. Write only
-% from the S rows; SIMULATO, never MISURATO.
-\todo{simulator phase 2: do P1--P3 hold beyond this cache policy and generator?}
+% Phase 2 of the simulator: rows S2-S6 of claims.md v3.8 only; SIMULATO, never MISURATO.
+The simulator gives a first, simulated answer to whether these properties are tied to LRU
+(\cref{sec:m-sim}).\claim{S2}
+Across four eviction policies and two session models, the dependence of the agentic
+marginal on the reachable set holds in 7 of 8 combinations, the exception being W-TinyLFU,
+and the net effect of adding the agentic class changes sign with the
+policy.\claim{S2}\claim{S5}
+If this holds on real systems, the cost of a class depends on the state and on the policy of
+the cache, and an estimate of P2 would have to be made for the cache as it is
+configured.\claim{S2}\claim{S5}\claim{D5}
 
 % "We did not find prior work": docs/VERIFICHE-chiuse.md (systematic search, 2025-2026) and
 % docs/UNDERTOW-CONTESTO.md §7; not a claims.md row.
