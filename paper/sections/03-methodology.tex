@@ -29,10 +29,13 @@ queries: the chapter, the book's metadata, its table of contents, and excerpts o
 linked chapters with a full-text headline.
 Every class requests this same page and triggers the same four queries on a miss, so what
 a miss costs depends on the size of the chapter, not on the class that requests it.
-% Mean chapter size in the agentic reachable sets vs the corpus (data/derived/chapter_sizes.csv,
-% computed 28 Sep, separated mapping, distinct chapters): 23.3 / 24.4 / 25.5 KB at scopes
-% 0.02 / 0.06 / 0.20 against 25.5 KB for the corpus (medians ~20.2 KB everywhere).
-% NOT written: pending Andrea's decision (the smallest set is ~8% below the corpus).
+% Mean chapter size: data/derived/chapter_sizes.csv (response bodies reconstructed by
+% tools/sim/object_sizes.py), separated mapping, distinct chapters of each reachable set;
+% computed 28 Sep, decided 29 Sep. Not a claims.md row.
+The reconstructed response of a chapter has a mean of 23.3, 24.4 and 25.5\,kB in the
+agentic reachable sets at scopes 0.02, 0.06 and 0.20 (\cref{sec:m-classes}), against
+25.5\,kB over the whole corpus, with medians close to 20.2\,kB in all four; the smallest
+reachable set therefore holds chapters about 8\% smaller on average than the corpus.
 The cache holds $5{,}263 \pm 8$ objects, with a mean of 24.9\,KiB of storage per object:
 this is the mean number of objects in Varnish over the ten measurement windows in which
 the cache is full.\claim{C2}
@@ -67,6 +70,8 @@ The classes differ only in which chapters they request.
   one new chapter per request, so no chapter is requested twice before the whole corpus
   has been visited.
   The measurement phase continues the traversal where the warm-up left it.
+  Since 28 September 2026 the class runs as its own k6 scenario, with its own traversal
+  counter (see below).
 \item \emph{Agentic.} The class requests short sessions of three consecutive chapters in
   corpus order.
   Each k6 virtual user keeps its own session.
@@ -94,6 +99,25 @@ because the capacity itself was measured as a number of objects and every class 
 the same kind of object, with a mean of 24.9\,KiB of storage per object.\claim{C2}
 To change the volume of one class while the others stay fixed in absolute terms, we
 change $\lambda$, $\alpha$ and $\beta$ together.\claim{A1}
+
+\paragraph{An artefact of the exhaustive traversal, and its correction.}
+% docs/retractions.md R7; docs/PREREG-lab-trav-own-20260928.md (204459c);
+% docs/RISULTATO-lab-trav-own-20260928.md; claims.md v3.7 (A3, A9, B2, D8).
+In the runs before 28 September 2026, the exhaustive class took its position in the
+traversal from an iteration counter shared by all three classes.
+Its path through the corpus therefore depended on the total offered rate $\lambda$, which
+changes between our configurations even when the exhaustive rate is fixed.\claim{A9}\claim{D8}
+Our simulator of the generator exposed the effect, and the rerun described below measured
+it: the drop in the exhaustive miss ratio as agentic traffic grows remains, at about 57\% of
+its previous size.\claim{D8}
+We corrected the generator by running the exhaustive class as a separate k6 scenario with
+its own counter, which also makes its arrivals regular instead of randomly
+interleaved.
+A pre-registered rerun of the five configurations at scope 0.02, on 28 September 2026,
+confirmed the predicted shifts; at that scope these runs are primary, and the earlier runs
+are kept as a previous measurement.\claim{A3}\claim{A9}\claim{D8}
+The artefact moved the net effect of the agentic class and the size of the exhaustive
+drop; it did not move the overlap effect beyond its errors.\claim{A9}\claim{D8}\claim{A3}
 In the primary design the human and exhaustive classes are offered 55 and 28 req/s, and
 the agentic class 12 or 36 req/s (configured values 11.9985 and 35.9975).\claim{A1}
 

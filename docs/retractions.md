@@ -1,13 +1,18 @@
 # Ritrattazioni
 
-Sei affermazioni fatte durante il progetto e poi smentite. Sono elencate qui, per
-intero, perche' nascondere una correzione e' peggio che averla dovuta fare — e perche'
-il criterio con cui sono cadute e' parte del metodo.
+Sette correzioni fatte durante il progetto: sei affermazioni smentite (R1-R6) e un artefatto
+del generatore di carico che spostava alcune misure (R7). Sono elencate qui, per intero,
+perche' nascondere una correzione e' peggio che averla dovuta fare — e perche' il criterio
+con cui sono cadute e' parte del metodo.
 
-**Due fatti valgono per tutte e sei.** Primo: erano **interpretazioni**, non misure.
-Nessun dato misurato e' mai stato smentito; sono cadute le spiegazioni che vi erano
+**Due fatti valgono per le prime sei.** Primo: erano **interpretazioni**, non misure.
+Nessun dato misurato e' stato smentito da R1-R6; sono cadute le spiegazioni che vi erano
 state appoggiate sopra. Secondo: sono state trovate **prima della pubblicazione**, da
 controlli che abbiamo deciso noi di eseguire.
+
+**R7 e' diversa:** e' un difetto di disegno nel generatore, e ha spostato valori misurati
+(A9, D8, B2). Vale anche per R7 il secondo fatto: trovata prima della pubblicazione, dal
+simulatore, e verificata sul lab con una pre-registrazione.
 
 I dati che le sostenevano stanno in `archive/retired/`, **non** in `data/evidence/`.
 
@@ -47,6 +52,11 @@ interno e' reale; il risparmio netto no.
 > **Nota del 26 settembre 2026.** Superato da claims.md v3.6: A9 afferma solo che il netto
 > non è negativo; la replica pre-registrata ha IC 95% [−0,0601, +0,5361], che contiene lo
 > zero.
+
+> **Nota del 29 settembre 2026.** Superato da claims.md v3.7: con la traversata esaustiva
+> corretta (R7) l'aggiunta della classe agentica **costa**, +1,102 ± 0,080 req/s, IC 95%
+> [+0,909, +1,295]. La ritrattazione di R2 esce rafforzata: il netto piccolo delle misure
+> precedenti era in parte prodotto dall'artefatto.
 
 ---
 
@@ -136,10 +146,68 @@ pubblica insieme al risultato.
 
 ---
 
+## R7 — Artefatto della traversata esaustiva (indice di iterazione globale)
+
+**Trovato:** 28 settembre 2026, dal simulatore; **verificato sul lab:** 28 settembre;
+**recepito:** claims.md v3.7, 29 settembre.
+**Che cos'era.** In `harness/load/workload.js` la classe esaustiva sceglieva il capitolo con
+`permuteTrav(offset + TRAV_SKIP + exec.scenario.iterationInTest)`, e `iterationInTest` conta
+le iterazioni **di tutte le classi**. Lo stesso capitolo tornava quindi disponibile
+all'esaustiva ogni N/λ secondi (204 s a λ = 83, 142 s a λ = 119), cioe' il percorso della
+classe esaustiva dipendeva dal rate totale λ, che nel disegno cambia fra P0 (0 req/s
+agentiche), S12 e S36 anche a parita' di α·λ = 28 req/s. Non era una misura sbagliata: era
+una seconda variabile che cambiava insieme a quella manipolata.
+**Cosa spostava.**
+- **A9, sgonfiato.** Con la traversata globale il miss esaustivo scendeva da P0 a S36 di
+  −0,0566 (0,8580 → 0,8014, replica 25-26 set); con la traversata corretta di −0,0324
+  (0,8576 → 0,8252). Il calo in piu' faceva sembrare meno costosa l'aggiunta agentica: il
+  netto 0 → 36 era +0,392 ± 0,158 e +0,238 ± 0,110 (IC con lo zero), e' **+1,102 ± 0,080**.
+- **D8, gonfiato in ampiezza.** La direzione resta (il miss esaustivo scende quando cresce
+  l'agentica, sotto separazione), ma circa il 57% del calo misurato prima e' effetto della
+  cache; il resto era artefatto.
+- **B2, gonfiato in modulo.** Il termine esaustivo della scomposizione fra S12 e S36 passa
+  da −0,551 ± 0,025 a **−0,288 ± 0,047**.
+- **S5 (simulatore), gonfiato.** Il netto negativo con S3-FIFO passa da −2,17 a −1,05; con
+  W-TinyLFU da circa zero a +0,56; con LRU da +0,33 a +1,20. Cambiano anche S3 (SIEVE: il segno
+  a scope 0,02 ora regge) e S4 (S3-FIFO: A3 a 36 req/s ora indeterminato).
+- **Non spostati oltre l'errore:** il segno di A1 a scope 0,02 (−0,0405 ± 0,0061 prima,
+  **−0,0348 ± 0,0043** dopo) e l'effetto della sovrapposizione A3 (+0,926 e +0,800 dopo,
+  contro +0,882 e +0,872). A1 agli scope 0,06 e 0,20 si rimisura il 29 settembre
+  (`docs/PREREG-lab-trav-own-scope-20260929.md`).
+**Come e' stato trovato.** Nella fase 2 del simulatore (`docs/RISULTATO-simulatore-fase2.md`)
+il netto negativo con S3-FIFO veniva quasi tutto dalla classe esaustiva; l'ipotesi annotata
+allora era che la traversata dipendesse da λ. Due controlli:
+- **fase 2b, pre-registrata** (`docs/PREREG-simulatore-fase2b.md`, `52d294c`; uscite in
+  `data/sim/fase2b/`): con un contatore proprio della classe il calo del miss esaustivo da P0
+  a S36 **resta** (LRU −0,0315 ± 0,0007, |Δ|/SE circa 46), quindi e' in parte un effetto
+  della cache, ma e' circa **meta'** (53%) di quello con il contatore globale (−0,0600, che
+  coincide con il lab);
+- **esplorativo, non pre-registrato** (`tools/sim/esplora_artefatto.py`, `f684b05`,
+  committato prima dell'esecuzione; `data/sim/esplorativo-artefatto/`): i marginali di A1 si
+  spostano di circa 0,015 ai tre scope (cambio di segno e ordinamento reggono), A3 e A7 non
+  cambiano, il netto di A9 passa da circa +0,33 a circa +1,1. Da qui le previsioni per il lab.
+**Verifica sul lab.** Pre-registrazione `docs/PREREG-lab-trav-own-20260928.md` (`204459c`,
+pushata prima del lancio): opzione `TRAV_MODE=scen` in `workload.js`, che mette l'esaustiva in
+uno scenario k6 proprio con un contatore solo suo (sequenza verificata capitolo per capitolo
+contro il simulatore); stessi cinque punti della replica del 25-26 settembre, stesso ordine,
+unica differenza `TRAV_MODE`. Campagna del 28 settembre, 13:41-20:22 UTC, cinque run con gate
+`ok`, nessuno rifatto; analisi con `tools/trav_own_analysis.py` (`188b8cb`, collaudato prima
+sulla replica). Esito (`docs/RISULTATO-lab-trav-own-20260928.md`): **V1-V4 passano** e i
+cinque livelli stanno tutti negli IC previsti (V5). Dichiarato: con `TRAV_MODE=scen` gli arrivi
+esaustivi diventano regolari invece che casuali, e il confronto con la replica e' fra giorni
+diversi.
+**Cosa resta.** A scope 0,02 i run `scen` sono primari; quelli a traversata globale restano
+nel registry come misura precedente. Il default di `workload.js` resta quello vecchio, per
+riprodurre i run passati; ogni run nuovo dichiara `TRAV_MODE` in `env.txt`.
+
+---
+
 ## Cosa hanno in comune
 
-Tre delle sei (R3, R4, R6) hanno la stessa origine: **ragionare sull'esito di un
-controllo prima di eseguirlo**. R4 in particolare nasce da una divisione fatta senza
+Tre delle prime sei (R3, R4, R6) hanno la stessa origine: **ragionare sull'esito di un
+controllo prima di eseguirlo**. R7 ha un'origine diversa: una variabile di disegno che
+cambiava insieme a quella manipolata, nascosta in un contatore condiviso; l'ha trovata un
+modello indipendente del generatore (il simulatore), non un controllo sui dati. R4 in particolare nasce da una divisione fatta senza
 verificare cosa misurasse il divisore.
 
 Le regole che ne sono derivate, ora nella stop-list del progetto:
