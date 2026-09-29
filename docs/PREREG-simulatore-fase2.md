@@ -350,7 +350,7 @@ si riscrivono.
 Scritto e committato **prima** di eseguire la riesecuzione. Il testo sopra, l'emendamento 1 e
 l'esito originale (`docs/RISULTATO-simulatore-fase2.md`, `data/sim/fase2/`) non si modificano:
 l'esito nuovo si scrive **accanto** a quello originale. *Nota:* a differenza del testo originale,
-questo emendamento non e' stato pushato prima dell'esecuzione (push fatto da Andrea dopo); fa
+questo emendamento non e' pushato prima dell'esecuzione (il push lo fa Andrea); fa
 fede l'ordine dei commit.
 
 **Motivo.** Il generatore della fase 2 sceglie il capitolo esaustivo dall'indice globale di
