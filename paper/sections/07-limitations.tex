@@ -6,12 +6,13 @@
 \paragraph{One testbed.}
 All measurements come from one testbed: one virtual machine, one corpus, one cache
 technology with LRU eviction, and one synthetic generator.\claim{A1}
-We did not test other eviction policies or other hosts, the primary design uses one cache
-size, and absolute values such as origin rates and miss ratios are properties of this
+We did not test other eviction policies or other hosts on the testbed (the simulator
+explores other policies, \cref{sec:m-sim}), the primary design uses one cache size, and absolute values such as origin rates and miss ratios are properties of this
 testbed.
 All experiments use the cacheable chapter page; requests that no cache can absorb, such as
 full-text search, are outside this study.
-With the corrected exhaustive traversal each reachable-set size has one run per point, and
+With the corrected exhaustive traversal each reachable-set size has one run of 5
+repetitions per point, and
 the smallest was measured on a different day from the other two; the earlier measurements
 with the shared counter agree on the sign and the ordering.\claim{A1}
 
@@ -48,10 +49,13 @@ its size (\cref{sec:r-asymmetry}).\claim{A7}
 
 \paragraph{Runs that keep the shared traversal counter.}
 The admission-policy frontier (\cref{sec:r-frontier}), the CPU validation of origin
-requests and the secondary exhaustive series (\cref{sec:r-asymmetry}) come from runs made
-before the exhaustive traversal was corrected, and were not rerun.\claim{A6}\claim{C1}\claim{A7}
-These runs also predate the recording of full configurations on 21 September 2026; where
-their rates enter a result, as in the exhaustive series, they are reconstructed from the
-per-class request counts in the k6 output.\claim{A7}
+requests, the measurement of the cache capacity, the window-length check and the secondary
+exhaustive series (\cref{app:a7}) come from runs made before the exhaustive traversal was
+corrected, and were not rerun.\claim{A6}\claim{C1}\claim{C2}\claim{C7}\claim{A7}
+Except for the capacity runs, these runs also predate the recording of full configurations
+on 21 September 2026.
+In the exhaustive series, the only one where their rates enter a result, $\alpha$ is read
+from the result files and $\lambda$ from the campaign script, and $\lambda$ is checked
+against the request rate that k6 measured.\claim{A7}
 All primary results at scope 0.02 and across the three reachable sets come from runs with
 the corrected traversal and a recorded configuration.\claim{A1}\claim{A3}\claim{A9}

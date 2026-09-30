@@ -39,7 +39,7 @@ EDITORIAL = dict(
              "and buys no measurable latency",
     deck="Requests served and human p99 latency under eight admission policies at the knee "
          "of the\ntestbed (185 req/s). Blocking and deferring trace a single convex frontier.",
-    source="Source: Undertow testbed, 620 s windows, mean of 3 runs per policy, whiskers "
+    source="Source: Undertow testbed, 620 s windows, mean of 3 repetitions per policy, whiskers "
            "± 1 SE.\nB versus C: 95% confidence interval of the latency difference "
            "−1.99 to +2.05 ms.",
 )
@@ -48,9 +48,9 @@ CAPTION = (
     "Work/latency frontier at the knee of the testbed (185 req/s; α = 0.35, "
     "β = 0.10). Each point is an admission policy: squares block classes at the origin "
     "(C blocks the exhaustive and agentic classes, B the exhaustive class only), circles "
-    "defer exhaustive requests with a budget of 1 to 6, and the no-policy point A (114,693 "
-    "served, human p99 555.4 ± 48.6 ms) lies above the plotted range. Points are joined "
-    "in order of requests served. Mean of 3 runs; whiskers ± 1 SE, some smaller than "
+    "defer exhaustive requests with a budget of 1 to 6, and the no-policy point lies "
+    "above the plotted range. Points are joined "
+    "in order of requests served. Mean of 3 repetitions; whiskers ± 1 SE, some smaller than "
     "the markers. The marginal slope rises monotonically from 0.01 to 102.25 ms per 1,000 "
     "additional requests served. B serves 2,807 ± 185 more requests than C "
     "(t = 15.19) with a human p99 difference of +0.03 ± 0.73 ms (95% CI −1.99 to "

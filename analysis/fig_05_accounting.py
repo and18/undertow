@@ -33,7 +33,7 @@ EDITORIAL = dict(
     deck="Change in origin requests per second, split by the class that causes it, for two "
          "steps of\nagentic load at the smallest reachable set. Terms add up to the measured change.",
     source="Source: Undertow testbed, separated reachable sets, scope 0.02; measured change: mean "
-           "of 5 runs, whisker ± 1 SE.",
+           "of 5 repetitions, whisker ± 1 SE.",
 )
 
 STEP_A, STEP_B = "0-12", "12-36"     # step keys in the CSV
@@ -51,7 +51,7 @@ def _caption():
         "agentic req/s with human and exhaustive volumes fixed. Each bar is the contribution "
         "of one term to the change in origin requests per second and starts where the "
         "previous one ends; the grey bar is their sum and the marker the measured change "
-        "(mean of 5 runs, all three points measured on 28 Sep 2026 with the exhaustive class "
+        "(mean of 5 repetitions, all three points measured on 28 Sep 2026 with the exhaustive class "
         "in its own k6 scenario; ± 1 SE). The sum matches the measurement to within "
         f"{S.num(a['closure_pct'], 1)}% (step a) and {S.num(b['closure_pct'], 1)}% (step b). "
         "In step b the largest term is the change on the "

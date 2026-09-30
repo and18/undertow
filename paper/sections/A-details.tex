@@ -1,0 +1,106 @@
+\section{Details}\label{app:details}
+% Material moved from the main text (final review, 30 Sep 2026). Sources: claims.md v3.9
+% (C3, C5, C6, B3, A7, S1-S6), docs/PREREGISTRAZIONE-scopesweep.md (derivation of the prior
+% prediction), tools/fig02b_data.py (rates of the exhaustive series),
+% tools/honeypot_aggregate.py (signatures: presence of the headers only).
+
+\subsection{Honeypot}\label{app:honeypot}
+The web server of the public measurement site logs, for each request, the time, URL,
+status and user agent, an identifier of the TCP connection with the request's position in
+it, and the Web Bot Auth headers \texttt{Signature-Agent} and
+\texttt{Signature-Input}.\claim{C6}
+Clients are classed by their declared user agent into six classes; the \emph{agent} class
+matches fetchers that act for a user, such as \texttt{ChatGPT-User}, \texttt{Claude-User}
+and Perplexity.
+The declaration is not verified.
+All aggregates come from one fingerprinted snapshot of the logs and a fixed window,
+[12 August, 22 September 2026) UTC, with 520,871 requests.\claim{C6}
+Client addresses are used only in memory, as a grouping key through a keyed hash with a
+fresh random key; only per-class aggregates leave the analysis (\cref{app:ethics}).
+
+The windowed working set of a client is the largest number of distinct URLs it requests
+within a sliding window of 143\,s, for the clients with at least 5
+requests.\claim{C3}
+The window is the characteristic time of the testbed cache at the smallest agentic setting
+of the earlier runs: the capacity, then estimated at 5,274 objects, divided by the origin
+miss rate of about 37 req/s at scope 0.02; with the measured capacity of 5,263 objects it
+would be 142\,s, a difference of 0.2\% that we do not recompute.\claim{C3}
+Across 31 agent-class clients the windowed working set has a median of 4, a 90th
+percentile of 670 and a maximum of 678; our generator at scope 0.02 and 12 agentic req/s
+touches about 693 distinct objects in the same window (\cref{fig:a-honeypot}).\claim{C3}
+Contiguity is the share of consecutive request pairs within one session that read
+adjacent chapters of the same book; a session is a TCP connection on the honeypot and a
+k6 virtual user in the generator.\claim{C5}
+It is 4.25\% of 1,929 pairs on the honeypot (284 connections, 37 clients), with 19.4\% of
+the pairs repeating the same chapter, against 66.9\% and no repetitions for the
+generator.\claim{C5}
+Of all requests, 3.83\% carry Web Bot Auth headers (19,934 of 520,871), none of them from
+the declared agents.\claim{C6}
+We record the presence of the headers; we did not verify the signatures
+cryptographically.
+
+\subsection{The prior characteristic-time prediction}\label{app:tc}
+Under the characteristic-time approximation~\cite{fagin1977,che2002,fricker2012}, an object
+in an LRU cache of capacity $C$ survives if it is requested again within
+$T_C = C/M$, where $M$ is the rate of misses.
+If a class sends $\lambda$ requests per second spread uniformly over $W$ objects, each
+object is requested at rate $\lambda/W$ and the class's miss ratio is
+$\exp(-\lambda T_C / W)$.
+The prior prediction used this form with $T_C = 143$\,s and the reachable sets as then
+computed, 3,052 and 10,172 objects, so that the elasticity
+$\mathrm{miss}(12)/\mathrm{miss}(36) = \exp(24\,T_C/W)$ is about 3.1 at scope 0.06 and 1.4
+at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
+We observe 1.66 and 1.15: the ordering holds and the value at scope 0.06 falls outside the
+tolerance (\cref{sec:m-tc}, \cref{fig:a-model}).\claim{B3}\claim{B4}
+
+\subsection{Simulator}\label{app:sim}
+The first phase checked the simulator against the testbed, with 20 seeds per point and
+tolerances fixed in advance.\claim{S1}
+It reproduces the per-class miss ratios (18 of 18 within 0.02 of the testbed) and the origin
+rate (within 3\%, from $+0.37\%$ to $+0.92\%$).\claim{S1}
+The simulated agentic marginal at scope 0.02 is $-0.0451 \pm 0.0033$, against
+$-0.0405 \pm 0.0061$ measured, and the simulated overlap effect is $+0.882$ and $+0.839$
+origin req/s, against $+0.882$ and $+0.872$; the comparison used the shared traversal
+counter on both sides.\claim{S1}
+The simulated miss is slightly higher than the measured one at all five points compared,
+within the tolerance.\claim{S1}
+\Cref{tab:sim} gives the outcome of the second phase, with the corrected traversal, for all
+eight combinations.\claim{S2}\claim{S3}\claim{S4}\claim{S5}
+Every value in it is simulated; policies other than LRU were not validated on the testbed.
+
+\begin{table}[h]
+\caption{Second phase of the simulator (simulated, not measured): four eviction policies
+and two session models (the generator's, and sessions calibrated on the honeypot). Marginal
+at scope 0.02 and net effect of adding the agentic class from 0 to 36 req/s, in origin
+requests per request and per second.}
+\label{tab:sim}
+\centering\scriptsize
+\begin{tabularx}{\textwidth}{@{}ll>{\raggedleft\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\raggedleft\arraybackslash}X@{}}
+\toprule
+Policy & Sessions & Marginal at 0.02 & Depends on reachable set & Sign change & Overlap effect at 36 req/s & Net 0 $\to$ 36 \\
+\midrule
+LRU       & generator  & $-0.031$ & yes & yes & yes & $+1.20$ \\
+LRU       & calibrated & $-0.017$ & yes & yes & yes & $+1.43$ \\
+SIEVE     & generator  & $-0.027$ & yes & yes & no  & $-0.42$ \\
+SIEVE     & calibrated & $-0.025$ & yes & yes & no  & $-0.42$ \\
+S3-FIFO   & generator  & $-0.046$ & yes & yes & no  & $-1.05$ \\
+S3-FIFO   & calibrated & $-0.043$ & yes & yes & no  & $-0.99$ \\
+W-TinyLFU & generator  & $+0.004$ & no  & no  & no  & $+0.56$ \\
+W-TinyLFU & calibrated & $+0.001$ & yes & no  & no  & $+0.58$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{The secondary exhaustive series}\label{app:a7}
+To check that the exhaustive class is insensitive to its own volume, and not only to the
+agentic one, a campaign of 16 September 2026 varied the exhaustive volume from 0 to 42 req/s
+with the human and agentic classes fixed at 55 and 12 req/s.\claim{A7}
+It used the shared mapping, a measurement window of 1,211\,s and 3 repetitions per point,
+and the shared traversal counter.\claim{A7}
+The configured exhaustive rates are 0, 13.9968, 27.9965 and 41.9977 req/s: $\alpha$ is read
+from the result files and $\lambda$ from the campaign script, because these runs predate the
+recording of full configurations, and $\lambda$ is checked against the request rate that k6
+measured.\claim{A7}
+The marginal cost of the exhaustive class is $0.961 \pm 0.009$, $0.997 \pm 0.010$ and
+$0.979 \pm 0.004$ over the three steps, and its miss ratio rises from 0.791 to 0.861
+between 14 and 42 req/s, a factor of 1.09.\claim{A7}

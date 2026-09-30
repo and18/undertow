@@ -1,5 +1,5 @@
 """
-FIG-A3 — The synthetic agent matches real agents on working-set width, not on contiguity.
+FIG-A3 — The synthetic agent is close to observed agents in windowed working set, not in contiguity.
 
 CLAIMS    C3 (MISURATO): lowest testbed point ~693 distinct objects in 143 s;
           honeypot agent-class p90 = 670.
@@ -85,7 +85,7 @@ def _texts():
 _SOURCE, CAPTION = _texts()
 
 EDITORIAL = dict(
-    headline="The synthetic agent matches real agents on working-set width,\nnot on contiguity",
+    headline="The synthetic agent is close to observed agents in windowed\nworking set, not in contiguity",
     deck="Agent-class clients observed on a honeypot compared with the testbed’s agentic "
          "class at its\nlowest setting (scope 0.02, 12 req/s).",
     source=_SOURCE,
@@ -118,8 +118,8 @@ def render(variant):
 
     # a — working-set width
     cv.panel_title(L, top + T.s(T.panel) * 0.95 * PT, "a",
-                   sp.pick("Working-set width: matched",
-                           "Working-set width: matched at the 90th percentile"))
+                   sp.pick("Windowed working set: close",
+                           "Windowed working set: close at the 90th percentile"))
     fa = cv.frame(fx, top + title_h, fw, 2 * row_h, (1, 2000), (2 * row_h, 0), xlog=True)
     xt = [1, 10, 100, 1000]
     fa.vgrid(xt)
@@ -146,7 +146,7 @@ def render(variant):
 
     # b — contiguity
     tb_top = top + title_h + 2 * row_h + axis_h + gap
-    cv.panel_title(L, tb_top + T.s(T.panel) * 0.95 * PT, "b", "Contiguity: not matched")
+    cv.panel_title(L, tb_top + T.s(T.panel) * 0.95 * PT, "b", "Contiguity: not close")
     fb = cv.frame(fx, tb_top + title_h, fw, 2 * row_h, (0, 100), (2 * row_h, 0))
     xt = [0, 25, 50, 75, 100]
     fb.vgrid(xt[1:])

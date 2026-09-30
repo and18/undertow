@@ -1,27 +1,33 @@
 \section{Introduction}\label{sec:intro}
-% claims.md v3.8. Order: problem -> question -> design -> finding (A1) -> what it is not (A9)
-% -> the other classes (A2, A7) -> measurement confounder (A3, C4) -> human class (B5) ->
-% consequence at the knee (A4, A6) -> key sentence (D1b) -> implications (D3, D4-D6, labelled)
-% -> contributions -> how the evidence was checked (pre-registration, R7) -> outline.
-Automated traffic is a growing share of what web servers and caches handle, and operators
-now decide how to treat it by its class.
-Content-delivery networks let site owners allow or block search crawlers, training
-crawlers and AI agents as separate categories~\cite{cloudflare2026options}, and the IETF is
-standardising how automated clients sign their requests and how sites state their
+% claims.md v3.9. Order: general question -> measurable question -> chain (automation ->
+% composition -> cache behaviour -> origin work -> class policies) -> design -> findings
+% (A1, A9, A2/A7, A3/C4, B5, A4) -> key sentence with its limit (D1b) -> implications,
+% labelled (D3, D4-D6, D2) -> three contributions -> how the evidence was checked (paragraph)
+% -> outline. The general question and the chain are framing, stated as questions.
+How should web infrastructure be designed when the traffic it serves is no longer
+mostly human?
+Operators already treat automated traffic by its class: content-delivery networks let site
+owners allow or block search crawlers, training crawlers and AI agents as separate
+categories~\cite{cloudflare2026options}, and the IETF is standardising how automated
+clients sign their requests and how sites state their
 preferences~\cite{ietf-webbotauth,ietf-aipref-vocab}.
-Behind these mechanisms sits an assumption that is rarely tested: that a class of traffic
-has a cost, so that knowing the class tells the operator what admitting more of it will
-do to the infrastructure.
+These mechanisms rest on an assumption that can be measured: that a class of traffic has a
+cost, so that knowing the class tells the operator what admitting more of it will do.
+We ask whether the cost of a class is a fixed property of the class, or whether it depends
+on the state of the shared cache and on the other traffic that shares it.
 
-We test that assumption where it matters most for a web origin, in the work that a shared
-cache lets through.
-On a testbed with a Varnish cache in front of a database-backed site, three classes share
-the cache: a human class with Zipf-like popularity, an exhaustive class that traverses the
-corpus like a crawler, and an agentic class that reads short sessions of related
-pages (\cref{sec:method}).
-We measure the \emph{load-marginal} cost of a class: the origin requests caused by one more
-request of that class, when its offered rate increases while the others stay
-fixed.\claim{A1}
+The question sits on a chain that we examine link by link.
+More automated traffic changes the composition of what a cache sees; the composition
+changes how the cache behaves for each class; that behaviour sets the work that reaches the
+origin; and a policy that assigns a cost to a class may be wrong if it ignores the state
+that sets that work.
+We measure the middle links on a testbed with a Varnish cache in front of a
+database-backed site, where three classes share the cache: a human class with Zipf-like
+popularity, an exhaustive class that traverses the corpus like a crawler, and an agentic
+class that reads short sessions of related pages (\cref{sec:method}).
+The quantity we measure is the \emph{load-marginal} cost of a class: the origin requests
+caused by one more request of that class, when its offered rate increases while the others
+stay fixed.\claim{A1}
 We vary one property of the agentic class at a time, in particular its \emph{reachable
 set}, the set of objects its requests can touch.\claim{A1}
 
@@ -52,17 +58,17 @@ stable marginal cost independent of the state of the shared cache.\claim{D1b}
 In our testbed this holds for the agentic class; the exhaustive class, varied on its own
 volume, stays close to a constant, so the label guarantees stability in neither
 direction.\claim{D1b}\claim{A7}
-It follows, as a design implication rather than a validated technology, that if
-infrastructure wants to make class-sensitive decisions, identity alone can be
-insufficient, because the marginal effect of a class is
-state-dependent.\claim{D3}
-Classification remains necessary: blocking the exhaustive class by its identity lies on the
-empirical frontier of served work and human latency that we sampled.\claim{D2}
-What identity leaves out, in our data, is the width of the class's reachable set, its
+As a design implication rather than a validated technology, if infrastructure wants to make
+class-sensitive decisions, identity alone can be insufficient, because the marginal
+effect of a class is state-dependent.\claim{D3}
+Blocking the exhaustive class by its identity lies on the frontier of served work and human
+latency that we sampled; we did not test policies that ignore identity.\claim{D2}
+The further implications we draw, again as implications, are that infrastructure would
+need to observe the width of a class's set of requested objects, an estimate of its
 marginal cost in the current cache state, and its effect on the other
 workloads.\claim{D4}\claim{D5}\claim{D6}
 
-This paper makes four contributions.
+This paper makes three contributions.
 \begin{itemize}
 \item A measurement of the load-marginal origin cost of three coexisting classes of web
   traffic, with the reachable set of one class as the manipulated variable, showing a
@@ -73,16 +79,15 @@ This paper makes four contributions.
 \item A statement of what infrastructure would need to know beyond identity, set against
   the closest existing lines of work, as implications and open questions rather than a
   component (\cref{sec:implications}).\claim{D4}\claim{D5}\claim{D6}
-\item A record of how the evidence was checked: pre-registered reruns of the
-  configurations behind the main results, a public honeypot to place the synthetic agentic class against real
-  clients, and a simulator that found, and a rerun corrected, an artefact of our own load
-  generator (\cref{sec:m-prereg,sec:m-honeypot}).\claim{A1}\claim{A9}\claim{C3}
 \end{itemize}
 
-The honeypot places the synthetic class but does not validate it: by the number of
-distinct objects requested within a short window, our smallest reachable set is close to
-the agentic clients we observed, while their requests are far less contiguous than our
-sessions.\claim{C3}\claim{C5}
+The configurations behind the main results were measured again under pre-registered
+protocols, and a simulator of our load generator found an artefact in it, which a
+pre-registered rerun corrected (\cref{sec:m-classes,sec:m-prereg}).\claim{A1}\claim{A9}
+A public honeypot places the synthetic agentic class but does not validate it: by the
+number of distinct objects requested within a short window, our smallest reachable set is
+close to the agentic clients we observed, while their requests are far less contiguous
+than our sessions.\claim{C3}\claim{C5}
 \Cref{sec:related} places this work against related work, \cref{sec:method} describes the
 testbed, \cref{sec:results} reports the measurements, \cref{sec:mechanism} separates what
 they support from what they only suggest, \cref{sec:implications} states the implications,

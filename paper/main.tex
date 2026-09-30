@@ -10,11 +10,9 @@
 %   4. Figures are included from ../figures/paper/ at their printed size; their captions
 %      are \input from the .caption.tex files that `make figures` writes. Never edit a
 %      caption here: edit CAPTION in the figure script.
-% Format: Springer LNCS (llncs), anonymous submission to PAM 2027 (long paper: at most 24
-% pages of content, target about 16, plus at most 5 for appendices and references;
-% double-blind). Do not add
-% names, affiliations, the measurement site's domain or the repository URL: use
-% "a public measurement site" and \anonrepo.
+% Format: Springer LNCS (llncs), named version for arXiv. The measurement site is referred
+% to as "a public measurement site"; \anonrepo stays a placeholder until the repository is
+% published.
 \documentclass[runningheads]{llncs}
 
 \usepackage[utf8]{inputenc}
@@ -34,15 +32,15 @@
 \let\claim\relax
 \let\endclaim\relax
 \newif\ifshowclaims
-\showclaimstrue          % draft: claim IDs appear in the margin.  Set \showclaimsfalse to hide.
+\showclaimsfalse         % arXiv version: claim IDs hidden. Set \showclaimstrue to show them in the margin.
 \ifshowclaims
   \newcommand{\claim}[1]{\marginpar{\raggedright\tiny\color{teal}#1}}
 \else
   \newcommand{\claim}[1]{}
 \fi
 \newcommand{\todo}[1]{\textcolor{orange!80!black}{[TODO: #1]}}
-% Anonymous artifact link: replace with the anonymised repository URL before submission.
-\newcommand{\anonrepo}{\todo{anonymised repository link}}
+% Repository link: placeholder until the repository is published.
+\newcommand{\anonrepo}{\todo{repository link}}
 
 % ── figures: one command, caption from the build ────────────────────────────
 % \undertowfig{STEM}{short caption for the list of figures}{label}
@@ -56,12 +54,12 @@
 % The figures are drawn 4.80 in wide; the llncs \textwidth is 12.2 cm (4.80 in), so they are
 % included at their printed size.
 
-\title{\todo{choose title} A Traffic Class Has No Stable Cost:
-       Reachable Sets and the Origin Cost of Automated Web Traffic}
-\titlerunning{A Traffic Class Has No Stable Cost}
-\author{Anonymous Author(s)}
-\authorrunning{Anonymous}
-\institute{Anonymous Institution}
+\title{Same Label, Opposite Sign: How Shared-Cache State Sets the Marginal Origin Cost
+       of Web Traffic Classes}
+\titlerunning{Same Label, Opposite Sign}
+\author{Andrea Licitra}
+\authorrunning{A. Licitra}
+\institute{Independent Researcher, Rome, Italy}
 
 \begin{document}
 \maketitle
@@ -79,14 +77,14 @@
 \input{sections/07-limitations}
 \input{sections/08-conclusion}
 
-% Acknowledgments: anonymous for the submission; the GenAI statement is required by PAM.
+% Acknowledgments with the statement on the use of AI assistants.
 \begin{credits}
 \subsubsection{\ackname}
 An AI assistant (Claude, Anthropic) was used for programming support, for the analysis
 scripts, for drafting and editing the text and for checking references against their
 primary sources.
-The authors checked every statement against the measurements and the scripts that produce
-them, and take full responsibility for the content of the paper.
+The author checked every statement against the measurements and the scripts that produce
+them, and takes full responsibility for the content of the paper.
 \end{credits}
 
 \bibliographystyle{splncs04}
@@ -94,6 +92,8 @@ them, and take full responsibility for the content of the paper.
 
 \appendix
 \input{sections/A-ethics}
+\input{sections/A-details}
+\clearpage
 \input{sections/A-appendix}
 
 \end{document}

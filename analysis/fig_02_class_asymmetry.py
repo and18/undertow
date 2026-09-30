@@ -35,9 +35,9 @@ EDITORIAL = dict(
              "the other classes’ by about 1%",
     deck="(a) Miss ratio of each class as the agentic offered rate rises from 12 to 36 req/s. "
          "(b) Marginal\norigin cost of the exhaustive class as its own volume rises.",
-    source="Source: Undertow testbed. (a) separated reachable sets, mean of 5 runs. (b) "
+    source="Source: Undertow testbed. (a) separated reachable sets, mean of 5 repetitions. (b) "
            "secondary series of 16 Sep 2026:\nshared mapping, 1,211 s window, mean of 3 "
-           "runs, whiskers ± 1 SE.",
+           "repetitions, whiskers ± 1 SE.",
 )
 
 CAPTION = (
@@ -46,11 +46,11 @@ CAPTION = (
     "the others stay fixed (human 55, exhaustive 28 req/s; log scale); reachable sets are "
     "separated, smallest agentic reachable set (scope 0.02); labels give "
     "the ratio between the two mean miss ratios, computed from the unrounded means. "
-    "Mean of 5 runs; whiskers \u00b1 1 SE, smaller than the markers. (b) Marginal origin requests per added exhaustive request as the exhaustive "
+    "Mean of 5 repetitions; whiskers \u00b1 1 SE, smaller than the markers. (b) Marginal origin requests per added exhaustive request as the exhaustive "
     "volume rises from 0 to 42 req/s with the human and agentic volumes fixed; its miss "
     "ratio changes by 1.09× between 14 and 42 req/s (at 0 req/s there is no exhaustive "
     "traffic). This is a secondary series (16 Sep 2026: "
-    "shared mapping, 1,211 s measurement window, 3 runs) and is not paired with the primary "
+    "shared mapping, 1,211 s measurement window, 3 repetitions) and is not paired with the primary "
     "design. Whiskers: ± 1 SE."
 )
 
@@ -114,8 +114,8 @@ def _panel_b(cv, sp, x, y, w, h, rows):
         f.dot(i, v, C.exhaustive)
         f.label(i, v, S.num(v, 3), T.value, dy=7, ha="center", va="bottom", weight=SEMIBOLD)
     cv.text(x, f.bottom + 0.05 + T.s(T.tick) * 1.25 * PT + 0.06 + T.s(T.axis) * 1.3 * PT + 0.06,
-            sp.pick("Secondary series: shared mapping, 1,211 s window, 3 runs",
-                    "Secondary series: shared mapping,\n1,211 s window, 3 runs"),
+            sp.pick("Secondary series: shared mapping, 1,211 s window, 3 repetitions",
+                    "Secondary series: shared mapping,\n1,211 s window, 3 repetitions"),
             T.sub, linespacing=1.25,
             color=C.ink_faint, ha="left", va="top")
     return f

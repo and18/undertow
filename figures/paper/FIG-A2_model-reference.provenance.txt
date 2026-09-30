@@ -9,7 +9,7 @@ runs
            tre-20260929-080424
            tre-20260929-092436
            tre-20260929-104448
-script     analysis/fig_a2_model_reference.py  sha256:2912bfb582416d8e
+script     analysis/fig_a2_model_reference.py  sha256:20d24a2ada9a1278
 style      analysis/figure_style.py  sha256:5ced2797acd85eab
 targets    paper 4.80 in (canonical) · narrow 3.33 in · editorial 6.20 in
 toolchain  python 3.12.3 · matplotlib 3.10.9 · font Source Sans 3

@@ -16,7 +16,8 @@ core~0, Varnish to core~1, the application to core~2 and PostgreSQL to cores
 3--5.\claim{C1}
 The application runs one gunicorn process with 8 threads and a pool of 2 to 12 database
 connections.
-Varnish keeps objects in 128\,MiB of memory and evicts them in LRU order.
+Varnish keeps objects in 128\,MiB of memory and evicts them in approximately LRU order: an
+object moves to the head of the list at most once every two seconds.
 Its configuration is deliberately minimal: no normalisation of the cache key, no grace or
 keep period, and cacheability set only by the \texttt{Cache-Control} header of the
 application.
@@ -31,11 +32,11 @@ Every class requests this same page and triggers the same four queries on a miss
 a miss costs depends on the size of the chapter, not on the class that requests it.
 % Mean chapter size: data/derived/chapter_sizes.csv (response bodies reconstructed by
 % tools/sim/object_sizes.py), separated mapping, distinct chapters of each reachable set;
-% computed 28 Sep, decided 29 Sep. Not a claims.md row.
+% computed 28 Sep, recomputed 30 Sep; claims.md row C8.
 The reconstructed response of a chapter has a mean of 23.3, 24.4 and 25.5\,kB in the
 agentic reachable sets at scopes 0.02, 0.06 and 0.20 (\cref{sec:m-classes}), against
 25.5\,kB over the whole corpus, with medians close to 20.2\,kB in all four; the smallest
-reachable set therefore holds chapters about 8\% smaller on average than the corpus.
+reachable set therefore holds chapters about 8\% smaller on average than the corpus.\claim{C8}
 The cache holds $5{,}263 \pm 8$ objects, with a mean of 24.9\,KiB of storage per object:
 this is the mean number of objects in Varnish over the ten measurement windows in which
 the cache is full.\claim{C2}
@@ -56,6 +57,10 @@ Each request is assigned to a class by one uniform draw: exhaustive with probabi
 $\alpha$, agentic with probability $\beta$ and human otherwise.
 The configured offered rates of the three classes are therefore $\alpha\lambda$,
 $\beta\lambda$ and $(1-\alpha-\beta)\lambda$.
+In the runs with the corrected traversal (see below), the exhaustive class is a separate k6
+scenario at $\alpha\lambda$ req/s, and the human and agentic classes share a second
+scenario at $(1-\alpha)\lambda$ req/s, in which a request is agentic with probability
+$\beta/(1-\alpha)$; the offered rates are the same.
 Each class sends its own \texttt{User-Agent}, and the generator records, per class,
 whether each request was a hit or a miss from a diagnostic header that Varnish adds to
 the response.
@@ -115,14 +120,16 @@ We corrected the generator by running the exhaustive class as a separate k6 scen
 its own counter, which also makes its arrivals regular instead of randomly
 interleaved.
 Two pre-registered reruns with the corrected generator, on 28 and 29 September 2026,
-measured again the five configurations at scope 0.02 and the two wider scopes of A1
+measured again the five configurations at scope 0.02 and the two wider scopes of the
+main result
 (\cref{sec:m-prereg}); all primary results at these configurations come from them, and the
 earlier runs are kept as a previous measurement.\claim{A1}\claim{A3}\claim{A9}\claim{D8}
 The artefact moved the net effect of the agentic class and the size of the exhaustive
 drop; it did not move the sign or the ordering of the agentic marginal, or the overlap
 effect beyond its errors.\claim{A1}\claim{A9}\claim{D8}\claim{A3}
-The admission-policy frontier and the exhaustive series of \cref{sec:r-asymmetry} were not
-rerun and keep the shared counter.
+The admission-policy frontier, the exhaustive series of \cref{sec:r-asymmetry}, the CPU
+validation, the cache capacity and the window-length check were not rerun and keep the
+shared counter.
 
 \paragraph{Shared and separated mapping.}
 The multiplier $m_A$ decides where the agentic reachable set lies with respect to human
@@ -201,29 +208,15 @@ Ratios and elasticities are computed from unrounded means, never from rounded va
 
 \subsection{Honeypot}\label{sec:m-honeypot}
 To place the synthetic agentic class against real clients, we run a honeypot on a public
-measurement site, a static site of chapters of public-domain books.
-Its web server logs, for each request, the time, URL, status and user agent, an
-identifier of the TCP connection with the request's position in it, and the Web Bot Auth
-headers \texttt{Signature-Agent} and \texttt{Signature-Input}.\claim{C6}
-Clients are classed by their declared user agent into six classes; the \emph{agent}
-class matches fetchers that act for a user, such as \texttt{ChatGPT-User},
-\texttt{Claude-User} and Perplexity.
-The declaration is not verified.
-All aggregates come from one fingerprinted snapshot of the logs and a fixed window,
-[12 August, 22 September 2026) UTC, with 520,871 requests.\claim{C6}
-Client addresses are used only in memory, as a grouping key through a keyed hash with a
-fresh random key; no address, hash or log line is written, and only per-class aggregates
-leave the analysis.
-
-We compare the honeypot with the generator on two quantities.
-The windowed working set of a client is the largest number of distinct URLs it requests
-within a sliding window of 143\,s, for the clients with at least 5 requests.\claim{C3}
-The window is the characteristic time of the testbed cache, fixed from an earlier capacity
-estimate of 5,274 objects; with 5,263 it would be 142\,s, a difference of 0.2\% that we
-do not recompute.\claim{C3}
-Contiguity is the share of consecutive request pairs within one session that read
-adjacent chapters of the same book.\claim{C5}
-A session is a TCP connection on the honeypot and a k6 virtual user in the generator.\claim{C5}
+measurement site, a static site of chapters of public-domain books; its logs record the
+requested URL, the user agent, the TCP connection and the Web Bot Auth headers of every
+request.\claim{C6}
+We compare it with the generator on two quantities: the windowed working set, the largest
+number of distinct URLs a client requests within a sliding window of 143\,s, and
+contiguity, the share of consecutive request pairs within one session that read adjacent
+chapters of the same book.\claim{C3}\claim{C5}
+The logging, the classification of clients, the choice of the window and the handling of
+client addresses are described in \cref{app:honeypot}.
 
 \subsection{Pre-registered checks}\label{sec:m-prereg}
 % docs/PREREG-replica-20260924.md + RISULTATO (25-26 Sep); docs/PREREG-lab-trav-own-20260928.md
@@ -234,7 +227,7 @@ launch, and its version is recorded in the configuration of every run.\claim{A1}
 Each fixed the configurations, their order, the formulas and the pass criteria, and each
 reports every criterion whatever its outcome.
 The first, on 25--26 September 2026, measured again in one night the five configurations
-behind A1 at scope 0.02, the overlap effect and the net effect, which had rested on one run
+behind the agentic marginal at scope 0.02, the overlap effect and the net effect, which had rested on one run
 per point or on runs from different days; its criteria required the marginal to stay
 negative and close to the original, the overlap effect to stay positive at both rates, and
 the net effect not to be significantly negative.\claim{A1}\claim{A3}\claim{A9}
@@ -244,7 +237,8 @@ The second, on 28 September, repeated the same five configurations with the corr
 exhaustive traversal (\cref{sec:m-classes}), against predictions from the simulator for the
 marginal, the overlap effect, the net effect and the exhaustive drop; all four fell within
 the predicted intervals.\claim{A1}\claim{A3}\claim{A9}\claim{D8}
-The third, on 29 September, measured the two wider scopes of A1 with the corrected
+The third, on 29 September, measured the two wider scopes of the agentic marginal with the
+corrected
 traversal; its criteria on the sign, the ordering and the predicted values all
 held.\claim{A1}
 In all three, every run passed the gate, none was repeated, and nothing deviated from the

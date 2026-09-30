@@ -1,3 +1,22 @@
 \section{Conclusion}\label{sec:conclusion}
-% Written last, together with the abstract. No new claims.
-\todo{conclusion}
+% No new claims: every sentence restates a row already used in the paper (claims.md v3.9).
+We measured what one more request of a traffic class costs the origin behind a shared
+cache, with three classes coexisting and the reachable set of one of them as the
+manipulated variable.\claim{A1}
+Under the same label, the marginal cost of the agentic class changed sign as its reachable
+set grew, from $-0.035$ to $+0.421$ origin requests per request, while adding the class
+still cost origin work and the exhaustive class stayed close to a constant when its own
+volume varied.\claim{A1}\claim{A9}\claim{A7}
+The measured cost of a class also moved with its overlap with another class's popular
+objects, and the human class paid for a wider agentic reachable set through origin load
+rather than lost hits.\claim{A3}\claim{B5}
+These measurements support one statement: a traffic class does not have a stable marginal
+cost independent of the state of the shared cache.\claim{D1b}
+
+The implication we draw is a conditional one: if infrastructure wants to make
+class-sensitive decisions, identity alone can be insufficient, and the width of a class's
+set of requested objects, an estimate of its marginal cost in the current state and its
+effect on the other workloads would complement the label.\claim{D3}\claim{D4}\claim{D5}\claim{D6}
+The question these results leave open is how to estimate that marginal cost online, from
+what an operator can observe, without the controlled experiments we used to measure
+it.\claim{D5}

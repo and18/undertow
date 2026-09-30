@@ -26,7 +26,7 @@ objects.\claim{A1}\claim{C2}
 At each scope the agentic rate goes from 12 to 36 req/s, the human and exhaustive classes
 stay at 55 and 28 req/s, reachable sets are mapped separately across classes, the
 exhaustive class runs in its own k6 scenario (\cref{sec:m-classes}), and each point is the
-mean of 5 runs.\claim{A1}
+mean of 5 repetitions.\claim{A1}
 The marginal cost is the change in origin req/s divided by the change in the configured
 offered rate of the class (\cref{sec:m-marginal}).
 
@@ -41,6 +41,9 @@ $-0.0405 \pm 0.0061$: with the corrected traversal the sign, the change of sign 
 ordering hold, and the two wider scopes move by about $-0.017$.\claim{A1}
 The smallest scope was measured on 28 September and the two wider ones on 29 September
 2026.\claim{A1}
+The marginal is the slope between 12 and 36 agentic req/s; at the smallest scope the slope
+between 0 and 12 req/s is positive, $+0.161 \pm 0.007$ origin requests per request, so the
+marginal also depends on the operating point at which it is measured.\claim{A1}\claim{D1b}
 
 This is a marginal cost between 12 and 36 req/s, not the net effect of the class.
 At the smallest scope, adding the agentic class from 0 to 36 req/s costs
@@ -122,30 +125,19 @@ At the smallest scope, the agentic miss ratio falls from 0.1830 to 0.0448, a fac
 4.08 computed from the unrounded means (\cref{fig:asymmetry}a).\claim{A2}
 Over the same step, the exhaustive miss ratio falls by a factor of 1.01 and the human
 miss ratio is unchanged to two decimals (a factor of 1.00).\claim{A2}
-The agentic factor depends on the scope: at 0.06 and 0.20 it drops to 1.66 and
-1.15.\claim{A2}
-At those scopes the human and exhaustive factors stay between 1.03 and 1.06.\claim{A2}
+The agentic factor depends on the scope: at 0.06 and 0.20 the agentic miss ratio still
+falls, by factors of 1.66 and 1.15.\claim{A2}
+At those scopes the exhaustive miss ratio also falls, by 1.03 and 1.04, and the human miss
+ratio rises, by 1.04 and 1.06.\claim{A2}
 
-This design varies the volume of one class only.
-A class whose own volume is never changed could look insensitive for that reason alone.
-We therefore also vary the exhaustive volume on its own, from 0 to 42 req/s, with the
-human and agentic volumes fixed (\cref{fig:asymmetry}b).\claim{A7}
-The marginal cost of the exhaustive class is flat at about 0.98 origin requests per added
-request: $0.961 \pm 0.009$, $0.997 \pm 0.010$ and $0.979 \pm 0.004$ over the three
-steps.\claim{A7}
-Between 14 and 42 req/s its miss ratio rises from 0.791 to 0.861, a factor of
-1.09; at 0 req/s there is no exhaustive traffic and so no exhaustive miss
-ratio.\claim{A7}
-
-This is a secondary series.
-It comes from a campaign of 16 September 2026 with shared mapping, a measurement window
-of 1,211 s instead of 620 s, and 3 runs per point, so it is not paired with the primary
-design.\claim{A7}
-The agentic volume is fixed at 12 req/s at all four points, and the only manipulated
-variable is the exhaustive volume.\claim{A7}
-Varied on its own volume, the exhaustive class stays almost flat.\claim{A7}
-The two series differ in mapping and window, so we compare the shape of their response,
-not its size.\claim{A7}
+This design varies the volume of one class only, and a class whose own volume is never
+changed could look insensitive for that reason alone.
+A secondary series varies the exhaustive volume on its own, from 0 to 42 req/s, with the
+human and agentic volumes fixed (\cref{fig:asymmetry}b): the marginal cost of the exhaustive
+class stays flat at about 0.98 origin requests per added request.\claim{A7}
+The series uses the shared mapping, a longer window and 3 repetitions per point, so we
+compare the shape of its response, not its size; its details are in
+\cref{app:a7}.\claim{A7}
 
 Zhang et al.~\cite{zhang2025} already vary the share of AI traffic and measure the cache
 hit ratio; what we add is the marginal origin cost and its comparison across three
@@ -215,13 +207,20 @@ shares the cache with other classes.\claim{C4}
 At the knee of the testbed, blocking and deferring are not alternative policies: they
 lie on one empirical work/latency frontier sampled at one operating point, between
 requests served and human tail latency.\claim{A6}
-We measure eight admission policies at 185 req/s, with 3 runs each
+We measure eight admission policies at 185 req/s, with 3 repetitions each
 (\cref{fig:frontier}).\claim{A6}\claim{A4}
 The policies are no policy, two blocking policies, and five budgets for deferring
 exhaustive requests.\claim{A6}
+Blocking happens in the application, before any query: a request of a blocked class that
+misses in the cache receives an error, while one that hits is still served by Varnish,
+because only misses reach the application.
+Deferring limits the exhaustive class to a budget of 1, 2, 3, 4 or 6 concurrent requests
+in the application; a request beyond the budget receives an immediate error with a retry
+hint, and the generator does not retry it.
+These runs use the default agentic scope, 0.02, and the shared mapping, and they predate
+the correction of the exhaustive traversal (\cref{sec:m-classes}).
 Ordered by requests served, the marginal slope of the frontier rises monotonically, from
 0.01 to 102.25 ms of human p99 per 1,000 additional requests served.\claim{A6}
-No point lies off the curve.\claim{A6}
 At this operating point, blocking and deferring are therefore two parameterisations of
 the same trade-off.\claim{A6}
 
@@ -234,8 +233,8 @@ Its 95\% confidence interval, $-1.99$ to $+2.05$ ms, contains zero.\claim{A4}
 Blocking the agentic class in addition to the exhaustive class thus costs served
 requests and gives no difference in human p99 that we can
 measure.\claim{A4}
-With 3 runs per policy, a latency difference of about 2 ms in either direction cannot be
-excluded.\claim{A4}
+With 3 repetitions per policy, a latency difference of about 2 ms in either direction
+cannot be excluded.\claim{A4}
 
 These results say what changes at the origin and by how much.
 \Cref{sec:mechanism} asks why.

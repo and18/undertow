@@ -50,7 +50,8 @@ the elasticity of the agentic miss ratio, that is, its miss ratio at 12 req/s ov
 at 36 req/s.\claim{B3}
 The prediction has no independent timestamp (\cref{sec:m-prereg}); we call it a prior
 prediction.\claim{B3}
-It gave 3.1 at scope 0.06 and 1.4 at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
+It gave 3.1 at scope 0.06 and 1.4 at scope 0.20, with a tolerance of $\pm$30\%
+(derivation in \cref{app:tc}).\claim{B3}
 We observe 1.66 and 1.15 (\cref{fig:a-model}).\claim{B3}
 At scope 0.06 the observed value is 47\% below the prediction, outside the tolerance, so
 the quantitative prediction is rejected; the earlier sweep, with the shared traversal
@@ -63,6 +64,10 @@ In the terms of the approximation, a narrow reachable set lets more of a class's
 requests return within $T_C$ as its volume grows, and a wide one less so.\claim{B4}
 This reading is consistent with the ordering but was not verified as a prediction; a
 configuration with non-monotone elasticities would contradict it.\claim{B4}
+
+% PENDING (final review B1): paragraph on the non-monotone miss rate of an object in its
+% request rate under the characteristic-time approximation, from docs/RISULTATO-che-posthoc.md
+% (not yet written) and a new claims.md row. Not written until both exist.
 
 \subsection{How the cost reaches the human class}\label{sec:m-human}
 Supported: when the agentic reachable set widens, the human class pays through origin load,
@@ -94,50 +99,35 @@ Blocking the agentic class as well removes about 0.10 per blocked request: it co
 measure.\claim{A4}\claim{A5}
 
 \subsection{A simulator for what the testbed cannot vary}\label{sec:m-sim}
-% Status SIMULATO (claims.md, rows S1-S6). Every number in this subsection is simulated,
-% except the lab values it is compared with. Never evidence for A1 or A3.
+% Status SIMULATO (claims.md, rows S1-S6). Never evidence for the measured results.
+% Details and the full matrix of the second phase: appendix app:sim.
 To study configurations that the testbed cannot vary, we built a trace-driven simulator:
 a generator that reproduces the one of \cref{sec:m-classes} and an LRU cache with the
 byte capacity of the testbed's 128\,MiB.\claim{S1}
-Its first phase was pre-registered as a check against the testbed, with 20 seeds per
-point.\claim{S1}
-Within the pre-registered tolerances, it reproduces the per-class miss ratios (18 of 18
-within 0.02 of the testbed) and the origin rate (within 3\%, from $+0.37\%$ to
-$+0.92\%$).\claim{S1}
-It also reproduces the sign and size of the two differences of \cref{sec:results}.\claim{S1}
-The simulated agentic marginal at scope 0.02 is $-0.0451 \pm 0.0033$, against
-$-0.0405 \pm 0.0061$ measured in the replication ($t = -13.49$).\claim{S1}
-The simulated overlap effect is $+0.882$ and $+0.839$ origin req/s, against $+0.882$ and
-$+0.872$ measured ($t = +12.31$ and $+10.40$).\claim{S1}
-The simulated miss is slightly higher than the measured one almost everywhere: the origin
-rate is higher at all five points compared, although within the tolerance.\claim{S1}
-These are simulated values, not measurements, and they add no evidence to the results of
-\cref{sec:results}.\claim{S1}
-Phase 1 compared simulator and testbed with the shared traversal counter; with the counter
-corrected, the simulator's predictions for the reruns of 28 and 29 September fell within
-their intervals (\cref{sec:m-prereg}).\claim{A1}\claim{A9}
+A first, pre-registered phase checked it against the testbed: within tolerances fixed in
+advance, it reproduces the per-class miss ratios, the origin rate, and the sign and size
+of the agentic marginal and of the overlap effect (\cref{app:sim}).\claim{S1}
+With the traversal corrected, its predictions for the reruns of 28 and 29 September fell
+within their intervals (\cref{sec:m-prereg}).\claim{A1}\claim{A9}
 
-% docs/PREREG-simulatore-fase2.md (amendment 2), docs/RISULTATO-simulatore-fase2.md, rows
-% S2-S6 of claims.md v3.8 (SCEN). Only S rows here.
-The second phase, also pre-registered, asked whether these dependences are specific to LRU
-and to our synthetic sessions.\claim{S2}
-It crossed four eviction policies, LRU, SIEVE, S3-FIFO and W-TinyLFU, with two session
-models, the generator's and sessions calibrated on the honeypot, using the corrected
-traversal.\claim{S2}
-In the simulator, the dependence of the agentic marginal on the reachable set holds in 7
-of the 8 combinations, the exception being W-TinyLFU with the generator's
+A second, pre-registered phase asked whether these dependences are specific to LRU and to
+our synthetic sessions, crossing four eviction policies, LRU, SIEVE, S3-FIFO and W-TinyLFU,
+with two session models, the generator's and sessions calibrated on the
+honeypot.\claim{S2}
+In the simulator, the dependence of the agentic marginal on the reachable set holds in 7 of
+the 8 combinations, the exception being W-TinyLFU with the generator's
 sessions.\claim{S2}
 The negative sign at scope 0.02 holds with LRU, SIEVE and S3-FIFO and is indeterminate with
 W-TinyLFU; our prior prediction that it is a property of LRU under scans is
 refuted.\claim{S3}
 The overlap effect is positive at 12 agentic req/s in all 8 combinations, and at 36 req/s it
 holds only with LRU.\claim{S4}
-The net effect of adding the agentic class depends on the policy: positive with LRU and
-W-TinyLFU, negative with SIEVE and S3-FIFO, where it comes from fewer misses of the other
-classes; this is not a demonstrated saving and says nothing about the Web.\claim{S5}
+The net effect of adding the agentic class is positive with LRU and W-TinyLFU and negative
+with SIEVE and S3-FIFO, where it comes from fewer misses of the other classes; this is not a
+demonstrated saving and says nothing about the Web.\claim{S5}
 The human miss ratio grows with the agentic reachable set and rate under every policy
 except S3-FIFO at the smallest scope, where it falls.\claim{S6}
 In the simulator, then, what one more request of a class costs depends both on the state of
-the cache and on its eviction policy.\claim{S2}\claim{S5}
+the cache and on its eviction policy (\cref{tab:sim}).\claim{S2}\claim{S5}
 These are simulated results for policies that were not validated on the testbed, and they
 are not evidence for the measured results of \cref{sec:results}.\claim{S2}

@@ -19,13 +19,13 @@ none of it is a validated technology.\claim{D3}
 \paragraph{Classification during the transition.}
 If infrastructure wants to make class-sensitive decisions, identity alone can be
 insufficient, because the marginal effect of a class is state-dependent.\claim{D1}\claim{D3}
-Our data imply that classification remains necessary: at the knee of the testbed,
-blocking the exhaustive class by its identity lies on the empirical work/latency frontier
-sampled at that operating point (\cref{sec:r-frontier}).\claim{D2}
-They also imply that it is not necessarily sufficient: a policy that knows only that
-traffic is agentic does not necessarily hold enough information to estimate its marginal
-impact, since under the same label the marginal cost ranged from $-0.035$ to $+0.421$
-origin requests per request (\cref{sec:r-sign}).\claim{D1}
+At the knee of the testbed, blocking the exhaustive class by its identity lies on the
+empirical work/latency frontier sampled at that operating point; we did not test policies
+that ignore identity (\cref{sec:r-frontier}).\claim{D2}
+Identity alone, however, can be insufficient: a policy that knows only that traffic is
+agentic does not necessarily hold enough information to estimate its marginal impact,
+since under the same label the marginal cost ranged from $-0.035$ to $+0.421$ origin
+requests per request (\cref{sec:r-sign}).\claim{D1}
 
 \paragraph{Three quantities beside the label.}
 As design implications, three quantities would complement the class label.\claim{D4}\claim{D5}\claim{D6}
@@ -36,13 +36,29 @@ cost.\claim{D4}\claim{A1}
 What infrastructure can observe is the windowed working set, the counterpart of the
 reachable set in request logs: we computed it over a short window for the clients of our
 honeypot (\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
-The second implication is that it should know the marginal cost of the class in the
-current state of the shared cache, because at the operating point of the frontier one
+The second implication is that a useful infrastructure would need an estimate of the
+marginal cost of the class in the current state of the shared cache, because at the operating point of the frontier one
 blocked exhaustive request frees about 0.82 origin requests and one agentic request about
 0.10.\claim{D5}\claim{A5}
 The third implication is that it should know the effect of a class on the other
 workloads, because the human p99 rose by 26.7\,ms while the human miss ratio changed only
 by a factor of 1.07 (\cref{sec:m-human}).\claim{D6}\claim{B5}
+
+\paragraph{A decision map.}
+As a map of the questions that a class-sensitive decision would have to answer, and not as
+an architecture, these implications line up in one chain:\claim{D3}
+\begin{center}\small
+\textsc{class} $\rightarrow$ \textsc{state} $\rightarrow$ \textsc{cost} $\rightarrow$
+\textsc{externality} $\rightarrow$ \textsc{decision}
+\end{center}
+The class says who the traffic is, which is what classification provides today; the state
+says how the class behaves against the shared cache, for example how wide its windowed
+working set is; the cost is what the next request of the class costs now; the externality
+is who pays for it among the other workloads; and the decision is whether to admit, defer,
+prioritise or isolate the class.\claim{D3}\claim{D4}\claim{D5}\claim{D6}
+Our measurements bear on the state, cost and externality links; at the decision step,
+blocking and deferring lie on one frontier in our testbed, and isolating the agentic class
+would remove a measured benefit.\claim{A6}\claim{D8}
 
 \paragraph{From evidence to properties.}
 \Cref{tab:bridge} restates these implications as three properties, P1 to P3, and sets
@@ -51,8 +67,7 @@ existing line of work and where that line of work falls short for our evidence; 
 statement of implications, not an architecture.\claim{D4}\claim{D5}\claim{D6}
 
 \begin{table}[t]
-\caption{Design implications, not validated technology (P1--P3 = claims D4--D6): the
-evidence behind each property, what infrastructure would need to know, the decision it
+\caption{Design implications, not validated technology: the evidence behind each property, what infrastructure would need to know, the decision it
 would enable, the closest existing line of work and where it falls short for our evidence.}
 \label{tab:bridge}
 \centering\scriptsize
@@ -74,7 +89,7 @@ P1 & Same class and volumes, marginal from $-0.035$ to $+0.421$ as only the reac
 \addlinespace
 P2 & Blocking frees ${\sim}0.82$ (exhaustive) and ${\sim}0.10$ (agentic) origin
   requests per request (\cref{sec:m-block}) &
-  Marginal cost of the class in the current cache state &
+  An estimate of the marginal cost of the class in the current cache state &
   Choose which class to block or defer at the current operating point &
   Capacity-marginal cache management~\cite{qureshi2006ucp,cidon2016cliffhanger} &
   Gives the value of more memory for a workload, not the origin work of one more request
@@ -105,8 +120,8 @@ closest line of work, and we did not measure this property.\claim{D7}
 The simulator gives a first, simulated answer to whether these properties are tied to LRU
 (\cref{sec:m-sim}).\claim{S2}
 Across four eviction policies and two session models, the dependence of the agentic
-marginal on the reachable set holds in 7 of 8 combinations, the exception being W-TinyLFU,
-and the net effect of adding the agentic class changes sign with the
+marginal on the reachable set holds in 7 of 8 combinations, the exception being W-TinyLFU
+with the generator's sessions, and the net effect of adding the agentic class changes sign with the
 policy.\claim{S2}\claim{S5}
 If this holds on real systems, the cost of a class depends on the state and on the policy of
 the cache, and an estimate of P2 would have to be made for the cache as it is

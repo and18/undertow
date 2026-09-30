@@ -36,7 +36,7 @@ EDITORIAL = dict(
     headline="What an extra agentic request costs the origin\ndepends on its reachable set",
     deck="Origin requests caused by each added agentic request, at three reachable-set sizes. "
          "Traffic\nvolumes, cache and corpus are held fixed; only the reachable set changes.",
-    source="Source: Undertow testbed, mean of 5 runs per row, whiskers ± 1 SE; agentic "
+    source="Source: Undertow testbed, mean of 5 repetitions per row, whiskers ± 1 SE; agentic "
            "load raised from 12 to 36 req/s.\nReal agents: theslowshelf.org honeypot, p90 of "
            "distinct objects per 143 s window, 12 Aug – 21 Sep 2026.",
 )
@@ -47,12 +47,12 @@ CAPTION = (
     "exhaustive classes stay fixed at 55 and 28 req/s; only the scope from which agentic "
     "sessions are drawn changes. Rows give the reachable set (the distinct chapters the "
     "generator can request for the class) as a multiple of the measured cache capacity of "
-    "5,263 objects. Bars: mean of 5 runs; whiskers: ± 1 SE, smaller than the bar ends. The "
+    "5,263 objects. Bars: mean of 5 repetitions; whiskers: ± 1 SE, smaller than the bar ends. The "
     "values are marginal between 12 and 36 req/s, not the net effect of adding the class, "
     "which is reported in the text. The tag marks the row closest to real agents by windowed "
     "working set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for "
     "that row), not by the size of the reachable set. Reachable sets are separated across "
-    "classes (AGENT_MUL = 3266489917); the exhaustive class runs as its own k6 scenario."
+    "classes; the exhaustive class runs as its own k6 scenario."
 )
 
 XMIN, XMAX = -0.10, 0.50

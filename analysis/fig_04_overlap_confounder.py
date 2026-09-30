@@ -37,7 +37,7 @@ EDITORIAL = dict(
     headline="Sharing the popular head with human traffic\nmakes the agentic class look cheaper",
     deck="Origin requests per second with the agentic reachable set inside the human popular "
          "head\n(shared) and decorrelated from it (separated), at two agentic loads.",
-    source="Source: Undertow testbed, mean of 5 runs per point, whiskers ± 1 SE; "
+    source="Source: Undertow testbed, mean of 5 repetitions per point, whiskers ± 1 SE; "
            "human 55 req/s and exhaustive 28 req/s fixed.",
 )
 
@@ -58,14 +58,14 @@ def _caption():
         f"the human popular head (overlap {S.num(float(sh['overlap_pct']), 1)}%; the human "
         "generator never draws rank 0); "
         f"{S.num(float(sh['human_mass_pct']), 1)}% of human traffic falls on agentic bases. "
-        "Separated: a different permutation (AGENT_MUL = 3266489917) reduces the overlap to "
+        "Separated: a different permutation reduces the overlap to "
         f"{S.num(float(se['overlap_pct']), 1)}% and that share of human traffic to "
         f"{S.num(float(se['human_mass_pct']), 1)}%. Removing the overlap raises origin work by "
         f"{S.num(float(e12['effect']), 3, sign=True)} req/s (t = {S.num(float(e12['t']), 2)}) "
         f"at 12 agentic req/s and {S.num(float(e36['effect']), 3, sign=True)} req/s "
         f"(t = {S.num(float(e36['t']), 2)}) at 36, and lowers the agentic hit ratio from "
         f"{h[(12, 'shared')]} to {h[(12, 'separated')]} and from {h[(36, 'shared')]} to "
-        f"{h[(36, 'separated')]}. Mean of 5 runs, all four points measured on 28 Sep 2026 "
+        f"{h[(36, 'separated')]}. Mean of 5 repetitions, all four points measured on 28 Sep 2026 "
         "with the exhaustive class in its own k6 scenario; whiskers ± 1 SE. The previous "
         "measurement, with a traversal counter shared by all classes (not drawn), gave "
         f"{S.num(float(e12['prev_effect']), 3, sign=True)} ± {S.num(float(e12['prev_effect_se']), 3)} "

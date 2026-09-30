@@ -31,7 +31,7 @@ EDITORIAL = dict(
     headline="Human latency rises with the agentic reachable set\nwhile the human hit ratio barely moves",
     deck="Human p99 latency, human cache hit ratio and origin load at 30% agentic share, "
          "for three\nagentic reachable-set sizes. Volumes and cache are held fixed.",
-    source="Source: Undertow testbed, mean of 5 runs per point, whiskers ± 1 SE.",
+    source="Source: Undertow testbed, mean of 5 repetitions per point, whiskers ± 1 SE.",
 )
 
 def _caption():
@@ -46,10 +46,11 @@ def _caption():
         "Effect of the agentic reachable set on the human class, at 30% agentic share with "
         f"volumes and cache fixed. (a) Human p99 latency rises from {S.num(p0, 1)} to "
         f"{S.num(p2, 1)} ms ({S.num(d, 1, sign=True)} \u00b1 {S.num(se, 1)} ms, "
-        f"t = {S.num(d / se, 1)}). (b) The human miss ratio changes by a factor of "
-        f"{S.num(m2 / m0, 2)} ({S.num(m0, 3)} to {S.num(m2, 3)}). (c) Origin load rises from "
+        f"t = {S.num(d / se, 1)}). (b) The human hit ratio moves from {S.num(1 - m0, 3)} to "
+        f"{S.num(1 - m2, 3)}, that is, the human miss ratio changes by a factor of "
+        f"{S.num(m2 / m0, 2)}. (c) Origin load rises from "
         f"{S.num(float(r[0]['origin_rps']), 1)} to {S.num(float(r[-1]['origin_rps']), 1)} "
-        "req/s. Mean of 5 runs; whiskers \u00b1 1 SE, smaller than the markers where not "
+        "req/s. Mean of 5 repetitions; whiskers \u00b1 1 SE, smaller than the markers where not "
         "visible. The upstream channel through which origin load reaches human latency was "
         "not measured.")
 

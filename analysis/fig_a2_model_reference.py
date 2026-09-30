@@ -35,7 +35,7 @@ EDITORIAL = dict(
     headline="The prior model got the direction right\nand the size wrong",
     deck="Elasticity of the agentic miss ratio (miss at 12 req/s over miss at 36 req/s) at "
          "three reachable-set\nsizes: observed against the prior prediction of the model.",
-    source="Source: Undertow testbed, mean of 5 runs; prior prediction of 21 Sep 2026, written "
+    source="Source: Undertow testbed, mean of 5 repetitions; prior prediction of 21 Sep 2026, written "
            "before the first results\nat scopes 0.06 and 0.20 were available, not independently "
            "timestamped.",
 )
@@ -55,7 +55,7 @@ def _caption():
         "0.20 were available and not independently timestamped, with the \u00b130% tolerance "
         "stated with it (band); the first row is the anchor: that scope had already been "
         "measured, in earlier runs, when the prediction was written. Filled circles: observed "
-        "with the exhaustive class in its own k6 scenario, mean of 5 runs. The ordering predicted by the "
+        "with the exhaustive class in its own k6 scenario, mean of 5 repetitions. The ordering predicted by the "
         f"model holds; the quantitative criterion fails at {S.num(float(r['W_over_capacity']), 2)}\u00d7 "
         f"cache ({S.num(obs, 2)} against {S.num(pri, 1)}, "
         f"{S.num(100 * (obs / pri - 1), 0)}%).")

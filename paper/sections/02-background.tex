@@ -12,18 +12,16 @@ purpose.
 Since 1 July 2026, Cloudflare lets site owners manage AI traffic by three use cases:
 Search; Agent, a fetcher that visits a site to complete a job, often with a person
 waiting; and Training~\cite{cloudflare2026options}.
-The same post announced that, from 15 September 2026, domains newly onboarding to
-Cloudflare would have the Training and Agent categories blocked on pages that display
-ads, with Search allowed.
-It is an announcement that concerns new domains and pages with ads, and we found no
-primary source confirming that it took effect.
+The same post announced new defaults for newly onboarded domains on pages that display
+ads, which we did not find confirmed as in effect.
 At the IETF, the Web Bot Auth working group specifies HTTP message signatures for
 automated traffic, built on RFC~9421 and carried in the \texttt{Signature-Agent} and
 \texttt{Signature-Input} headers~\cite{ietf-webbotauth}.
 The AI Preferences working group defines a vocabulary for preferences on AI training, AI
 use and search~\cite{ietf-aipref-vocab}.
-On our honeypot, 3.83\% of requests carry a Web Bot Auth signature, and none of them
-comes from the declared agents.\claim{C6}
+On our honeypot, 3.83\% of requests carry Web Bot Auth signature headers, and none of them
+comes from the declared agents; we observed the headers and did not verify the signatures
+cryptographically.\claim{C6}
 All these mechanisms act on who the traffic is and what it declares; this paper asks
 what that tells an operator about the cost of the traffic.\claim{D1}
 
@@ -55,7 +53,7 @@ Third, the overlap that these workloads fix changes the measured cost of a class
 Fourth, in our testbed the miss ratio of the exhaustive class falls from 0.858 to 0.825
 when the agentic class is added from 0 to 36 req/s under the separated mapping, so
 isolating the agentic class in a
-separate cache would remove a measured benefit (supported).\claim{D8}
+separate cache would remove a measured benefit.\claim{D8}
 The separate layer that Cloudflare envisions is organised differently: it routes human and
 AI traffic to distinct tiers and, for AI traffic, varies the handling by task and by the
 latency the task tolerates, from caches with moderate response times for
@@ -102,7 +100,7 @@ Work & What varies & Metric & Overlap & What is missing \\
 Zhang et al.~\cite{zhang2025} & Share of AI traffic (0--100\%); eviction policy &
   Hit and miss ratio, overall and of human traffic &
   Fixed (about 20\% and 10\%) &
-  Origin cost of one more request; width of the AI working set; overlap as a variable \\
+  Origin cost of one more request; width of the set of objects AI traffic requests; overlap as a variable \\
 \addlinespace
 FairRide~\cite{pu2016fairride} & How a cache is shared among users &
   Cache performance and fairness properties &
