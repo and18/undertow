@@ -1,18 +1,19 @@
-% Only MISURATO and SOSTENUTO rows (claims.md v3.9): D1b, A1, A7, A9, A3, B5, A4, D2, D3.
-% At most 200 words. No \claim markers inside the abstract environment (marginpar in the
-% title page): the rows are listed in this comment.
+% MISURATO and SOSTENUTO rows (claims.md v3.10): D1b, A1, A7, A9, A3, B5, D3; plus B7
+% (INTERPRETATIVO, post hoc) as a declared exception decided on 30 Sep, because it narrows
+% the claim (the effect is structural, not new theory). The frontier result (A4) is left
+% out: its runs predate the traversal fix. At most 200 words. No \claim markers inside the
+% abstract environment: the rows are listed in this comment.
 Web infrastructure increasingly treats traffic by its class: human, crawler or AI agent.
-We ask whether a class has a cost such decisions can rely on. On a testbed with a
-shared Varnish cache in front of a database-backed site, we measure the origin work
-caused by one more request of a class while the other classes stay fixed. A traffic class
-does not have a stable marginal cost independent of the state of the shared cache,
-although a crawler-like class stays flat. With
-the same label, volumes, cache and corpus, the marginal cost of agentic traffic changes
-sign with the set of objects it can reach: $-0.035$, $+0.143$ and $+0.421$ origin requests
-per request at 0.19, 0.58 and 1.90 times the cache capacity. A negative marginal is not a
-saving: adding the class costs 1.10 origin requests per second. The measured cost
-also shifts by 0.80 to 0.93 origin requests per second with the overlap between classes,
-and human tail latency grows with origin load while the human miss ratio barely moves. At
-our operating point, blocking agents as well as crawlers costs 2,807 served requests for
-no measurable latency gain. Identity alone can be insufficient for
-class-sensitive decisions.
+We ask whether a class has a cost decisions can rely on. On a testbed with a shared
+Varnish cache in front of a database-backed site, we measure the origin work caused by one
+more request of a class while the other classes stay fixed. In our testbed the marginal
+cost of a class is not a stable property of its label: for agentic traffic it depends on
+the state of the shared cache, while a crawler-like class stays flat. Under the same label,
+the marginal cost of agentic traffic changes sign with the set
+of objects it can reach: $-0.035$, $+0.143$ and $+0.421$ origin requests per request at
+0.19, 0.58 and 1.90 times the cache capacity. A negative marginal is not a saving: adding
+the class costs 1.10 origin req/s. The measured cost also shifts by
+0.80--0.93 origin req/s with the overlap between classes, and human tail latency
+grows with origin load while the human miss ratio barely moves. A characteristic-time model
+reproduces these values post hoc, so the effect is structural rather than a testbed
+artefact. Identity alone can be insufficient for class-sensitive decisions.

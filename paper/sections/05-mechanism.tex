@@ -65,9 +65,44 @@ requests return within $T_C$ as its volume grows, and a wide one less so.\claim{
 This reading is consistent with the ordering but was not verified as a prediction; a
 configuration with non-monotone elasticities would contradict it.\claim{B4}
 
-% PENDING (final review B1): paragraph on the non-monotone miss rate of an object in its
-% request rate under the characteristic-time approximation, from docs/RISULTATO-che-posthoc.md
-% (not yet written) and a new claims.md row. Not written until both exist.
+% claims.md B7 (INTERPRETATIVO, post hoc): docs/RISULTATO-che-posthoc.md (51b2717),
+% tools/che_posthoc.py. No parameter fitted to the lab (checked in the script, 30 Sep).
+Interpretive, and computed after the measurements: the same approximation shows why a
+negative marginal is not an anomaly.\claim{B7}
+An object requested at rate $\lambda$ misses with probability $e^{-\lambda T}$, so it
+produces misses at rate $\lambda e^{-\lambda T}$, which rises and then falls as $\lambda$
+grows, with its maximum at $\lambda T = 1$; a class that asks often for few objects can
+lower the misses of its own objects as its rate grows.
+This is a property of the classical approximation, not a result of ours.
+We fed it the access distribution of our generator and the three classes, with $T$ solved
+from the capacity of the cache in bytes and no fitted parameters (\cref{app:tc}).\claim{B7}
+Both versions of the exhaustive class that we computed reproduce the change of sign, and
+the periodic one, which matches our corrected generator, reproduces the measured values
+within 0.008 (\cref{tab:tc}).\claim{B7}
+At scope 0.02 the mean $\lambda T$ of an agentic object moves from 1.23 at 12 req/s to
+3.49 at 36, across the maximum, while at scope 0.20 it stays well below 1.\claim{B7}
+The change of sign is therefore structural rather than an artefact of our testbed.\claim{B7}
+The calculation was made after the data; it does not revive the rejected prior prediction,
+which used a single $T$ and a uniform access rate.\claim{B3}\claim{B7}
+
+\begin{table}[t]
+\caption{Agentic marginal (origin requests per added request) measured and computed post hoc
+with the characteristic-time approximation, using the generator's access distribution.
+(A) treats the exhaustive class as Poisson traffic; (B) as periodic traffic, as in the
+corrected generator. $\lambda T$: mean over agentic objects, version (B). Computed after the
+measurements; no fitted parameters.}
+\label{tab:tc}
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Scope & Measured & (A) & (B) & $\lambda T$ at 12 req/s & $\lambda T$ at 36 req/s \\
+\midrule
+0.02 & $-0.0348$ & $-0.0218$ & $-0.0311$ & 1.23 & 3.49 \\
+0.06 & $+0.1430$ & $+0.1722$ & $+0.1488$ & 0.39 & 1.00 \\
+0.20 & $+0.4209$ & $+0.4669$ & $+0.4282$ & 0.12 & 0.27 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{How the cost reaches the human class}\label{sec:m-human}
 Supported: when the agentic reachable set widens, the human class pays through origin load,

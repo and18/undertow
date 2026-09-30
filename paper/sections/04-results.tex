@@ -219,6 +219,13 @@ in the application; a request beyond the budget receives an immediate error with
 hint, and the generator does not retry it.
 These runs use the default agentic scope, 0.02, and the shared mapping, and they predate
 the correction of the exhaustive traversal (\cref{sec:m-classes}).
+The exhaustive path has the same distribution under every policy, but with the shared
+counter each chapter came back to the exhaustive class every $\sim$92\,s, less than the
+characteristic time of about 143\,s, so exhaustive hits are inflated under every
+policy.\claim{A6}\claim{A4}
+Because blocking acts in the application and deferring only on exhaustive misses, the size
+of the differences between policies may have changed with it; we did not measure
+by how much.\claim{A6}\claim{A4}
 Ordered by requests served, the marginal slope of the frontier rises monotonically, from
 0.01 to 102.25 ms of human p99 per 1,000 additional requests served.\claim{A6}
 At this operating point, blocking and deferring are therefore two parameterisations of

@@ -110,6 +110,12 @@ Two questions remain open, and we state them as such.
 The first is how to estimate P2 online, without the controlled experiments we used to
 measure it; capacity-marginal estimators such as miss-ratio curves answer a different
 question (\cref{sec:rw}).\claim{D5}
+As an implication, a classical model may be enough for the estimate itself: fed with the
+access distribution of the class, the characteristic-time approximation reproduces the
+values we measured (\cref{sec:m-tc}).\claim{B7}\claim{D5}
+What remains open is whether that distribution can be estimated online from request logs,
+where the contiguity of real clients differs from that of our sessions
+(\cref{sec:limitations}).\claim{D5}\claim{C5}
 The second is the weakest of our implications: that infrastructure would also need the
 state of the shared cache and the pressure on resources, which our evidence supports only
 indirectly; load- and latency-driven admission

@@ -52,6 +52,11 @@ The admission-policy frontier (\cref{sec:r-frontier}), the CPU validation of ori
 requests, the measurement of the cache capacity, the window-length check and the secondary
 exhaustive series (\cref{app:a7}) come from runs made before the exhaustive traversal was
 corrected, and were not rerun.\claim{A6}\claim{C1}\claim{C2}\claim{C7}\claim{A7}
+For the frontier, the exhaustive path has the same distribution under every policy, but
+each chapter came back to the exhaustive class every $\sim$92\,s, less than the
+characteristic time of about 143\,s, so exhaustive hits are inflated under every policy;
+since blocking acts in the application and deferring only on exhaustive misses, the size
+of the differences between policies may have changed, and we did not measure it.\claim{A6}\claim{A4}\claim{A5}
 Except for the capacity runs, these runs also predate the recording of full configurations
 on 21 September 2026.
 In the exhaustive series, the only one where their rates enter a result, $\alpha$ is read

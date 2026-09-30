@@ -68,11 +68,21 @@ need to observe the width of a class's set of requested objects, an estimate of 
 marginal cost in the current cache state, and its effect on the other
 workloads.\claim{D4}\claim{D5}\claim{D6}
 
+The change of sign is consistent with the classical characteristic-time theory of LRU
+caches: computed after the fact with the access distribution of our generator, that theory
+reproduces the measured values (\cref{sec:m-tc}).\claim{B7}
+Our contribution is therefore not a new law of caching.
+It is to show, at the origin, that the label of a class does not determine its marginal
+cost, and to quantify how much it varies; to keep the marginal apart from the net effect of
+a class; to expose the overlap between classes as a confounder of the measured cost; and to
+show how the cost reaches human traffic through origin load.\claim{A1}\claim{A9}\claim{A3}\claim{B5}
+
 This paper makes three contributions.
 \begin{itemize}
 \item A measurement of the load-marginal origin cost of three coexisting classes of web
   traffic, with the reachable set of one class as the manipulated variable, showing a
-  change of sign under a fixed label (\cref{sec:r-sign,sec:r-asymmetry}).\claim{A1}\claim{A2}
+  change of sign under a fixed label and separating it from the net effect of the class
+  (\cref{sec:r-sign,sec:r-asymmetry}).\claim{A1}\claim{A2}\claim{A9}
 \item A measurement confounder, quantified: the overlap between the reachable sets of
   different classes changes the cost measured for a class, a choice that experiments on
   mixed traffic easily leave implicit (\cref{sec:r-overlap}).\claim{A3}

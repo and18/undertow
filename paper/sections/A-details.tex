@@ -18,26 +18,19 @@ All aggregates come from one fingerprinted snapshot of the logs and a fixed wind
 Client addresses are used only in memory, as a grouping key through a keyed hash with a
 fresh random key; only per-class aggregates leave the analysis (\cref{app:ethics}).
 
-The windowed working set of a client is the largest number of distinct URLs it requests
-within a sliding window of 143\,s, for the clients with at least 5
-requests.\claim{C3}
-The window is the characteristic time of the testbed cache at the smallest agentic setting
-of the earlier runs: the capacity, then estimated at 5,274 objects, divided by the origin
-miss rate of about 37 req/s at scope 0.02; with the measured capacity of 5,263 objects it
-would be 142\,s, a difference of 0.2\% that we do not recompute.\claim{C3}
-Across 31 agent-class clients the windowed working set has a median of 4, a 90th
-percentile of 670 and a maximum of 678; our generator at scope 0.02 and 12 agentic req/s
-touches about 693 distinct objects in the same window (\cref{fig:a-honeypot}).\claim{C3}
-Contiguity is the share of consecutive request pairs within one session that read
-adjacent chapters of the same book; a session is a TCP connection on the honeypot and a
-k6 virtual user in the generator.\claim{C5}
-It is 4.25\% of 1,929 pairs on the honeypot (284 connections, 37 clients), with 19.4\% of
-the pairs repeating the same chapter, against 66.9\% and no repetitions for the
+The windowed working set is computed for the clients with at least 5 requests.\claim{C3}
+Its 143\,s window is the characteristic time of the testbed cache at the smallest agentic
+setting of the earlier runs: the capacity, then estimated at 5,274 objects, divided by the
+origin miss rate of about 37 req/s at scope 0.02; with the measured capacity of 5,263
+objects it would be 142\,s, a difference of 0.2\% that we do not recompute.\claim{C3}
+Across the 31 agent-class clients that qualify, the windowed working set has a median of 4
+and a maximum of 678 (\cref{fig:a-honeypot}).\claim{C3}
+Contiguity on the honeypot is computed over 1,929 request pairs from 284 connections of 37
+clients, and 19.4\% of those pairs repeat the same chapter, which never happens in the
 generator.\claim{C5}
-Of all requests, 3.83\% carry Web Bot Auth headers (19,934 of 520,871), none of them from
-the declared agents.\claim{C6}
-We record the presence of the headers; we did not verify the signatures
-cryptographically.
+Of the signed requests, 19,934 of 520,871, all but two come from generic bots; we record the
+presence of the signature headers and did not verify the signatures
+cryptographically.\claim{C6}
 
 \subsection{The prior characteristic-time prediction}\label{app:tc}
 Under the characteristic-time approximation~\cite{fagin1977,che2002,fricker2012}, an object
@@ -50,8 +43,29 @@ The prior prediction used this form with $T_C = 143$\,s and the reachable sets a
 computed, 3,052 and 10,172 objects, so that the elasticity
 $\mathrm{miss}(12)/\mathrm{miss}(36) = \exp(24\,T_C/W)$ is about 3.1 at scope 0.06 and 1.4
 at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
-We observe 1.66 and 1.15: the ordering holds and the value at scope 0.06 falls outside the
-tolerance (\cref{sec:m-tc}, \cref{fig:a-model}).\claim{B3}\claim{B4}
+\paragraph{The post-hoc calculation.}
+% claims.md B7; docs/RISULTATO-che-posthoc.md; tools/che_posthoc.py.
+The calculation of \cref{tab:tc} keeps the approximation and replaces its inputs with those
+of our design.\claim{B7}
+Each chapter $j$ receives a request rate $\mu_j$ from the human class, whose rank
+$r = \lfloor N^u \rfloor$ has probability $\log((k+1)/k)/\log N$, and from the agentic class,
+whose session starts have probability $((k+1)/S)^{0.4} - (k/S)^{0.4}$ over the first
+$S = \lfloor N \cdot \mathrm{scope} \rfloor$ ranks, each session adding a third of its rate to
+three consecutive chapters.\claim{B7}
+The exhaustive class sends $\alpha\lambda$ requests per second over the $N$ chapters.
+In version (A) it is Poisson traffic like the others, so a chapter is a hit with probability
+$1 - e^{-(\mu_j + \alpha\lambda/N) T}$.\claim{B7}
+In version (B) it returns to each chapter every $P = N/(\alpha\lambda)$ seconds, as in the
+corrected generator; with $T < P$, the chapter is in the cache with probability
+$1 - e^{-\mu_j T}(1 - T/P)$, which is also the hit probability of the other classes, and an
+exhaustive request hits with probability $1 - e^{-\mu_j T}$.\claim{B7}
+$T$ solves the capacity equation $\sum_j s_j\, o_j(T) = C$, where $o_j$ is the occupancy
+probability of chapter $j$, $s_j$ its size from the reconstructed responses plus a fixed
+512-byte overhead, and $C$ the 128\,MiB of the cache.\claim{B7}
+The origin rate is the sum of the miss rates, and the marginal is computed as for the
+measurements.
+No parameter is fitted to the measurements: the sizes and the overhead are those fixed in
+advance for the simulator (\cref{app:sim}), and $T$ follows from the capacity.\claim{B7}
 
 \subsection{Simulator}\label{app:sim}
 The first phase checked the simulator against the testbed, with 20 seeds per point and
