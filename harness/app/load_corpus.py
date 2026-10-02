@@ -117,7 +117,7 @@ def main():
         host=os.environ.get("PGHOST", "db"),
         dbname=os.environ.get("PGDATABASE", "undertow"),
         user=os.environ.get("PGUSER", "undertow"),
-        password=os.environ.get("PGPASSWORD", "undertow"),
+        password=os.environ["PGPASSWORD"],
     )
     cur = conn.cursor()
     print("creo lo schema")

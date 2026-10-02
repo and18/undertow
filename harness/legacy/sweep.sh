@@ -70,7 +70,7 @@ vmq() { curl -s "http://localhost:8428/api/v1/query?query=$1" \
 # rileggere una campagna notturna senza contare i minuti a mano.
 annotate() {
     curl -s -X POST http://localhost:3000/api/annotations \
-        -H 'Content-Type: application/json' -u admin:undertow \
+        -H 'Content-Type: application/json' -u "admin:$(grep -oP '^GRAFANA_ADMIN_PASSWORD=\K.*' .env 2>/dev/null)" \
         -d "{\"time\":$(date +%s)000,\"tags\":[\"undertow\",\"sweep\"],\"text\":\"$1\"}" \
         >/dev/null 2>&1 || true
 }

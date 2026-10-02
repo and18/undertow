@@ -130,7 +130,7 @@ def get_pool():
             port=os.environ.get("PGPORT", "5432"),
             dbname=os.environ.get("PGDATABASE", "undertow"),
             user=os.environ.get("PGUSER", "undertow"),
-            password=os.environ.get("PGPASSWORD", "undertow"),
+            password=os.environ["PGPASSWORD"],
         )
     return _pool
 

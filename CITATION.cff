@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, data or figures, please cite the paper below
+  (preferred-citation) and, where relevant, this repository.
+title: "Undertow: testbed, data and analysis for state-dependent marginal origin cost in shared web caches"
+type: software
+authors:
+  - family-names: Licitra
+    given-names: Andrea
+    # TODO: replace the placeholder with the real ORCID iD before publishing.
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/and18/undertow"
+license:
+  - MIT
+  - CC-BY-4.0
+keywords:
+  - web caching
+  - AI agents
+  - crawlers
+  - origin cost
+  - measurement
+  - Varnish
+preferred-citation:
+  type: article
+  title: "Same Label, Opposite Sign: State-Dependent Marginal Origin Cost in Shared Web Caches"
+  authors:
+    - family-names: Licitra
+      given-names: Andrea
+      # TODO: same ORCID iD as above.
+      orcid: "https://orcid.org/0000-0000-0000-0000"
+  year: 2026
+  # TODO: add the arXiv identifier once assigned, e.g.
+  # identifiers:
+  #   - type: other
+  #     value: "arXiv:XXXX.XXXXX"

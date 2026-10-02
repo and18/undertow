@@ -1,6 +1,0 @@
-{
-  "permissions": {
-    "ask":  ["Bash(ssh *)", "Bash(scp *)", "Bash(git push *)", "Bash(git push)"],
-    "deny": ["Read(./data/hplogs/**)", "Read(./.env)", "Read(./.env.*)", "Read(./harness/.env)"]
-  }
-}

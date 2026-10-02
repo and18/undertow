@@ -44,7 +44,7 @@ davvero, perche' nessuna collisione puo' abbassare quel valore.
 
 Uso:
     python3 analyze_honeypot.py /var/log/nginx/agentic.log*
-    python3 analyze_honeypot.py --exclude-ip 93.47.44.48 130.110.1.121 -- <file>
+    python3 analyze_honeypot.py --exclude-ip 192.0.2.10 198.51.100.20 -- <file>
 """
 
 import argparse

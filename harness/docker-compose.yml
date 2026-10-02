@@ -73,7 +73,7 @@ services:
       PGPORT: "5432"
       PGDATABASE: undertow
       PGUSER: undertow
-      PGPASSWORD: undertow
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in harness/.env (see .env.example)}
       CACHE_TTL: "${CACHE_TTL:-3600}"
       OBJECT_TTL: "${OBJECT_TTL:-0}"
     healthcheck:
@@ -97,7 +97,7 @@ services:
     environment:
       POSTGRES_DB: undertow
       POSTGRES_USER: undertow
-      POSTGRES_PASSWORD: undertow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in harness/.env (see .env.example)}
     command: >
       postgres
       -c max_connections=100
@@ -118,7 +118,7 @@ services:
     container_name: ut-db-exporter
     cpuset: "${CPUSET_OBS:-7}"
     environment:
-      DATA_SOURCE_NAME: "postgresql://undertow:undertow@db:5432/undertow?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://undertow:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in harness/.env (see .env.example)}@db:5432/undertow?sslmode=disable"
     depends_on: [db]
     networks: [ut]
 
@@ -161,7 +161,7 @@ services:
     container_name: ut-grafana
     cpuset: "${CPUSET_OBS:-7}"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: undertow
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in harness/.env (see .env.example)}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_DEFAULT_THEME: light
@@ -183,7 +183,7 @@ services:
       PGHOST: db
       PGDATABASE: undertow
       PGUSER: undertow
-      PGPASSWORD: undertow
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in harness/.env (see .env.example)}
     volumes:
       - ../cache:/corpus:ro
       # Montato invece che copiato nell'immagine: elimina ogni ambiguita'

@@ -62,7 +62,7 @@ sampler_peak() {
 annotate() {
     curl -s -X POST http://localhost:3000/api/annotations \
         -H 'Content-Type: application/json' \
-        -u admin:undertow \
+        -u "admin:$(grep -oP '^GRAFANA_ADMIN_PASSWORD=\K.*' .env 2>/dev/null)" \
         -d "{\"time\":$(date +%s000),\"tags\":[\"undertow\",\"$1\"],\"text\":\"$2\"}" \
         > /dev/null 2>&1 || true
 }

@@ -40,6 +40,7 @@ ls cache/*.txt | wc -l          # expect ~495
 
 cd harness
 cp env.x86-16 .env              # or env.arm6, or write your own
+cat .env.example >> .env        # then set the two passwords in .env
 nproc                           # confirm the cpusets in .env fit
 docker compose up -d && sleep 30
 docker compose ps
@@ -204,13 +205,16 @@ Non-negotiable, each learned from a run that had to be discarded:
 Campaigns take 3–8 hours. Detach them:
 
 ```bash
-nohup bash load/sweep.sh > /tmp/sweep.log 2>&1 &
+nohup bash load/treclassi.sh > /tmp/treclassi.log 2>&1 &
 ```
 
-Results land in `harness/results/<script>-<timestamp>/points.csv`, one
-row written per completed measurement, so an interruption costs only the
-run in flight. Re-invoking with `OUT=<that directory>` resumes and skips
-what is already recorded.
+Results land in `harness/results/tre-<timestamp>/points.csv`, one row
+written per completed measurement, so an interruption costs only the
+run in flight. Each run directory also gets `env.txt`, the full
+environment of the launching shell: check it 30 seconds after launch, and
+do not publish it as is (in an SSH session it contains the client
+address). The earlier runners (`sweep.sh`, `budget.sh`, ...) are in
+`harness/legacy/` and are not maintained.
 
 A laptop is not a suitable host for these campaigns: two kernel panics
 (`WORKER_INVALID`) occurred on the x86 development machine during
