@@ -211,3 +211,16 @@ stata aggiunta da memoria.
 
 Voci del bib non citate nel paper, quindi assenti dal `.bbl`: `megiddo2003arc`, `jiang2002lirs`,
 `johnson1994twoq`, `liu2025somesite`, `tene-latency` (le ultime due ancora «check»).
+
+---
+
+## Bibliografia — verifiche del 2 ottobre 2026
+
+| voce | esito | dettagli |
+|---|---|---|
+| `bandara2026agentfirst` | **VERIFICATA** (pagina arXiv) | «Towards an Agent-First Web: Redesigning the Web for AI Agents», arXiv:2606.19116, v1 del 17 giugno 2026; 21 autori, primo Eranga Bandara, ultimo Sachin Shetty. Paper di visione: identificazione degli agenti nelle richieste HTTP e limiti di frequenza invece del blocco; nessuna misura su cache o carico all'origine |
+| `megiddo2003arc` | **VERIFICATA** (USENIX) | Megiddo, Modha, «ARC: A Self-Tuning, Low Overhead Replacement Cache», 2nd USENIX FAST (FAST '03), 2003; pagine non indicate sulla pagina |
+| `zhang2024sieve` | **VERIFICATA** (USENIX) | Zhang, Yang, Yue, Vigfusson, Rashmi, NSDI '24, pp. 1229-1246 |
+| `yang2023s3fifo` | **VERIFICATA** (Crossref) | Yang, Zhang, Qiu, Yue, Rashmi, «FIFO queues are all you need for cache eviction», SOSP '23, pp. 130-149, doi 10.1145/3600006.3613147 |
+| `einziger2017tinylfu` | **VERIFICATA** (Crossref) | Einziger, Friedman, Manes, «TinyLFU: A Highly Efficient Cache Admission Policy», ACM Transactions on Storage 13(4):1-31, 2017, doi 10.1145/3149371 (Crossref registra il titolo come «TinyLFU»; esiste anche la versione PDP 2014, non citata) |
+| `liu2025somesite`, `tene-latency` | **TOLTE** dal bib | segnaposto non verificati e non citati |

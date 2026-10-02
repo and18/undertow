@@ -1,0 +1,9 @@
+policy,label,run,reps,origin_rps,T_s,return_s,return_within_T
+A,no policy,tre-20260919-072040,3,81.4500,64.6,91.6,no
+B,block exhaustive,tre-20260919-080920,3,18.8033,279.9,91.6,yes
+C,block exhaustive and agentic,tre-20260919-085754,3,17.9633,293.0,91.6,yes
+D1,"defer, budget 1",tre-20260920-075220,3,40.3033,130.6,91.6,yes
+D2,"defer, budget 2",tre-20260920-070346,3,55.0100,95.7,91.6,yes
+D3,"defer, budget 3",tre-20260920-061512,3,64.1033,82.1,91.6,no
+D4,"defer, budget 4",tre-20260919-094627,3,68.3233,77.0,91.6,no
+D6,"defer, budget 6",tre-20260919-103501,3,74.9633,70.2,91.6,no

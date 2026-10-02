@@ -135,13 +135,9 @@ changed could look insensitive for that reason alone.
 A secondary series varies the exhaustive volume on its own, from 0 to 42 req/s, with the
 human and agentic volumes fixed (\cref{fig:asymmetry}b): the marginal cost of the exhaustive
 class stays flat at about 0.98 origin requests per added request.\claim{A7}
-The series uses the shared mapping, a longer window and 3 repetitions per point, so we
-compare the shape of its response, not its size; its details are in
-\cref{app:a7}.\claim{A7}
+It is not paired with the primary design, so we compare the shape of its response, not its
+size (\cref{app:a7}).\claim{A7}
 
-Zhang et al.~\cite{zhang2025} already vary the share of AI traffic and measure the cache
-hit ratio; what we add is the marginal origin cost and its comparison across three
-coexisting classes.\claim{A2}
 Because the other classes stay fixed, the total offered rate grows with the class we
 raise; the design measures the response to one class's offered rate, not to its share at
 constant total.\claim{A2}
@@ -218,14 +214,8 @@ Deferring limits the exhaustive class to a budget of 1, 2, 3, 4 or 6 concurrent 
 in the application; a request beyond the budget receives an immediate error with a retry
 hint, and the generator does not retry it.
 These runs use the default agentic scope, 0.02, and the shared mapping, and they predate
-the correction of the exhaustive traversal (\cref{sec:m-classes}).
-The exhaustive path has the same distribution under every policy, but with the shared
-counter each chapter came back to the exhaustive class every $\sim$92\,s, less than the
-characteristic time of about 143\,s, so exhaustive hits are inflated under every
-policy.\claim{A6}\claim{A4}
-Because blocking acts in the application and deferring only on exhaustive misses, the size
-of the differences between policies may have changed with it; we did not measure
-by how much.\claim{A6}\claim{A4}
+the correction of the exhaustive traversal (\cref{sec:m-classes}); \cref{sec:limitations}
+states for which policies this can matter.\claim{A6}
 Ordered by requests served, the marginal slope of the frontier rises monotonically, from
 0.01 to 102.25 ms of human p99 per 1,000 additional requests served.\claim{A6}
 At this operating point, blocking and deferring are therefore two parameterisations of

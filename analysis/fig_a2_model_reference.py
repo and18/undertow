@@ -48,17 +48,11 @@ def _caption():
     r = fail[0]
     obs, pri = float(r["observed"]), float(r["prior"])
     return (
-        "Characteristic-time approximation (Fagin 1977; Che et al. 2002; formalised by Fricker "
-        "et al. 2012) against observed elasticity of the agentic miss ratio, defined as the miss "
-        "ratio at 12 req/s over that at 36 req/s. Hollow circles: a prior prediction with a "
-        "uniform access approximation, written before the first results at scopes 0.06 and "
-        "0.20 were available and not independently timestamped, with the \u00b130% tolerance "
-        "stated with it (band); the first row is the anchor: that scope had already been "
-        "measured, in earlier runs, when the prediction was written. Filled circles: observed "
-        "with the exhaustive class in its own k6 scenario, mean of 5 repetitions. The ordering predicted by the "
-        f"model holds; the quantitative criterion fails at {S.num(float(r['W_over_capacity']), 2)}\u00d7 "
-        f"cache ({S.num(obs, 2)} against {S.num(pri, 1)}, "
-        f"{S.num(100 * (obs / pri - 1), 0)}%).")
+        "Prior characteristic-time prediction (Section 5.2) against the observed elasticity of "
+        "the agentic miss ratio, defined as the miss ratio at 12 req/s over that at 36 req/s. "
+        "Hollow circles: the prior prediction with its tolerance band; the first row is the "
+        "anchor, a scope already measured when the prediction was written. Filled circles: "
+        "observed with the exhaustive class in its own k6 scenario, mean of 5 repetitions.")
 
 
 CAPTION = _caption()

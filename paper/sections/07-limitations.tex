@@ -42,21 +42,29 @@ We also did not measure where origin load turns into human latency: the queue at
 stage was never measured (\cref{sec:m-human}).\claim{B6}
 
 \paragraph{Secondary series and shared mapping.}
-The series that varies the exhaustive volume comes from a campaign with shared mapping, a
-measurement window of 1,211\,s and 3 repetitions per point.\claim{A7}
-It is not paired with the primary design, so we compare the shape of its response, not
-its size (\cref{sec:r-asymmetry}).\claim{A7}
+The series that varies the exhaustive volume comes from an earlier campaign with a
+different mapping and window (\cref{app:a7}), so it is not paired with the primary
+design.\claim{A7}
 
 \paragraph{Runs that keep the shared traversal counter.}
 The admission-policy frontier (\cref{sec:r-frontier}), the CPU validation of origin
 requests, the measurement of the cache capacity, the window-length check and the secondary
 exhaustive series (\cref{app:a7}) come from runs made before the exhaustive traversal was
 corrected, and were not rerun.\claim{A6}\claim{C1}\claim{C2}\claim{C7}\claim{A7}
-For the frontier, the exhaustive path has the same distribution under every policy, but
-each chapter came back to the exhaustive class every $\sim$92\,s, less than the
-characteristic time of about 143\,s, so exhaustive hits are inflated under every policy;
-since blocking acts in the application and deferring only on exhaustive misses, the size
-of the differences between policies may have changed, and we did not measure it.\claim{A6}\claim{A4}\claim{A5}
+For the frontier, a chapter came up in the shared traversal every 91.6\,s (16,954 chapters
+at 185 req/s), and the exhaustive class requested it at each pass with probability
+$\alpha = 0.35$.\claim{A6}
+Taking the characteristic time of each policy as the cache capacity over its origin rate,
+$T \approx 5{,}263$ objects divided by the origin rate, gives 65\,s with no policy; 131,
+96, 82, 77 and 70\,s for deferral budgets 1, 2, 3, 4 and 6; and 280 and 293\,s for the two
+blocking policies.\claim{A6}
+A return after 91.6\,s therefore falls within $T$ only under budgets 1 and 2, where
+exhaustive hits may be inflated; with no policy and budgets 3 to 6, $T$ is shorter than the
+return.\claim{A6}
+Under the blocking policies an exhaustive miss receives an uncacheable error, so the
+exhaustive class never hits its own earlier requests.\claim{A4}\claim{D2}
+We did not measure how much budgets 1 and 2, and hence the shape of the frontier, are
+affected.\claim{A6}
 Except for the capacity runs, these runs also predate the recording of full configurations
 on 21 September 2026.
 In the exhaustive series, the only one where their rates enter a result, $\alpha$ is read

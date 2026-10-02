@@ -1,6 +1,5 @@
-% Verified on primary sources: docs/VERIFICHE-chiuse.md (sections "Letteratura" and
-% "Bibliografia per il .bbl di PAM", 28 Sep 2026) and docs/UNDERTOW-CONTESTO.md §7.
-% Entries still marked "check" are not cited in the paper and do not reach the .bbl.
+% Verified on primary sources: docs/VERIFICHE-chiuse.md (bibliography checks of 28 Sep,
+% 30 Sep and 2 Oct 2026) and docs/UNDERTOW-CONTESTO.md §7.
 
 @article{fagin1977,
   author  = {Ronald Fagin},
@@ -58,7 +57,8 @@
 @inproceedings{megiddo2003arc,
   author    = {Nimrod Megiddo and Dharmendra S. Modha},
   title     = {{ARC}: A Self-Tuning, Low Overhead Replacement Cache},
-  booktitle = {FAST '03}, year = {2003}}
+  booktitle = {2nd USENIX Conference on File and Storage Technologies (FAST '03)},
+  year      = {2003}}
 
 @inproceedings{jiang2002lirs,
   author    = {Song Jiang and Xiaodong Zhang},
@@ -69,11 +69,6 @@
   author    = {Theodore Johnson and Dennis Shasha},
   title     = {{2Q}: A Low Overhead High Performance Buffer Management Replacement Algorithm},
   booktitle = {VLDB '94}, year = {1994}}
-
-@inproceedings{liu2025somesite,
-  author    = {Liu and others},
-  title     = {Somesite I Used To Crawl},
-  booktitle = {IMC '25}, year = {2025}, note = {arXiv:2411.15091. check: authors}}
 
 @misc{cloudflare2026cache,
   author = {Avani Wildani and Suleman Ahmad},
@@ -98,10 +93,6 @@
   title  = {A Vocabulary For Expressing {AI} Usage Preferences},
   howpublished = {Internet-Draft draft-ietf-aipref-vocab-08, IETF AI Preferences working group},
   year = {2026}, note = {14 September 2026}}
-
-@misc{tene-latency,
-  author = {Gil Tene}, title = {How {NOT} to Measure Latency},
-  howpublished = {Talk}, note = {check: venue and year}}
 
 % ── added 28 Sep 2026, verified on primary sources (Crossref, USENIX pages) ──────────
 
@@ -158,3 +149,29 @@
   title       = {The {Menlo} Report: Ethical Principles Guiding Information and Communication Technology Research},
   institution = {U.S. Department of Homeland Security, Science and Technology Directorate, Cyber Security Division},
   year        = {2012}, note = {3 August 2012}}
+
+% ── added 2 Oct 2026, verified on primary sources (USENIX pages, Crossref, arXiv) ────
+
+@inproceedings{zhang2024sieve,
+  author    = {Yazhuo Zhang and Juncheng Yang and Yao Yue and Ymir Vigfusson and K. V. Rashmi},
+  title     = {{SIEVE} is Simpler than {LRU}: an Efficient Turn-Key Eviction Algorithm for Web Caches},
+  booktitle = {21st USENIX Symposium on Networked Systems Design and Implementation (NSDI '24)},
+  pages     = {1229--1246}, year = {2024}}
+
+@inproceedings{yang2023s3fifo,
+  author    = {Juncheng Yang and Yazhuo Zhang and Ziyue Qiu and Yao Yue and K. V. Rashmi},
+  title     = {{FIFO} Queues are All You Need for Cache Eviction},
+  booktitle = {Proceedings of the 29th Symposium on Operating Systems Principles (SOSP '23)},
+  pages     = {130--149}, year = {2023}, doi = {10.1145/3600006.3613147}}
+
+@article{einziger2017tinylfu,
+  author  = {Gil Einziger and Roy Friedman and Ben Manes},
+  title   = {{TinyLFU}: A Highly Efficient Cache Admission Policy},
+  journal = {ACM Transactions on Storage},
+  volume  = {13}, number = {4}, pages = {1--31}, year = {2017}, doi = {10.1145/3149371}}
+
+@misc{bandara2026agentfirst,
+  author       = {Eranga Bandara and Ross Gore and Ravi Mukkamala and Asanga Gunaratna and Safdar H. Bouk and Xueping Liang and Peter Foytik and Abdul Rahman and Sachini Rajapakse and Isurunima Kularathna and Pramoda Karunarathna and Chalani Rajapakse and Ng Wee Keong and Kasun De Zoysa and Tharaka Hewa and Amin Hass and Wathsala Herath and Aruna Withanage and Nilaan Loganathan and Atmaram Yarlagadda and Sachin Shetty},
+  title        = {Towards an Agent-First Web: Redesigning the Web for {AI} Agents},
+  howpublished = {arXiv preprint arXiv:2606.19116},
+  year         = {2026}, note = {17 June 2026}}

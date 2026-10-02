@@ -33,6 +33,7 @@ FIGURES = [
     "fig_04_overlap_confounder",
     "fig_05_accounting",
     "fig_06_cpu_validation",
+    "fig_07_why_sign_flips",
     "fig_a1_human_externality",
     "fig_a2_model_reference",
     "fig_a3_honeypot_calibration",
@@ -46,7 +47,7 @@ def sha256(p):
 
 _TEX = [("\\", r"\textbackslash{}"), ("%", r"\%"), ("&", r"\&"), ("_", r"\_"), ("#", r"\#"),
         ("\u2212", "$-$"), ("\u00b1", r"$\pm$"), ("\u00d7", r"$\times$"), ("\u00f7", r"$\div$"),
-        ("\u03b1", r"$\alpha$"), ("\u03b2", r"$\beta$"), ("\u2192", r"$\rightarrow$"),
+        ("\u03b1", r"$\alpha$"), ("\u03b2", r"$\beta$"), ("\u03bb", r"$\lambda$"), ("\u2192", r"$\rightarrow$"),
         ("\u2248", r"$\approx$"), ("\u2264", r"$\leq$"), ("\u00b2", r"$^{2}$"),
         ("\u00b7", r"$\cdot$"), ("\u2013", "--"), ("\u2014", "---"), ("\u2019", "'")]
 

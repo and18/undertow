@@ -22,8 +22,8 @@ insufficient, because the marginal effect of a class is state-dependent.\claim{D
 At the knee of the testbed, blocking the exhaustive class by its identity lies on the
 empirical work/latency frontier sampled at that operating point; we did not test policies
 that ignore identity (\cref{sec:r-frontier}).\claim{D2}
-Identity alone, however, can be insufficient: a policy that knows only that traffic is
-agentic does not necessarily hold enough information to estimate its marginal impact,
+A policy that knows only that traffic is agentic, however, does not necessarily hold enough
+information to estimate its marginal impact,
 since under the same label the marginal cost ranged from $-0.035$ to $+0.421$ origin
 requests per request (\cref{sec:r-sign}).\claim{D1}
 
@@ -37,9 +37,9 @@ What infrastructure can observe is the windowed working set, the counterpart of 
 reachable set in request logs: we computed it over a short window for the clients of our
 honeypot (\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
 The second implication is that a useful infrastructure would need an estimate of the
-marginal cost of the class in the current state of the shared cache, because at the operating point of the frontier one
-blocked exhaustive request frees about 0.82 origin requests and one agentic request about
-0.10.\claim{D5}\claim{A5}
+marginal cost of the class in the current state of the shared cache, because in the
+primary design one blocked exhaustive request frees about 0.84 origin requests and one
+agentic request about 0.16.\claim{D5}\claim{A5}
 The third implication is that it should know the effect of a class on the other
 workloads, because the human p99 rose by 26.7\,ms while the human miss ratio changed only
 by a factor of 1.07 (\cref{sec:m-human}).\claim{D6}\claim{B5}
@@ -87,7 +87,7 @@ P1 & Same class and volumes, marginal from $-0.035$ to $+0.421$ as only the reac
   actions~\cite{cloudflare2026options}; signed requests~\cite{ietf-webbotauth} &
   The label is the same at both ends of the range \\
 \addlinespace
-P2 & Blocking frees ${\sim}0.82$ (exhaustive) and ${\sim}0.10$ (agentic) origin
+P2 & Blocking frees ${\sim}0.84$ (exhaustive) and ${\sim}0.16$ (agentic) origin
   requests per request (\cref{sec:m-block}) &
   An estimate of the marginal cost of the class in the current cache state &
   Choose which class to block or defer at the current operating point &
@@ -110,9 +110,9 @@ Two questions remain open, and we state them as such.
 The first is how to estimate P2 online, without the controlled experiments we used to
 measure it; capacity-marginal estimators such as miss-ratio curves answer a different
 question (\cref{sec:rw}).\claim{D5}
-As an implication, a classical model may be enough for the estimate itself: fed with the
-access distribution of the class, the characteristic-time approximation reproduces the
-values we measured (\cref{sec:m-tc}).\claim{B7}\claim{D5}
+Interpretive, post hoc: as an implication, a classical model may be enough for the estimate
+itself, since, fed with the access distribution of the class, the characteristic-time
+approximation reproduces the values we measured (\cref{sec:m-tc}).\claim{B7}\claim{D5}
 What remains open is whether that distribution can be estimated online from request logs,
 where the contiguity of real clients differs from that of our sessions
 (\cref{sec:limitations}).\claim{D5}\claim{C5}
@@ -125,20 +125,19 @@ closest line of work, and we did not measure this property.\claim{D7}
 % Phase 2 of the simulator: rows S2-S6 of claims.md v3.8 only; SIMULATO, never MISURATO.
 The simulator gives a first, simulated answer to whether these properties are tied to LRU
 (\cref{sec:m-sim}).\claim{S2}
-Across four eviction policies and two session models, the dependence of the agentic
-marginal on the reachable set holds in 7 of 8 combinations, the exception being W-TinyLFU
-with the generator's sessions, and the net effect of adding the agentic class changes sign with the
+In the simulator the dependence on the reachable set holds for most policies and session
+models, and the net effect of adding the agentic class changes sign with the
 policy.\claim{S2}\claim{S5}
 If this holds on real systems, the cost of a class depends on the state and on the policy of
 the cache, and an estimate of P2 would have to be made for the cache as it is
 configured.\claim{S2}\claim{S5}\claim{D5}
 
-% "We did not find prior work": docs/VERIFICHE-chiuse.md (systematic search, 2025-2026) and
-% docs/UNDERTOW-CONTESTO.md §7; not a claims.md row.
+% claims.md D9 (SOSTENUTO, bibliographic search): docs/VERIFICHE-chiuse.md and
+% docs/UNDERTOW-CONTESTO.md §7.
 We did not find prior work that jointly measures, in one shared cache, the marginal origin
 cost of one more request of a class, its dependence on the width of the class's reachable
 set, the overlap between classes as a controlled variable, and the effect on the tail
-latency of the other classes.
+latency of the other classes.\claim{D9}
 Whether admission, placement and priority can move from deciding on identity to deciding
 on state and cost is the question these implications open.\claim{D1}\claim{D3}
 % Section E rows: "current architecture inadequate" and "new protocol or architecture

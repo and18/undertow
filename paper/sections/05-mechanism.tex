@@ -60,6 +60,8 @@ counter, gave the same verdict (1.62, 48\% below).\claim{B3}
 Interpretive: the same approximation explains the ordering qualitatively.\claim{B4}
 The wider the reachable set, the smaller the elasticity: 4.08 at scope 0.02, 1.66 at 0.06
 and 1.15 at 0.20, and below 2.0 at the widest scope.\claim{B4}
+Computed post hoc with the generator's access distribution (below), the approximation gives
+factors of 4.10, 1.64 and 1.16 against the 4.08, 1.66 and 1.15 measured.\claim{B4}\claim{B7}
 In the terms of the approximation, a narrow reachable set lets more of a class's own
 requests return within $T_C$ as its volume grows, and a wide one less so.\claim{B4}
 This reading is consistent with the ordering but was not verified as a prediction; a
@@ -80,8 +82,11 @@ Both versions of the exhaustive class that we computed reproduce the change of s
 the periodic one, which matches our corrected generator, reproduces the measured values
 within 0.008 (\cref{tab:tc}).\claim{B7}
 At scope 0.02 the mean $\lambda T$ of an agentic object moves from 1.23 at 12 req/s to
-3.49 at 36, across the maximum, while at scope 0.20 it stays well below 1.\claim{B7}
-The change of sign is therefore structural rather than an artefact of our testbed.\claim{B7}
+3.49 at 36, across the maximum, while at scope 0.20 it stays well below 1
+(\cref{fig:tc}).\claim{B7}
+The change of sign therefore follows from the access distribution and LRU replacement, not
+from details of the testbed's implementation; since the calculation uses our generator's
+distribution, it cannot exclude an artefact of the generator itself.\claim{B7}
 The calculation was made after the data; it does not revive the rejected prior prediction,
 which used a single $T$ and a uniform access rate.\claim{B3}\claim{B7}
 
@@ -103,6 +108,7 @@ Scope & Measured & (A) & (B) & $\lambda T$ at 12 req/s & $\lambda T$ at 36 req/s
 \bottomrule
 \end{tabular}
 \end{table}
+\undertowfig{FIG-07_why-sign-flips}{Why the sign of the agentic marginal flips}{fig:tc}
 
 \subsection{How the cost reaches the human class}\label{sec:m-human}
 Supported: when the agentic reachable set widens, the human class pays through origin load,
@@ -122,16 +128,20 @@ We infer the effect of load by exclusion and never measured the queue at each st
 we do not claim a channel (\cref{sec:limitations}).\claim{B6}
 
 \subsection{Why blocking by class works for one class}\label{sec:m-block}
-Supported: at the operating point of the empirical frontier, blocking one exhaustive request frees
-about 0.82 origin requests, and blocking one agentic request about 0.10.\claim{A5}
-The inference combines the miss ratios measured at that point, the agentic marginal cost,
-and the flat marginal of about 0.98 that the exhaustive class shows when its own volume is
-varied.\claim{A5}\claim{A7}
-It explains the two blocking policies of \cref{sec:r-frontier}.
-Blocking the exhaustive class by its identity removes about 0.82 origin requests per
-blocked request, and that policy lies on the frontier.\claim{A5}\claim{D2}
-Blocking the agentic class as well removes about 0.10 per blocked request: it costs $2{,}807 \pm 185$ served requests and gives no difference in human p99 that we can
-measure.\claim{A4}\claim{A5}
+Supported: in the primary design at scope 0.02, blocking one exhaustive request frees about
+0.84 origin requests, its miss ratio, and blocking one agentic request about 0.16, the slope
+of the agentic class between 0 and 12 req/s.\claim{A5}
+The inference combines these measured values with the flat marginal of about 0.98 that the
+exhaustive class shows when its own volume is varied.\claim{A5}\claim{A7}
+Per request, the exhaustive class costs the origin about five times what the agentic class
+costs, which is consistent with the two blocking policies of
+\cref{sec:r-frontier}.\claim{A5}
+Blocking the exhaustive class by its identity lies on the frontier; blocking the agentic class
+as well costs $2{,}807 \pm 185$ served requests and gives no difference in human p99 that we
+can measure.\claim{A4}\claim{D2}
+The per-request values come from the primary design; the comparison between the two
+policies comes from the frontier runs, which keep the shared traversal counter
+(\cref{sec:r-frontier}).\claim{A5}\claim{A4}
 
 \subsection{A simulator for what the testbed cannot vary}\label{sec:m-sim}
 % Status SIMULATO (claims.md, rows S1-S6). Never evidence for the measured results.
@@ -146,7 +156,8 @@ With the traversal corrected, its predictions for the reruns of 28 and 29 Septem
 within their intervals (\cref{sec:m-prereg}).\claim{A1}\claim{A9}
 
 A second, pre-registered phase asked whether these dependences are specific to LRU and to
-our synthetic sessions, crossing four eviction policies, LRU, SIEVE, S3-FIFO and W-TinyLFU,
+our synthetic sessions, crossing four eviction policies, LRU, SIEVE~\cite{zhang2024sieve},
+S3-FIFO~\cite{yang2023s3fifo} and W-TinyLFU~\cite{einziger2017tinylfu},
 with two session models, the generator's and sessions calibrated on the
 honeypot.\claim{S2}
 In the simulator, the dependence of the agentic marginal on the reachable set holds in 7 of
@@ -158,7 +169,7 @@ refuted.\claim{S3}
 The overlap effect is positive at 12 agentic req/s in all 8 combinations, and at 36 req/s it
 holds only with LRU.\claim{S4}
 The net effect of adding the agentic class is positive with LRU and W-TinyLFU and negative
-with SIEVE and S3-FIFO, where it comes from fewer misses of the other classes; this is not a
+with SIEVE and S3-FIFO; with S3-FIFO it comes from fewer exhaustive and human misses; this is not a
 demonstrated saving and says nothing about the Web.\claim{S5}
 The human miss ratio grows with the agentic reachable set and rate under every policy
 except S3-FIFO at the smallest scope, where it falls.\claim{S6}

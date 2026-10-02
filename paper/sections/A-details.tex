@@ -14,23 +14,18 @@ matches fetchers that act for a user, such as \texttt{ChatGPT-User}, \texttt{Cla
 and Perplexity.
 The declaration is not verified.
 All aggregates come from one fingerprinted snapshot of the logs and a fixed window,
-[12 August, 22 September 2026) UTC, with 520,871 requests.\claim{C6}
-Client addresses are used only in memory, as a grouping key through a keyed hash with a
-fresh random key; only per-class aggregates leave the analysis (\cref{app:ethics}).
+[12 August, 22 September 2026) UTC, with 520,871 requests; the handling of client
+addresses is described in \cref{app:ethics}.\claim{C6}
 
 The windowed working set is computed for the clients with at least 5 requests.\claim{C3}
 Its 143\,s window is the characteristic time of the testbed cache at the smallest agentic
 setting of the earlier runs: the capacity, then estimated at 5,274 objects, divided by the
 origin miss rate of about 37 req/s at scope 0.02; with the measured capacity of 5,263
 objects it would be 142\,s, a difference of 0.2\% that we do not recompute.\claim{C3}
-Across the 31 agent-class clients that qualify, the windowed working set has a median of 4
-and a maximum of 678 (\cref{fig:a-honeypot}).\claim{C3}
-Contiguity on the honeypot is computed over 1,929 request pairs from 284 connections of 37
-clients, and 19.4\% of those pairs repeat the same chapter, which never happens in the
-generator.\claim{C5}
-Of the signed requests, 19,934 of 520,871, all but two come from generic bots; we record the
-presence of the signature headers and did not verify the signatures
-cryptographically.\claim{C6}
+The distribution of the windowed working set across clients, and the counts behind the
+contiguity comparison, are given with \cref{fig:a-honeypot}.\claim{C3}\claim{C5}
+Of the requests with signature headers, 19,934 of 520,871, all but two come from generic
+bots.\claim{C6}
 
 \subsection{The prior characteristic-time prediction}\label{app:tc}
 Under the characteristic-time approximation~\cite{fagin1977,che2002,fricker2012}, an object
@@ -41,8 +36,8 @@ object is requested at rate $\lambda/W$ and the class's miss ratio is
 $\exp(-\lambda T_C / W)$.
 The prior prediction used this form with $T_C = 143$\,s and the reachable sets as then
 computed, 3,052 and 10,172 objects, so that the elasticity
-$\mathrm{miss}(12)/\mathrm{miss}(36) = \exp(24\,T_C/W)$ is about 3.1 at scope 0.06 and 1.4
-at scope 0.20, with a tolerance of $\pm$30\%.\claim{B3}
+$\mathrm{miss}(12)/\mathrm{miss}(36) = \exp(24\,T_C/W)$ gives the two predicted values of
+\cref{sec:m-tc}.\claim{B3}
 \paragraph{The post-hoc calculation.}
 % claims.md B7; docs/RISULTATO-che-posthoc.md; tools/che_posthoc.py.
 The calculation of \cref{tab:tc} keeps the approximation and replaces its inputs with those
@@ -76,8 +71,11 @@ The simulated agentic marginal at scope 0.02 is $-0.0451 \pm 0.0033$, against
 $-0.0405 \pm 0.0061$ measured, and the simulated overlap effect is $+0.882$ and $+0.839$
 origin req/s, against $+0.882$ and $+0.872$; the comparison used the shared traversal
 counter on both sides.\claim{S1}
-The simulated miss is slightly higher than the measured one at all five points compared,
-within the tolerance.\claim{S1}
+The simulated origin rate is slightly higher than the measured one at all five points
+($+0.4\%$ to $+0.9\%$), and the simulated miss ratios almost everywhere, within the
+tolerance.\claim{S1}
+Object sizes are the reconstructed chapter responses plus a fixed 512-byte overhead, fixed
+in the pre-registration of the first phase.\claim{S1}\claim{C8}
 \Cref{tab:sim} gives the outcome of the second phase, with the corrected traversal, for all
 eight combinations.\claim{S2}\claim{S3}\claim{S4}\claim{S5}
 Every value in it is simulated; policies other than LRU were not validated on the testbed.
@@ -111,10 +109,8 @@ agentic one, a campaign of 16 September 2026 varied the exhaustive volume from 0
 with the human and agentic classes fixed at 55 and 12 req/s.\claim{A7}
 It used the shared mapping, a measurement window of 1,211\,s and 3 repetitions per point,
 and the shared traversal counter.\claim{A7}
-The configured exhaustive rates are 0, 13.9968, 27.9965 and 41.9977 req/s: $\alpha$ is read
-from the result files and $\lambda$ from the campaign script, because these runs predate the
-recording of full configurations, and $\lambda$ is checked against the request rate that k6
-measured.\claim{A7}
+The configured exhaustive rates are 0, 13.9968, 27.9965 and 41.9977 req/s; their provenance
+is stated in \cref{sec:limitations}.\claim{A7}
 The marginal cost of the exhaustive class is $0.961 \pm 0.009$, $0.997 \pm 0.010$ and
 $0.979 \pm 0.004$ over the three steps, and its miss ratio rises from 0.791 to 0.861
-between 14 and 42 req/s, a factor of 1.09.\claim{A7}
+between 14 and 42 req/s.\claim{A7}

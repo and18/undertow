@@ -141,7 +141,7 @@ def render(variant):
     fa.dot(tb, y2, C.agentic, size=ms)
     fa.label(tb, y2, f"about {S.num(tb, 0)}", T.sub, dx=-6, ha="right", va="center",
              weight=SEMIBOLD)
-    _keys(cv, fa, L, ((y1, "Real agents", f"{S.num(_v(rows, 'agent_clients'), 0)} honeypot clients"),
+    _keys(cv, fa, L, ((y1, "Honeypot agents", f"{S.num(_v(rows, 'agent_clients'), 0)} honeypot clients"),
                       (y2, "Testbed agent", "scope 0.02, 12 req/s")))
 
     # b — contiguity
@@ -162,6 +162,6 @@ def render(variant):
              weight=SEMIBOLD)
     fb.label(gen, y2, f"{S.num(gen, 1)}%", T.sub, dx=-4, ha="right", va="center", color=C.surface,
              weight=SEMIBOLD)
-    _keys(cv, fb, L, ((y1, "Real agents", "per TCP connection"),
+    _keys(cv, fb, L, ((y1, "Honeypot agents", "per TCP connection"),
                       (y2, "Generator", "per k6 virtual user")))
     return cv.save(STEM)

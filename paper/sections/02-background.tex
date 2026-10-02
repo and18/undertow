@@ -1,6 +1,6 @@
 \section{Background and related work}\label{sec:related}
 % Sources: every cited entry verified on its primary source; outcomes and quotes in
-% docs/VERIFICHE-chiuse.md ("Bibliografia per il .bbl di PAM", 28 Sep 2026). Zhang et al.
+% docs/VERIFICHE-chiuse.md (bibliography checks of 28 Sep and 2 Oct 2026). Zhang et al.
 % remedies from the authors' PDF (sections 3.1, 3.2); Cloudflare posts of 2 Apr and 1 Jul
 % 2026 from the pages; SemDN from arXiv (venue not stated there: cited as a preprint).
 
@@ -32,7 +32,8 @@ Apache Traffic Server and Memcached, and measure the overall hit ratio and that 
 traffic.
 Their workloads fix the overlap between human and AI content, at about 20\% in the
 Wikimedia setup and 10\% in the synthetic trace, and do not vary it.
-They show that scan-resistant eviction policies such as SIEVE, S3-FIFO and ARC keep the
+They show that scan-resistant eviction policies such as SIEVE~\cite{zhang2024sieve},
+S3-FIFO~\cite{yang2023s3fifo} and ARC~\cite{megiddo2003arc} keep the
 hit ratio of human-like traffic high under AI interference, and propose a composable
 hierarchy of differentiated tiers for human and AI traffic, with a shared tier for the
 content that both request, instead of strict separation.
@@ -111,7 +112,7 @@ UCP, Cliffhanger~\cite{qureshi2006ucp,cidon2016cliffhanger} & Memory allocated t
   workload & Gradient of hit or miss ratio in memory (capacity-marginal) &
   Not a variable & Origin work of one more request at fixed capacity \\
 \addlinespace
-Breakwater, DAGOR, Protego, TopFull~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} &
+Breakwater, DAGOR, Protego, \mbox{TopFull}~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull} &
   Offered load & Latency and goodput under overload control &
   No cache & Cache state; per-class origin cost \\
 \addlinespace
@@ -138,10 +139,15 @@ origin that a class label does not determine the marginal cost, its size, the di
 between marginal and net, the overlap confounder and the effect on human traffic through
 load.\claim{A1}\claim{A9}\claim{A3}\claim{B5}
 
-\paragraph{Delivery architectures for agents.}
+\paragraph{Architectures for agents.}
 SemDN~\cite{hua2026semdn} proposes a hierarchical edge infrastructure that indexes and
 caches web content at the granularity of chunks for LLM agents.
 We do not propose a delivery architecture, and we have not tested our findings on
 SemDN.
 We ask a different question: whether, inside a shared infrastructure, the cost of a class
 of traffic can be treated as a stable property of that class.\claim{D1}
+Bandara et al.~\cite{bandara2026agentfirst}, in a vision paper, argue for identifying agents
+in their requests and limiting their rate instead of blocking them, and report no
+measurements of cache behaviour or origin load.\claim{D9}
+Our results bear on exactly what such identification can and cannot say about the cost of
+the traffic it identifies.\claim{D1}\claim{D3}

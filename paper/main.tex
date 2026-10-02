@@ -24,6 +24,7 @@
 \usepackage{tabularx}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{cite}
 \usepackage[hidelinks]{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 
@@ -44,12 +45,13 @@
 
 % ── figures: one command, caption from the build ────────────────────────────
 % \undertowfig{STEM}{short caption for the list of figures}{label}
-\newcommand{\undertowfig}[3]{%
-  \begin{figure}[t]
+% Optional first argument: float placement (default t; the appendix uses !ht).
+\newcommand{\undertowfig}[4][t]{%
+  \begin{figure}[#1]
     \centering
-    \includegraphics[width=\textwidth]{../figures/paper/#1.pdf}
-    \caption[#2]{\input{../figures/paper/#1.caption.tex}\unskip}
-    \label{#3}
+    \includegraphics[width=\textwidth]{../figures/paper/#2.pdf}
+    \caption[#3]{\input{../figures/paper/#2.caption.tex}\unskip}
+    \label{#4}
   \end{figure}}
 % The figures are drawn 4.80 in wide; the llncs \textwidth is 12.2 cm (4.80 in), so they are
 % included at their printed size.

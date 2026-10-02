@@ -48,7 +48,7 @@ CAPTION = (
     "the ratio between the two mean miss ratios, computed from the unrounded means. "
     "Mean of 5 repetitions; whiskers \u00b1 1 SE, smaller than the markers. (b) Marginal origin requests per added exhaustive request as the exhaustive "
     "volume rises from 0 to 42 req/s with the human and agentic volumes fixed; its miss "
-    "ratio changes by 1.09× between 14 and 42 req/s (at 0 req/s there is no exhaustive "
+    "ratio rises between 14 and 42 req/s (at 0 req/s there is no exhaustive "
     "traffic). This is a secondary series (16 Sep 2026: "
     "shared mapping, 1,211 s measurement window, 3 repetitions) and is not paired with the primary "
     "design. Whiskers: ± 1 SE."

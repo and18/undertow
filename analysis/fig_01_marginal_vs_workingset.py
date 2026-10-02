@@ -37,7 +37,7 @@ EDITORIAL = dict(
     deck="Origin requests caused by each added agentic request, at three reachable-set sizes. "
          "Traffic\nvolumes, cache and corpus are held fixed; only the reachable set changes.",
     source="Source: Undertow testbed, mean of 5 repetitions per row, whiskers ± 1 SE; agentic "
-           "load raised from 12 to 36 req/s.\nReal agents: theslowshelf.org honeypot, p90 of "
+           "load raised from 12 to 36 req/s.\nHoneypot agents: public measurement site, p90 of "
            "distinct objects per 143 s window, 12 Aug – 21 Sep 2026.",
 )
 
@@ -49,7 +49,7 @@ CAPTION = (
     "generator can request for the class) as a multiple of the measured cache capacity of "
     "5,263 objects. Bars: mean of 5 repetitions; whiskers: ± 1 SE, smaller than the bar ends. The "
     "values are marginal between 12 and 36 req/s, not the net effect of adding the class, "
-    "which is reported in the text. The tag marks the row closest to real agents by windowed "
+    "which is reported in the text. The tag marks the row closest to honeypot agents by windowed "
     "working set (distinct objects within 143 s: honeypot 90th percentile 670, about 693 for "
     "that row), not by the size of the reachable set. Reachable sets are separated across "
     "classes; the exhaustive class runs as its own k6 scenario."
@@ -115,7 +115,7 @@ def render(variant):
 
     # the single annotation: a tag on the row it refers to
     yc0 = y_rows + 0.5 * row_h
-    cv.text(x0 + 0.08, yc0, "closest to real agents", T.sub, color=C.ink_soft,
+    cv.text(x0 + 0.08, yc0, "closest to honeypot agents", T.sub, color=C.ink_soft,
             ha="left", va="center",
             bbox=dict(boxstyle="square,pad=0.15", fc=C.surface, ec="none"))
 
