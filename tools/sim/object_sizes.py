@@ -1,41 +1,41 @@
 #!/usr/bin/env python3
 """
-object_sizes.py — byte della risposta di /book/<id>/ch/<n> per ogni capitolo, ricostruiti
-dai testi del lab (simulatore, fase 1: docs/PREREG-simulatore-fase1.md, opzione (a)).
+object_sizes.py — bytes of the response of /book/<id>/ch/<n> for each chapter, rebuilt
+from the lab texts (simulator, phase 1: docs/PREREG-simulatore-fase1.md, option (a)).
 
-PERCHE'
-  La cache del simulatore ha capienza in byte, come `-s malloc,128m` di Varnish, e il corpus
-  e' a coda pesante: serve la dimensione di ogni oggetto, che il repository non ha.
+WHY
+  The simulator's cache has byte capacity, like Varnish's `-s malloc,128m`, and the corpus
+  is heavy-tailed: the size of each object is needed, which the repository does not have.
 
-COME
-  Eseguito in locale, lancia se stesso sul lab (`ssh lab python3 - --remote`, sorgente su
-  stdin). Sul lab:
-    - importa ~/undertow/harness/app/load_corpus.py (psycopg2 sostituito da un modulo vuoto,
-      nessun __pycache__ scritto) e ne usa split_chapters: stessi capitoli del database;
-    - libri come main() di load_corpus: catalog.json in ordine, testo presente, almeno 2
-      capitoli; titolo[:300], autori uniti con ", ", titolo di capitolo [:200],
+HOW
+  Run locally, it launches itself on the lab (`ssh lab python3 - --remote`, source on
+  stdin). On the lab:
+    - imports ~/undertow/harness/app/load_corpus.py (psycopg2 replaced by an empty module,
+      no __pycache__ written) and uses its split_chapters: same chapters as the database;
+    - books as main() of load_corpus: catalog.json in order, text present, at least 2
+      chapters; title[:300], authors joined with ", ", chapter title [:200],
       words = len(body.split());
-    - grafo dei link come main(): random.Random(42), rng.sample(all_ch, LINKS_PER_CHAPTER)
-      per ogni capitolo in ordine, scartando dst == src;
-    - risposta di chapter() in app.py: {book_id, n, title, body, book, toc, related},
-      serializzata come jsonify di Flask 3.0 fuori da debug (ensure_ascii, sort_keys,
-      separatori compatti, "\\n" finale). related: excerpt = body[:400] (left(c.body, 400));
-      preview di ts_headline NON riproducibile senza PostgreSQL: stimata con le prime 15
-      parole del capitolo di destinazione. PostgreSQL 16.15, wparser_def.c, righe 2433-2445:
-      con MaxFragments > 0 e nessuna corrispondenza mostra le prime min_words parole, default
-      15 (riga 2624). Con una corrispondenza il frammento arriva a MaxWords = 30 piu' i tag
-      <b>: qui non modellato, quindi la stima e' per difetto (Emendamento 1 della
-      pre-registrazione; fino ad allora 30 parole).
-    - stampa solo `book_id,n,bytes`. Nessun testo esce dal lab; nulla viene scritto sul lab.
-  In locale: controlla che libri e numero di capitoli coincidano con data/corpus/books.csv
-  e scrive data/derived/chapter_sizes.csv, nell'ordine di books.csv (quello di locate()).
+    - link graph as main(): random.Random(42), rng.sample(all_ch, LINKS_PER_CHAPTER)
+      for each chapter in order, discarding dst == src;
+    - response of chapter() in app.py: {book_id, n, title, body, book, toc, related},
+      serialised like Flask 3.0's jsonify outside debug (ensure_ascii, sort_keys,
+      compact separators, trailing "\\n"). related: excerpt = body[:400] (left(c.body, 400));
+      the ts_headline preview is NOT reproducible without PostgreSQL: estimated with the first 15
+      words of the destination chapter. PostgreSQL 16.15, wparser_def.c, lines 2433-2445:
+      with MaxFragments > 0 and no match it shows the first min_words words, default
+      15 (line 2624). With a match the fragment reaches MaxWords = 30 plus the <b>
+      tags: not modelled here, so the estimate is a lower bound (Amendment 1 of the
+      pre-registration; until then 30 words).
+    - prints only `book_id,n,bytes`. No text leaves the lab; nothing is written on the lab.
+  Locally: checks that books and number of chapters coincide with data/corpus/books.csv
+  and writes data/derived/chapter_sizes.csv, in the order of books.csv (that of locate()).
 
-IPOTESI (dichiarata)
-  Il database del lab e' stato caricato dai testi attuali di ~/undertow/cache con la
-  versione attuale di load_corpus.py (12 link, 54f5cf7). Non verificabile senza interrogare
-  il database, che resta spento.
+ASSUMPTION (declared)
+  The lab database was loaded from the current texts of ~/undertow/cache with the
+  current version of load_corpus.py (12 links, 54f5cf7). Not verifiable without querying
+  the database, which stays off.
 
-Uso:
+Usage:
     python3 tools/sim/object_sizes.py
 """
 import argparse
@@ -119,22 +119,22 @@ def local(out):
     if lab_n != want or len(sizes) != sum(want.values()):
         miss = set(want) ^ set(lab_n)
         diff = [b for b in set(want) & set(lab_n) if want[b] != lab_n[b]]
-        sys.exit(f"ricostruzione diversa da books.csv: libri non comuni {len(miss)}, "
-                 f"numero di capitoli diverso {len(diff)}, capitoli {len(sizes)} "
-                 f"contro {sum(want.values())}")
+        sys.exit(f"reconstruction different from books.csv: books not in common {len(miss)}, "
+                 f"different number of chapters {len(diff)}, chapters {len(sizes)} "
+                 f"against {sum(want.values())}")
     with open(out, "w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["book_id", "n", "bytes"])
         for r in books:
             for n in range(1, int(r["n_chapters"]) + 1):
                 w.writerow([r["gutenberg_id"], n, sizes[(r["gutenberg_id"], n)]])
-    print(f"{len(books)} libri, {len(sizes)} capitoli: coincidono con books.csv")
-    print(f"scritto {out}")
+    print(f"{len(books)} books, {len(sizes)} chapters: they match books.csv")
+    print(f"written {out}")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--remote", metavar="ROOT", help="(uso interno) esecuzione sul lab")
+    ap.add_argument("--remote", metavar="ROOT", help="(internal use) run on the lab")
     ap.add_argument("--out", default=str(Path(__file__).resolve().parents[2] / "data" / "derived"
                                          / "chapter_sizes.csv"))
     a = ap.parse_args()

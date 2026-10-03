@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 """
-pick_terms.py - Seleziona i termini di ricerca in una banda di costo.
+pick_terms.py - Selects the search terms within a cost band.
 
-PERCHE'
+WHY
 
-Il costo di una ricerca full-text dipende da quanti capitoli contengono
-il termine: sul corpus attuale va da 83 ms per "whale" a 1330 ms per
-"night", un fattore 16. Un termine scelto liberamente renderebbe il
-costo per richiesta una variabile NON CONTROLLATA del workload — e se i
-profili umano e agentico campionassero termini con costo diverso, si
-confonderebbe la composizione del traffico con il costo delle query.
+The cost of a full-text search depends on how many chapters contain
+the term: on the current corpus it goes from 83 ms for "whale" to 1330 ms for
+"night", a factor of 16. A freely chosen term would make the
+per-request cost an UNCONTROLLED variable of the workload — and if the
+human and agentic profiles sampled terms of different cost, the
+traffic composition would be confounded with the query cost.
 
-La varianza non si elimina riscrivendo la query: e' intrinseca al
-ranking full-text, che deve calcolare ts_rank su ogni corrispondenza.
-Si controlla selezionando a monte i termini che cadono in una banda
-stretta, misurata sul corpus in uso.
+The variance is not eliminated by rewriting the query: it is intrinsic to
+full-text ranking, which has to compute ts_rank on every match.
+It is controlled by selecting upstream the terms that fall in a narrow
+band, measured on the corpus in use.
 
-Il risultato e' un file versionato: chiunque replichi l'esperimento usa
-gli stessi termini e ottiene lo stesso costo per richiesta.
+The result is a versioned file: anyone replicating the experiment uses
+the same terms and gets the same per-request cost.
 
-TARATURA DELLA BANDA
+CALIBRATING THE BAND
 
-La banda va scelta in funzione della legge di Little. Perche' un pool di
-N thread si saturi a un ritmo di lambda richieste al secondo all'origine
-serve W = N / lambda. Con N=16 e un ginocchio desiderato attorno ai
-320 req/s, W deve valere circa 50 ms.
+The band must be chosen according to Little's law. For a pool of
+N threads to saturate at a rate of lambda requests per second at the origin
+one needs W = N / lambda. With N=16 and a desired knee around
+320 req/s, W must be about 50 ms.
 
-USO
+USAGE
 
     python tools/pick_terms.py --target 8080 --lo 35 --hi 70 --want 40
     # scrive harness/profiles/search-terms.txt
@@ -41,9 +41,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-# Candidati: parole comuni nella narrativa e nella saggistica di lingua
-# inglese, scelte per coprire un ampio intervallo di frequenza nel corpus.
-# L'elenco e' volutamente lungo: la selezione la fa la misura, non l'autore.
+# Candidates: common words in English-language fiction and non-fiction,
+# chosen to cover a wide frequency range in the corpus.
+# The list is deliberately long: the selection is made by the measurement, not the author.
 CANDIDATES = """
 whale ship ocean captain sailor harbour voyage anchor storm tide
 love heart marriage wedding kiss letter promise sorrow tears joy
@@ -66,14 +66,14 @@ chocolate umbrella lantern spectacles waistcoat handkerchief carriage
 
 
 def measure(base, term, repeats=3):
-    """Latenza mediana di una ricerca, in millisecondi.
+    """Median latency of a search, in milliseconds.
 
-    Mediana e non media: una singola esecuzione fredda produce un valore
-    molto piu' alto delle successive e trascinerebbe la media.
+    Median and not mean: a single cold execution produces a value
+    much higher than the following ones and would drag the mean.
     """
     url = f"{base}/search?q={urllib.parse.quote(term)}"
     times, hits = [], 0
-    for i in range(repeats + 1):          # +1 = giro di riscaldamento
+    for i in range(repeats + 1):          # +1 = warm-up round
         t0 = time.perf_counter()
         try:
             with urllib.request.urlopen(url, timeout=30) as r:
@@ -91,11 +91,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost:8080")
     ap.add_argument("--lo", type=float, default=35.0,
-                    help="estremo inferiore della banda, ms")
+                    help="lower end of the band, ms")
     ap.add_argument("--hi", type=float, default=70.0,
-                    help="estremo superiore della banda, ms")
+                    help="upper end of the band, ms")
     ap.add_argument("--want", type=int, default=40,
-                    help="quanti termini selezionare")
+                    help="how many terms to select")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
@@ -104,13 +104,13 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
 
     terms = sorted(set(CANDIDATES))
-    print(f"misuro {len(terms)} termini su {args.base}\n")
+    print(f"measuring {len(terms)} terms on {args.base}\n")
 
     measured = []
     for i, t in enumerate(terms, 1):
         ms, hits = measure(args.base, t)
         if ms is None:
-            print(f"  [{i:3}/{len(terms)}] {t:<14} errore")
+            print(f"  [{i:3}/{len(terms)}] {t:<14} error")
             continue
         mark = "  <--" if args.lo <= ms <= args.hi else ""
         print(f"  [{i:3}/{len(terms)}] {t:<14} {ms:8.1f} ms  {hits:2} hit{mark}")
@@ -120,36 +120,36 @@ def main():
     inband.sort(key=lambda x: x[1])
 
     print(f"\n{'='*60}")
-    print(f"termini misurati:     {len(measured)}")
-    print(f"nella banda {args.lo:.0f}-{args.hi:.0f} ms: {len(inband)}")
+    print(f"terms measured:     {len(measured)}")
+    print(f"in the band {args.lo:.0f}-{args.hi:.0f} ms: {len(inband)}")
 
     if len(inband) < args.want:
-        print(f"\nSOLO {len(inband)} termini nella banda, ne servono {args.want}.")
-        print("Allarga la banda, oppure cambia il costo dell'endpoint:")
+        print(f"\nONLY {len(inband)} terms in the band, {args.want} needed.")
+        print("Widen the band, or change the cost of the endpoint:")
         allms = sorted(m[1] for m in measured)
         if allms:
             q = statistics.quantiles(allms, n=10)
-            print(f"  distribuzione: min={allms[0]:.0f}  d1={q[0]:.0f}  "
-                  f"mediana={statistics.median(allms):.0f}  "
+            print(f"  distribution: min={allms[0]:.0f}  d1={q[0]:.0f}  "
+                  f"median={statistics.median(allms):.0f}  "
                   f"d9={q[-1]:.0f}  max={allms[-1]:.0f} ms")
         sys.exit(1)
 
-    # Selezione uniforme lungo la banda, non i primi N: cosi' il campione
-    # copre l'intervallo invece di addensarsi al suo estremo inferiore.
+    # Uniform selection along the band, not the first N: this way the sample
+    # covers the interval instead of crowding at its lower end.
     step = len(inband) / args.want
     chosen = [inband[int(i * step)] for i in range(args.want)]
 
     costs = [c[1] for c in chosen]
-    print(f"\nselezionati {len(chosen)} termini")
-    print(f"  costo:  min={min(costs):.1f}  mediana={statistics.median(costs):.1f}  "
+    print(f"\nselected {len(chosen)} terms")
+    print(f"  cost:  min={min(costs):.1f}  median={statistics.median(costs):.1f}  "
           f"max={max(costs):.1f} ms")
-    print(f"  rapporto max/min: {max(costs)/min(costs):.2f}x")
-    print(f"  W medio: {statistics.mean(costs):.1f} ms")
+    print(f"  max/min ratio: {max(costs)/min(costs):.2f}x")
+    print(f"  mean W: {statistics.mean(costs):.1f} ms")
 
     n_threads = 16
     lam = n_threads / (statistics.mean(costs) / 1000)
-    print(f"\n  Con {n_threads} thread, il pool satura a ~{lam:.0f} req/s "
-          f"all'origine.")
+    print(f"\n  With {n_threads} threads, the pool saturates at ~{lam:.0f} req/s "
+          f"at the origin.")
 
     with out.open("w", encoding="utf-8") as f:
         f.write("# Termini di ricerca dell'esperimento — generato da "
@@ -161,7 +161,7 @@ def main():
         for t, ms, hits in chosen:
             f.write(f"{t}\t{ms:.1f}\t{hits}\n")
 
-    print(f"\nscritto: {out}")
+    print(f"\nwritten: {out}")
 
 
 if __name__ == "__main__":

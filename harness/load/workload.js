@@ -1,40 +1,39 @@
 /*
- * workload.js - Generatore di workload a composizione variabile.
+ * workload.js - Workload generator with variable composition.
  *
- * MODELLI DI ACCESSO
+ * ACCESS MODELS
  *
- * Il cache hit ratio NON deve essere una proprieta' osservata per caso
- * durante lo sweep: deve DISCENDERE dal modello di accesso. Con
- * campionamento uniforme casuale l'hit ratio dipende dalla durata del
- * test invece che dal pattern (48.000 richieste su 16.954 capitoli
- * significano tre visite per pagina; a ritmo basso quasi tutte uniche).
- * Nella calibrazione questo effetto ha prodotto da solo un hit ratio da
- * 21% a 76%.
+ * The cache hit ratio must NOT be a property observed by chance
+ * during the sweep: it must DERIVE from the access model. With
+ * uniform random sampling the hit ratio depends on the duration of the
+ * test instead of the pattern (48,000 requests over 16,954 chapters
+ * mean three visits per page; at a low rate almost all unique).
+ * In the calibration this effect alone produced a hit ratio from
+ * 21% to 76%.
  *
- *   zipf        Profilo umano. Rango estratto da Zipf(1), poi mappato su
- *               un capitolo tramite permutazione deterministica.
- *               Alta localita' temporale: poche pagine molto richieste.
+ *   zipf        Human profile. Rank drawn from Zipf(1), then mapped onto
+ *               a chapter through a deterministic permutation.
+ *               High temporal locality: few pages requested a lot.
  *
- *   traversal   Profilo agentico. Discesa in profondita': si sceglie un
- *               libro e se ne percorrono i capitoli in sequenza, poi si
- *               passa al successivo. Localita' quasi nulla, ogni pagina
- *               vista una volta sola. E' il modello usato da Zhang et
- *               al. (SoCC 2025) per il traffico AI, adottato qui per
- *               comparabilita' diretta.
+ *   traversal   Agentic profile. Depth-first descent: a book is chosen
+ *               and its chapters are walked in sequence, then the next
+ *               one. Almost no locality, every page seen only once. It is
+ *               the model used by Zhang et al. (SoCC 2025) for AI
+ *               traffic, adopted here for direct comparability.
  *
- *   mix         Miscela: ogni iterazione e' traversal con probabilita'
- *               ALPHA, zipf altrimenti. ALPHA e' la frazione agentica,
- *               unica variabile indipendente dello sweep.
+ *   mix         Mixture: each iteration is traversal with probability
+ *               ALPHA, zipf otherwise. ALPHA is the agentic fraction,
+ *               the sweep's only independent variable.
  *
- * IL RITMO TOTALE RESTA COSTANTE al variare di ALPHA. Se il volume
- * crescesse con la frazione agentica, un eventuale ginocchio
- * dimostrerebbe soltanto che piu' carico satura un sistema.
+ * THE TOTAL RATE STAYS CONSTANT as ALPHA varies. If the volume
+ * grew with the agentic fraction, any knee would only
+ * show that more load saturates a system.
  *
  * ENDPOINT
- *   chapter   cacheable      replica ed estensione del lavoro esistente
- *   search    non cacheable  caso non ancora studiato
+ *   chapter   cacheable      replication and extension of existing work
+ *   search    not cacheable  case not yet studied
  *
- * USO
+ * USAGE
  *   -e MODEL=zipf -e RATE=800 -e DURATION=300s
  *   -e MODEL=mix -e ALPHA=0.25 -e RATE=800
  */
@@ -53,54 +52,54 @@ const DURATION = __ENV.DURATION || '300s';
 const ENDPOINT = __ENV.ENDPOINT || 'chapter';
 const SEED     = parseInt(__ENV.SEED || '42');
 
-// Terza classe: agentica. Un agente che risponde a una persona in tempo
-// reale non e' ne' un umano che naviga ne' un crawler che scandisce.
-// Calibrata sull'honeypot (findings H6, H9): gli operatori agentici
-// reali coprono il 2,1-6,1% del sito con Gini 0,38-0,42 e chiedono ogni
-// URL 2,1-3,7 volte. Quindi: insieme ristretto di argomenti, popolarita'
-// moderatamente concentrata, sessioni corte su capitoli contigui.
+// Third class: agentic. An agent answering a person in real
+// time is neither a human browsing nor a crawler scanning.
+// Calibrated on the honeypot (findings H6, H9): real agentic operators
+// cover 2.1-6.1% of the site with Gini 0.38-0.42 and request each
+// URL 2.1-3.7 times. Hence: a narrow set of topics, moderately
+// concentrated popularity, short sessions over contiguous chapters.
 //
-// BETA e' la quota agentica, ALPHA quella esaustiva, il resto e' Zipf.
-// Il ritmo TOTALE resta costante, come per ALPHA.
+// BETA is the agentic share, ALPHA the exhaustive one, the rest is Zipf.
+// The TOTAL rate stays constant, as for ALPHA.
 const BETA          = parseFloat(__ENV.BETA || '0');
-// 0,02 e non 0,05: la sessione espande ogni base in AGENT_SESSION
-// capitoli contigui, quindi la copertura effettiva e' il triplo dello
-// scope. A 0,05 il collaudo ha dato 11,6% contro il 2,1-6,1% misurato
-// sugli operatori agentici reali (findings H6).
+// 0.02 and not 0.05: the session expands each base into AGENT_SESSION
+// contiguous chapters, so the effective coverage is three times the
+// scope. At 0.05 the trial gave 11.6% against the 2.1-6.1% measured
+// on real agentic operators (findings H6).
 const AGENT_SCOPE   = parseFloat(__ENV.AGENT_SCOPE || '0.02');
 const AGENT_SESSION = parseInt(__ENV.AGENT_SESSION || '3');
 const AGENT_SKEW    = parseFloat(__ENV.AGENT_SKEW || '0.6');
 
-// Moltiplicatore della permutazione per la classe agentica. Il default
-// e' lo stesso della classe umana, quindi riproduce i run fino al 19
-// settembre 2026. Con un valore diverso l'insieme di lavoro agentico
-// cade in una regione del corpus scorrelata dal rango di popolarita'
-// umano, e la sovrapposizione fra le due classi passa da "per
-// costruzione" a "incidentale".
+// Multiplier of the permutation for the agentic class. The default
+// is the same as the human class, so it reproduces the runs up to 19
+// September 2026. With a different value the agentic working set
+// falls in a region of the corpus uncorrelated with the human
+// popularity rank, and the overlap between the two classes goes from "by
+// construction" to "incidental".
 //
-// Deve essere dispari e coprimo con la dimensione del corpus
-// (16954 = 2 x 7^2 x 173), altrimenti la mappa non e' una permutazione.
-// Valore separato verificato: 3266489917.
+// It must be odd and coprime with the corpus size
+// (16954 = 2 x 7^2 x 173), otherwise the map is not a permutation.
+// Verified separate value: 3266489917.
 const AGENT_MUL     = parseInt(__ENV.AGENT_MUL || '2654435761');
 
 if (ALPHA + BETA > 1.0000001) {
-  throw new Error(`ALPHA(${ALPHA}) + BETA(${BETA}) supera 1`);
+  throw new Error(`ALPHA(${ALPHA}) + BETA(${BETA}) exceeds 1`);
 }
 
-// Sfasamento della traversata, in iterazioni. Warm-up e misura sono due
-// invocazioni k6 separate, quindi iterationInTest riparte da zero e la
-// misura ripercorrerebbe la sequenza appena percorsa dal warm-up: ogni
-// richiesta sarebbe una seconda visita a un oggetto inserito esattamente
-// WARMUP secondi prima, e l'hit ratio misurato sarebbe la curva di
-// sopravvivenza della cache invece del passaggio gratuito.
+// Offset of the traversal, in iterations. Warm-up and measurement are two
+// separate k6 invocations, so iterationInTest restarts from zero and the
+// measurement would retrace the sequence just walked by the warm-up: every
+// request would be a second visit to an object inserted exactly
+// WARMUP seconds earlier, and the measured hit ratio would be the cache's
+// survival curve instead of the free ride.
 const TRAV_SKIP = parseInt(__ENV.TRAV_SKIP || '0');
 
 const TERMS = (__ENV.TERMS ||
   'nurse,window,trial,servant,kiss,garden,letter,prayer,horse,silence'
 ).split(',');
 
-// Metriche separate per classe: l'hit ratio va attribuito al profilo che
-// lo ha generato, non solo aggregato.
+// Separate metrics per class: the hit ratio must be attributed to the
+// profile that generated it, not only aggregated.
 const hitZipf  = new Counter('ut_hit_zipf');
 const missZipf = new Counter('ut_miss_zipf');
 const hitTrav  = new Counter('ut_hit_traversal');
@@ -109,18 +108,18 @@ const okZipf   = new Counter('ut_ok_zipf');
 const okTrav   = new Counter('ut_ok_traversal');
 const shedZipf = new Counter('ut_shed_zipf');
 const shedTrav = new Counter('ut_shed_traversal');
-// Il rinvio non e' una perdita se il client torna. Un crawler batch puo'
-// permettersi di riprovare fra due secondi: nessuno sta aspettando. Nella
-// campagna del 2026-08-28 il generatore non riprovava, quindi ogni 503
-// appariva come lavoro perso e il budget sembrava costare il 12,6% del
-// throughput batch. I ritenti si contano separatamente dai primi
-// tentativi, altrimenti il carico offerto non sarebbe piu' confrontabile
-// con il riferimento.
+// Deferral is not a loss if the client comes back. A batch crawler can
+// afford to retry after two seconds: nobody is waiting. In the
+// 2026-08-28 campaign the generator did not retry, so every 503
+// appeared as lost work and the budget seemed to cost 12.6% of the
+// batch throughput. Retries are counted separately from first
+// attempts, otherwise the offered load would no longer be comparable
+// with the reference.
 const retriedTrav   = new Counter('ut_retried_traversal');
 const abandonedTrav = new Counter('ut_abandoned_traversal');
 
-// RETRY_MAX=0 riproduce il comportamento precedente ed e' la
-// configurazione di riferimento.
+// RETRY_MAX=0 reproduces the previous behaviour and is the
+// reference configuration.
 const RETRY_MAX = parseInt(__ENV.RETRY_MAX || '0');
 const RETRY_CAP = parseFloat(__ENV.RETRY_CAP || '5');   // secondi
 const latZipf  = new Trend('ut_lat_zipf', true);
@@ -130,22 +129,22 @@ const missAgent = new Counter('ut_miss_agent');
 const okAgent   = new Counter('ut_ok_agent');
 const shedAgent = new Counter('ut_shed_agent');
 const latAgent  = new Trend('ut_lat_agent', true);
-// Con BLOCK_CLASSES attivo una richiesta rifiutata torna 403, che oggi
-// non incrementa ne' ok ne' miss: senza questi contatori l'hit ratio
-// di una classe bloccata risulterebbe 1,000 perche' solo gli hit
-// producono ancora un 200.
+// With BLOCK_CLASSES active a rejected request returns 403, which today
+// increments neither ok nor miss: without these counters the hit ratio
+// of a blocked class would come out as 1.000 because only hits
+// still produce a 200.
 const blkZipf  = new Counter('ut_blk_zipf');
 const blkAgent = new Counter('ut_blk_agent');
 const blkTrav  = new Counter('ut_blk_traversal');
 
-// Stato di sessione, per VU. In k6 le variabili di modulo sono locali al
-// VU, quindi ogni VU porta avanti la propria sessione fra iterazioni.
+// Session state, per VU. In k6 module variables are local to the
+// VU, so each VU carries its own session forward between iterations.
 let agSession = null;
 
-// Zipf(AGENT_SKEW) su un sottoinsieme del corpus, per trasformata
-// inversa. Per s<1 vale CDF(r) = (r/N)^(1-s), quindi r = N*u^(1/(1-s)).
-// Con s=0,6 l'esponente e' 2,5. Base della sessione = quel rango mappato
-// a un capitolo; i successivi sono contigui, cioe' lo stesso libro.
+// Zipf(AGENT_SKEW) over a subset of the corpus, by inverse
+// transform. For s<1, CDF(r) = (r/N)^(1-s), so r = N*u^(1/(1-s)).
+// With s=0.6 the exponent is 2.5. Session base = that rank mapped
+// to a chapter; the following ones are contiguous, i.e. the same book.
 function agenticIndex(data) {
   if (agSession === null || agSession.left <= 0) {
     const scope = Math.max(1, Math.floor(data.total * AGENT_SCOPE));
@@ -157,30 +156,30 @@ function agenticIndex(data) {
   return (agSession.base + agSession.k++) % data.total;
 }
 
-// TRAV_MODE: come la classe esaustiva sceglie il capitolo.
+// TRAV_MODE: how the exhaustive class chooses the chapter.
 //
-//   glob (default, TRAV_MODE assente)  come tutti i run fino al 28 settembre
-//        2026: un solo scenario; l'indice della traversata e' iterationInTest
-//        di quello scenario, che conta le iterazioni di TUTTE le classi. Lo
-//        stesso capitolo torna ogni N iterazioni totali, cioe' ogni N/RATE
-//        secondi: a parita' di ALPHA*RATE il percorso esaustivo dipende da RATE
-//        (fase 2b del simulatore, docs/PREREG-simulatore-fase2b.md).
-//   scen l'esaustiva e' uno scenario proprio a rate ALPHA*RATE: il suo
-//        iterationInTest conta solo le richieste esaustive, quindi lo stesso
-//        capitolo torna ogni N/(ALPHA*RATE) secondi qualunque sia RATE. Umana e
-//        agentica stanno nello scenario "load" a rate (1-ALPHA)*RATE, con
-//        agentica a probabilita' BETA/(1-ALPHA). Gli arrivi esaustivi diventano
-//        regolari invece che estratti a caso. docs/PREREG-lab-trav-own-20260928.md.
+//   glob (default, TRAV_MODE absent)  like all the runs up to 28 September
+//        2026: a single scenario; the traversal index is iterationInTest
+//        of that scenario, which counts the iterations of ALL the classes. The
+//        same chapter comes back every N total iterations, i.e. every N/RATE
+//        seconds: at equal ALPHA*RATE the exhaustive path depends on RATE
+//        (simulator phase 2b, docs/PREREG-simulatore-fase2b.md).
+//   scen the exhaustive class is a scenario of its own at rate ALPHA*RATE: its
+//        iterationInTest counts only the exhaustive requests, so the same
+//        chapter comes back every N/(ALPHA*RATE) seconds whatever RATE is. Human and
+//        agentic sit in the "load" scenario at rate (1-ALPHA)*RATE, with
+//        agentic at probability BETA/(1-ALPHA). The exhaustive arrivals become
+//        regular instead of drawn at random. docs/PREREG-lab-trav-own-20260928.md.
 //
-// constant-arrival-rate vuole un rate intero: in scen i rate sono espressi
-// per 10 000 s (scarto di arrotondamento < 1e-5 req/s).
+// constant-arrival-rate wants an integer rate: in scen the rates are expressed
+// per 10,000 s (rounding error < 1e-5 req/s).
 const TRAV_MODE = __ENV.TRAV_MODE || 'glob';
 if (TRAV_MODE !== 'glob' && TRAV_MODE !== 'scen') {
-  throw new Error(`TRAV_MODE=${TRAV_MODE}: valori ammessi glob, scen`);
+  throw new Error(`TRAV_MODE=${TRAV_MODE}: allowed values glob, scen`);
 }
 const SCEN = TRAV_MODE === 'scen' && MODEL === 'mix' && ALPHA > 0;
 if (TRAV_MODE === 'scen' && !SCEN) {
-  throw new Error('TRAV_MODE=scen richiede MODEL=mix e ALPHA > 0');
+  throw new Error('TRAV_MODE=scen requires MODEL=mix and ALPHA > 0');
 }
 const SCEN_UNIT = 10000;
 const RATE_TRAV = Math.round(ALPHA * RATE * SCEN_UNIT);
@@ -188,7 +187,7 @@ const RATE_REST = Math.round((1 - ALPHA) * RATE * SCEN_UNIT);
 
 function arrival(rate, timeUnit, perSecond, exec) {
   const s = {
-    executor: 'constant-arrival-rate',     // open loop, obbligatorio
+    executor: 'constant-arrival-rate',     // open loop, mandatory
     rate: rate,
     timeUnit: timeUnit,
     duration: DURATION,
@@ -209,19 +208,19 @@ export const options = {
   },
   discardResponseBodies: true,
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'p(99.9)', 'max'],
-  // Il riuso delle connessioni e' un fattore di ablazione: si controlla a
-  // livello di campagna (NO_REUSE=1), non per singola richiesta, perche'
-  // k6 non permette di variarlo per iterazione.
+  // Connection reuse is an ablation factor: it is controlled at
+  // campaign level (NO_REUSE=1), not per request, because
+  // k6 does not allow varying it per iteration.
   noConnectionReuse: __ENV.NO_REUSE === '1',
 };
 
 // -------------------------------------------------------------------------
-// Struttura del corpus
+// Corpus structure
 //
-// Si evita di materializzare i 16.954 capitoli: k6 copia i dati di setup
-// in OGNI VU, e con centinaia di VU sarebbero centinaia di MB. Si tiene
-// solo il vettore cumulativo per libro (495 numeri) e si risale
-// all'indice globale con una ricerca binaria.
+// We avoid materialising the 16,954 chapters: k6 copies the setup data
+// into EVERY VU, and with hundreds of VUs that would be hundreds of MB. We keep
+// only the cumulative vector per book (495 numbers) and recover
+// the global index with a binary search.
 // -------------------------------------------------------------------------
 
 export function setup() {
@@ -237,19 +236,19 @@ export function setup() {
   }
   const g = (a, b) => { while (b) { [a, b] = [b, a % b]; } return a; };
   if (g(TRAV_MUL % total, total) !== 1) {
-    throw new Error(`TRAV_MUL non coprimo con ${total}: la traversata non copre il corpus`);
+    throw new Error(`TRAV_MUL not coprime with ${total}: the traversal does not cover the corpus`);
   }
   return {
     ids: ids, cum: cum, total: total,
-    // Offset deterministico, dal seed dell'esperimento.
-    // Un offset casuale rende l'hit ratio della classe a bassa localita'
-    // non riproducibile tra run altrimenti identici.
+    // Deterministic offset, from the experiment seed.
+    // A random offset makes the hit ratio of the low-locality class
+    // non-reproducible between otherwise identical runs.
     offset: (SEED * 7919) % total,
   };
 }
 
 function locate(data, idx) {
-  // indice globale di capitolo -> (libro, numero di capitolo)
+  // global chapter index -> (book, chapter number)
   let lo = 0, hi = data.cum.length - 1;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
@@ -259,10 +258,10 @@ function locate(data, idx) {
   return { book: data.ids[lo], n: idx - base + 1 };
 }
 
-// Permutazione moltiplicativa deterministica: mappa il rango di
-// popolarita' su un indice di capitolo senza memorizzare una tabella.
-// Il moltiplicatore e' primo, quindi la mappa e' biiettiva su [0, N).
-// Permutazione della sola classe agentica: vedi AGENT_MUL.
+// Deterministic multiplicative permutation: maps the popularity rank
+// onto a chapter index without storing a table.
+// The multiplier is prime, so the map is bijective on [0, N).
+// Permutation of the agentic class only: see AGENT_MUL.
 function permuteAgent(rank, N) {
   return (rank * AGENT_MUL + SEED) % N;
 }
@@ -271,46 +270,46 @@ function permute(rank, N) {
   return (rank * 2654435761 + SEED) % N;
 }
 
-// Moltiplicatore distinto da quello di permute(). Con lo stesso, l'argomento
-// della traversata E' il rango di popolarita': lo scanner percorre il corpus
-// in ordine di popolarita' decrescente, e hit_bassa dipende da quale finestra
-// di ranghi la misura attraversa — cioe' da TRAV_SKIP, cioe' da WARMUP.
-// Firma del 6 settembre, blocco B: 0,254 / 0,267 / 0,159 a warm-up 120/300/600
-// con configurazione altrimenti identica.
+// Multiplier distinct from that of permute(). With the same one, the
+// argument of the traversal IS the popularity rank: the scanner walks the
+// corpus in decreasing popularity order, and hit_low depends on which
+// window of ranks the measurement traverses — that is, on TRAV_SKIP, that is on WARMUP.
+// Signature of 6 September, block B: 0.254 / 0.267 / 0.159 at warm-up 120/300/600
+// with an otherwise identical configuration.
 const TRAV_MUL = 2246822519;
 
 function permuteTrav(i, N) {
   return ((i % N) * (TRAV_MUL % N) + SEED * 7919) % N;
 }
 
-// Zipf(1) per trasformata inversa. Per alpha=1 la CDF del rango r vale
-// H_r/H_N, e H_r ~ ln(r), da cui r ~ N^u con u uniforme in [0,1].
-// Nessuna tabella da precalcolare.
+// Zipf(1) by inverse transform. For alpha=1 the CDF of rank r is
+// H_r/H_N, and H_r ~ ln(r), hence r ~ N^u with u uniform in [0,1].
+// No table to precompute.
 function zipfRank(N) {
   return Math.min(Math.floor(Math.pow(N, Math.random())), N - 1);
 }
 
-// Stato di attraversamento.
+// Traversal state.
 //
-// I crawler reali NON rivisitano. Sull'honeypot GPTBot, AhrefsBot e
-// Amazonbot mostrano tutti req/url = 1,00 e gini = 0,00 su circa 19.000
-// pagine: accesso perfettamente uniforme, ogni pagina una volta sola.
+// Real crawlers do NOT revisit. On the honeypot GPTBot, AhrefsBot and
+// Amazonbot all show req/url = 1.00 and gini = 0.00 over about 19,000
+// pages: perfectly uniform access, every page once only.
 //
-// Il cursore per-VU precedente rivisitava, perche' VU indipendenti si
-// sovrappongono: a lambda=260 con alpha=0,5 il rapporto risultava circa
-// 1,4, quindi il 28% delle richieste agentiche erano ripetizioni che la
-// cache poteva servire. Questo GONFIA h_A e sottostima il costo.
+// The previous per-VU cursor did revisit, because independent VUs
+// overlap: at lambda=260 with alpha=0.5 the ratio came out at about
+// 1.4, so 28% of the agentic requests were repetitions that the
+// cache could serve. This INFLATES h_A and underestimates the cost.
 //
-// iterationInTest e' un contatore globale monotono su tutti i VU dello
-// scenario. Mappato con una permutazione moltiplicativa (moltiplicatore
-// coprimo con la dimensione del corpus, verificato) produce indici
-// distinti finche' il numero di iterazioni resta sotto quella
-// dimensione. Oltre, riavvolge: il rapporto req/url atteso e'
+// iterationInTest is a global monotonic counter across all the VUs of the
+// scenario. Mapped with a multiplicative permutation (multiplier
+// coprime with the corpus size, verified) it produces distinct
+// indices as long as the number of iterations stays below that
+// size. Beyond, it wraps around: the expected req/url ratio is
 //
-//     max(1, alpha * RATE * durata / total)
+//     max(1, alpha * RATE * duration / total)
 //
-// e va riportato per ogni punto, perche' e' un limite di scala del
-// testbed e non una proprieta' del modello.
+// and must be reported for every point, because it is a scale limit of the
+// testbed and not a property of the model.
 function traversalIndex(data) {
   return permuteTrav(data.offset + TRAV_SKIP + exec.scenario.iterationInTest, data.total);
 }
@@ -318,9 +317,9 @@ function traversalIndex(data) {
 // -------------------------------------------------------------------------
 
 export default function (data) {
-  // Un solo sorteggio per la ripartizione a tre vie: due sorteggi
-  // indipendenti introdurrebbero correlazione fra le classi.
-  // Con TRAV_MODE=scen questo scenario porta solo umana e agentica.
+  // A single draw for the three-way split: two independent draws
+  // would introduce correlation between the classes.
+  // With TRAV_MODE=scen this scenario carries only human and agentic.
   const u = Math.random();
   const cls = MODEL === 'traversal' ? 'trav'
             : MODEL === 'agent'     ? 'agent'
@@ -332,8 +331,8 @@ export default function (data) {
   request(data, cls);
 }
 
-// Scenario "trav" di TRAV_MODE=scen: ogni iterazione e' una richiesta
-// esaustiva; traversalIndex legge l'iterationInTest di questo scenario.
+// "trav" scenario of TRAV_MODE=scen: every iteration is an exhaustive
+// request; traversalIndex reads the iterationInTest of this scenario.
 export function trav(data) {
   request(data, 'trav');
 }
@@ -363,12 +362,12 @@ function request(data, cls) {
     tags: { profile: cls },
   });
 
-  // Solo la classe batch riprova, e solo sul 503 del budget.
+  // Only the batch class retries, and only on the budget's 503.
   let attempts = 0;
   while (agentic && res.status === 503 && attempts < RETRY_MAX) {
     shedTrav.add(1);
-    // Retry-After in secondi; il server invia 2. Il limite superiore
-    // evita che un valore anomalo blocchi il VU.
+    // Retry-After in seconds; the server sends 2. The upper limit
+    // prevents an anomalous value from blocking the VU.
     const ra = Math.min(parseFloat(res.headers['Retry-After'] || '2'), RETRY_CAP);
     sleep(ra);
     attempts++;
@@ -383,7 +382,7 @@ function request(data, cls) {
 
   const hit = res.headers['X-Cache'] === 'HIT';
   if (cls === 'agent') {
-    // La classe agentica non riprova: c'e' una persona che aspetta.
+    // The agentic class does not retry: there is a person waiting.
     if (res.status === 403) blkAgent.add(1);
     if (res.status === 503) shedAgent.add(1);
     else if (res.status === 200) {
@@ -395,7 +394,7 @@ function request(data, cls) {
     if (res.status === 403) {
       blkTrav.add(1);
     } else if (res.status === 503) {
-      // Ancora rinviata dopo l'ultimo tentativo: questa e' persa davvero.
+      // Still deferred after the last attempt: this one is truly lost.
       if (attempts >= RETRY_MAX) abandonedTrav.add(1);
       if (RETRY_MAX === 0) shedTrav.add(1);
     } else if (res.status === 200) {

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-fase1.py — simulatore di cache, fase 1: validazione sui dati del lab, come pre-registrato in
-docs/PREREG-simulatore-fase1.md (commit c026e0b, pushato prima del confronto).
+fase1.py — cache simulator, phase 1: validation on the lab data, as pre-registered in
+docs/PREREG-simulatore-fase1.md (commit c026e0b, pushed before the comparison).
 
-Due passi separati, nell'ordine della pre-registrazione:
+Two separate steps, in the order of the pre-registration:
 
-  python3 tools/sim/fase1.py gates      G0, G1, G2 (con H = 512 e 250 byte)
-  python3 tools/sim/fase1.py confronto  T1-T3, M1-M2 e grandezze senza soglia;
-                                        parte solo se data/sim/fase1/gates.csv ha
-                                        G0, G1 e G2 tutti PASSA
+  python3 tools/sim/fase1.py gates      G0, G1, G2 (with H = 512 and 250 bytes)
+  python3 tools/sim/fase1.py confronto  T1-T3, M1-M2 and quantities without threshold;
+                                        starts only if data/sim/fase1/gates.csv has
+                                        G0, G1 and G2 all PASSA
 
-Ogni numero prodotto qui e' SIMULATO. Si ferma se tools/sim/ ha modifiche non committate:
-il commit scritto in testa ai file di uscita deve essere quello che li ha prodotti.
-Lab in sola lettura (`ssh lab cat`): points.csv e JSON di k6 dei run della replica.
+Every number produced here is SIMULATED. It stops if tools/sim/ has uncommitted changes:
+the commit written at the top of the output files must be the one that produced them.
+Lab read-only (`ssh lab cat`): points.csv and k6 JSON of the replica runs.
 """
 import argparse
 import csv
@@ -25,21 +25,21 @@ from multiprocessing import Pool
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import trace as tr  # noqa: E402  (tools/sim/trace.py, non il modulo standard)
+import trace as tr  # noqa: E402  (tools/sim/trace.py, not the standard module)
 from cache import LRU  # noqa: E402
-assert hasattr(tr, "repetition"), "importato il modulo standard trace invece di tools/sim/trace.py"
+assert hasattr(tr, "repetition"), "imported the standard trace module instead of tools/sim/trace.py"
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "data" / "sim" / "fase1"
-H, HDR = 512, 250            # pre-registrati
-SEEDS = range(1, 21)         # 20 ripetizioni simulate per punto
+H, HDR = 512, 250            # pre-registered
+SEEDS = range(1, 21)         # 20 simulated repetitions per point
 G0_SEEDS = range(1, 6)
 SEP, SHR = 3266489917, 2654435761
 
 # nome -> (λ, α, β, scope, AGENT_MUL)
 POINTS = {
-    "S12": (95, 0.2947, 0.1263, 0.02, SEP),        # = scope 0,02, quota 13%
-    "S36": (119, 0.2353, 0.3025, 0.02, SEP),       # = scope 0,02, quota 30%
+    "S12": (95, 0.2947, 0.1263, 0.02, SEP),        # = scope 0.02, share 13%
+    "S36": (119, 0.2353, 0.3025, 0.02, SEP),       # = scope 0.02, share 30%
     "C12": (95, 0.2947, 0.1263, 0.02, SHR),
     "C36": (119, 0.2353, 0.3025, 0.02, SHR),
     "P0": (83, 0.3373, 0.0, 0.02, SHR),
@@ -48,25 +48,25 @@ POINTS = {
     "S12_020": (95, 0.2947, 0.1263, 0.20, SEP),
     "S36_020": (119, 0.2353, 0.3025, 0.20, SEP),
 }
-# scope -> (punto a quota 13%, punto a quota 30%), per T1 (class_miss_by_scope.csv)
+# scope -> (point at share 13%, point at share 30%), for T1 (class_miss_by_scope.csv)
 SCOPE_POINTS = {"0.02": ("S12", "S36"), "0.06": ("S12_006", "S36_006"),
                 "0.20": ("S12_020", "S36_020")}
-# replica del 25-26 set (docs/RISULTATO-replica-20260924.md)
+# replica of 25-26 Sep (docs/RISULTATO-replica-20260924.md)
 REPLICA = {"C12": "tre-20260925-213527", "S12": "tre-20260925-225538",
            "S36": "tre-20260926-001550", "P0": "tre-20260926-013602",
            "C36": "tre-20260926-025613"}
 T2_LAB = {"S12": 37.678, "S36": 36.706, "C12": 36.796, "C36": 35.834, "P0": 36.468}
-D_RATE = 35.9975 - 11.9985     # 23,9990
+D_RATE = 35.9975 - 11.9985     # 23.9990
 C2 = 5263.0
-NOTE = ""                     # --nota: fonte dei dati del lab, scritta in testa alle uscite
+NOTE = ""                     # --nota: source of the lab data, written at the top of the outputs
 
 
-# ------------------------------------------------------------------ utilita'
+# ------------------------------------------------------------------ utilities
 def commit():
     dirty = subprocess.run(["git", "status", "--porcelain", "--", "tools/sim"], cwd=ROOT,
                            capture_output=True, text=True, check=True).stdout.strip()
     if dirty:
-        sys.exit(f"tools/sim/ ha modifiche non committate:\n{dirty}")
+        sys.exit(f"tools/sim/ has uncommitted changes:\n{dirty}")
     return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                           capture_output=True, text=True, check=True).stdout.strip()
 
@@ -89,7 +89,7 @@ def sizes():
 
 
 def mean_se(v):
-    if any(math.isnan(x) for x in v):      # classe senza richieste (agentica a P0, β = 0)
+    if any(math.isnan(x) for x in v):      # class without requests (agentic at P0, β = 0)
         return float("nan"), float("nan")
     return statistics.fmean(v), statistics.stdev(v) / math.sqrt(len(v))
 
@@ -108,10 +108,10 @@ def write(path, cm, header, rows):
         w.writerow(header + ["stato"])
         for r in rows:
             w.writerow(list(r) + ["SIMULATO"])
-    print(f"scritto {path.relative_to(ROOT)}")
+    print(f"written {path.relative_to(ROOT)}")
 
 
-# -------------------------------------------------------------- simulazione
+# --------------------------------------------------------------- simulation
 _SIZES = None
 
 
@@ -121,7 +121,7 @@ def _init():
 
 
 def simulate(args):
-    """Una ripetizione simulata: (punto, seme) -> dizionario di uscite della misura."""
+    """One simulated repetition: (point, seed) -> dictionary of outputs of the measurement."""
     name, seed, h = args
     lam, alpha, beta, scope, mul = POINTS[name]
     n = len(_SIZES)
@@ -133,7 +133,7 @@ def simulate(args):
     body = 0
     nobj = []
     for i, (cl, idx, _) in enumerate(meas):
-        if i % lam == 0:                       # campione al secondo
+        if i % lam == 0:                       # per-second sample
             nobj.append(len(c))
         req[cl] += 1
         body += _SIZES[idx]
@@ -180,32 +180,32 @@ def gates():
     ids, cum = tr.corpus()
     n = cum[-1]
 
-    print("== G0 — contiguita' delle tracce a S12, sola misura, semi 1-5")
+    print("== G0 — contiguity of the traces at S12, measurement only, seeds 1-5")
     lam, alpha, beta, scope, mul = POINTS["S12"]
     share = []
     for s in G0_SEEDS:
         _, meas = tr.repetition(s, n, lam, alpha, beta, scope, mul)
         p, a = tr.contiguity(meas, ids, cum)
         share.append(100 * a / p)
-        print(f"  seme {s}: coppie {p}  contigue {a}  ({100 * a / p:.2f}%)")
+        print(f"  seed {s}: pairs {p}  contiguous {a}  ({100 * a / p:.2f}%)")
     g0 = statistics.fmean(share)
     ok["G0"] = abs(g0 - 66.9) <= 0.5
-    print(f"  media {g0:.2f}%  (soglia 66,9 ± 0,5)  {verdict(ok['G0'])}")
+    print(f"  mean {g0:.2f}%  (threshold 66.9 ± 0.5)  {verdict(ok['G0'])}")
     rows.append(["G0", "contiguity_pct_S12", f"{g0:.4f}", "66.9", "|x-66.9|<=0.5",
                  verdict(ok["G0"])])
 
-    print(f"\n== G1 — oggetti in cache, scope 0,20, H = {H}, 20 semi")
+    print(f"\n== G1 — objects in cache, scope 0.20, H = {H}, 20 seeds")
     by = run_points(["S12_020", "S36_020", "S12"], H)
     for p in ("S12_020", "S36_020"):
         m, se = mean_se([r["n_object"] for r in by[p]])
         g = abs(m - C2) / C2 <= 0.05
         ok[f"G1_{p}"] = g
-        print(f"  {p}: {m:.1f} ± {se:.1f}  contro {C2:.0f}  ({100 * (m / C2 - 1):+.2f}%)  "
+        print(f"  {p}: {m:.1f} ± {se:.1f}  against {C2:.0f}  ({100 * (m / C2 - 1):+.2f}%)  "
               f"{verdict(g)}")
         rows.append(["G1", f"n_object_{p}", f"{m:.4f}", f"{C2:.0f}", "|x/5263-1|<=0.05",
                      verdict(g)])
 
-    print(f"\n== G2 — byte per richiesta a S12, corpo + {HDR}, 20 semi")
+    print(f"\n== G2 — bytes per request at S12, body + {HDR}, 20 seeds")
     lab = []
     for k in range(1, 6):
         j = json.loads(lab_cat(f"{REPLICA['S12']}/m-a0.2947-b0.1263-{k}.json"))
@@ -214,7 +214,7 @@ def gates():
     lab_m = statistics.fmean(lab)
     sim_m, sim_se = mean_se([r["body_per_req"] + HDR for r in by["S12"]])
     ok["G2"] = abs(sim_m - lab_m) / lab_m <= 0.05
-    print(f"  lab {lab_m:.1f} (5 rip.)  sim {sim_m:.1f} ± {sim_se:.1f}  "
+    print(f"  lab {lab_m:.1f} (5 rep.)  sim {sim_m:.1f} ± {sim_se:.1f}  "
           f"({100 * (sim_m / lab_m - 1):+.2f}%)  {verdict(ok['G2'])}")
     rows.append(["G2", "bytes_per_req_S12", f"{sim_m:.4f}", f"{lab_m:.4f}",
                  "|x/lab-1|<=0.05", verdict(ok["G2"])])
@@ -223,8 +223,8 @@ def gates():
     allok = all(ok.values())
     print(f"\nCANCELLI: {verdict(allok)}")
     if not allok:
-        print("Uno o piu' cancelli non passano: il confronto non si esegue (vedi la "
-              "pre-registrazione per la ricalibrazione ammessa).")
+        print("One or more gates do not pass: the comparison is not run (see the "
+              "pre-registration for the admitted recalibration).")
 
 
 # ---------------------------------------------------------------- confronto
@@ -241,7 +241,7 @@ def confronto():
     with open(OUT / "gates.csv") as f:
         g = [r for r in csv.DictReader(line for line in f if not line.startswith("#"))]
     if not g or any(r["verdict"] != "PASSA" for r in g):
-        sys.exit("gates.csv assente o con un cancello NON PASSA: confronto non eseguito")
+        sys.exit("gates.csv missing or with a gate NON PASSA: comparison not run")
 
     by = run_points(list(POINTS), H)
     write(OUT / "reps.csv", cm, REP_HDR, rep_rows(by))
@@ -250,7 +250,7 @@ def confronto():
              "nobj": mean_se([r["n_object"] for r in rs])} for p, rs in by.items()}
     rows, crit = [], {}
 
-    print("== T1 — miss per classe (soglia |Δ| <= 0,02)")
+    print("== T1 — miss per class (threshold |Δ| <= 0.02)")
     col = {"human": tr.HUMAN, "agentic": tr.AGENT, "exhaustive": tr.TRAV}
     with open(ROOT / "data" / "derived" / "class_miss_by_scope.csv", newline="") as f:
         lab_miss = list(csv.DictReader(f))
@@ -263,24 +263,24 @@ def confronto():
             lm = float(r[key])
             ok = abs(sm - lm) <= 0.02
             inside += ok
-            print(f"  scope {r['scope']} quota {q} {r['class']:10s} sim {sm:.4f} ± {sse:.4f}  "
+            print(f"  scope {r['scope']} share {q} {r['class']:10s} sim {sm:.4f} ± {sse:.4f}  "
                   f"lab {lm:.4f}  Δ {sm - lm:+.4f}  {verdict(ok)}")
             rows.append(["T1", f"miss_{r['class']}_scope{r['scope']}_q{q}", f"{sm:.6f}",
                          f"{sse:.6f}", f"{lm:.4f}", r[key.replace("miss_share", "se")],
                          "|d|<=0.02", verdict(ok)])
         f_sim = S[lo]["miss"][k][0] / S[hi]["miss"][k][0]
-        print(f"      fattore 13%->30% sim {f_sim:.4f}  lab {float(r['factor']):.4f}  (senza soglia)")
+        print(f"      factor 13%->30% sim {f_sim:.4f}  lab {float(r['factor']):.4f}  (no threshold)")
         rows.append(["A2", f"factor_{r['class']}_scope{r['scope']}", f"{f_sim:.6f}", "",
                      r["factor"], "", "senza soglia", ""])
     crit["T1"] = inside == 2 * len(lab_miss)
-    print(f"  entro soglia: {inside} su {2 * len(lab_miss)}  T1 {verdict(crit['T1'])}")
+    print(f"  within threshold: {inside} out of {2 * len(lab_miss)}  T1 {verdict(crit['T1'])}")
 
-    print("\n== T2 — origin_rps ai 5 punti della replica (soglia 3%)")
+    print("\n== T2 — origin_rps at the 5 points of the replica (threshold 3%)")
     lab = lab_replica()
     t2 = True
     for p, ref in T2_LAB.items():
         if round(lab[p][0], 3) != ref:
-            sys.exit(f"points.csv di {REPLICA[p]} non riproduce Ō = {ref}: {lab[p][0]}")
+            sys.exit(f"points.csv of {REPLICA[p]} does not reproduce Ō = {ref}: {lab[p][0]}")
         sm, sse = S[p]["O"]
         ok = abs(sm - ref) / ref <= 0.03
         t2 &= ok
@@ -296,7 +296,7 @@ def confronto():
 
     simO = {p: S[p]["O"] for p in S}
     quant = {"m": ("S36", "S12", D_RATE), "d12": ("S12", "C12", 1.0), "d36": ("S36", "C36", 1.0)}
-    print("\n== T3 — ampiezza delle differenze (soglia 3 SE combinati)  e  M1, M2 (segni)")
+    print("\n== T3 — size of the differences (threshold 3 combined SE)  and  M1, M2 (signs)")
     val = {}
     for q, (a, b, dv) in quant.items():
         xs, ss = diff(a, b, simO, dv)
@@ -306,7 +306,7 @@ def confronto():
         ok = abs(xs - xl) <= tol
         crit[f"T3_{q}"] = ok
         print(f"  {q}: sim {xs:+.4f} ± {ss:.4f} (t {xs / ss:+.2f})  lab {xl:+.4f} ± {sl:.4f}  "
-              f"|Δ| {abs(xs - xl):.4f}  soglia {tol:.4f}  {verdict(ok)}")
+              f"|Δ| {abs(xs - xl):.4f}  threshold {tol:.4f}  {verdict(ok)}")
         rows.append(["T3", q, f"{xs:.6f}", f"{ss:.6f}", f"{xl:.6f}", f"{sl:.6f}",
                      f"|d|<={tol:.6f}", verdict(ok)])
     m, sm_ = val["m"]
@@ -321,40 +321,40 @@ def confronto():
                  f"{val['d12'][1]:.6f};{val['d36'][1]:.6f}", "", "", "d>0 and t>=3 both",
                  verdict(crit["M2"])])
 
-    print("\n== Senza soglia")
+    print("\n== Without threshold")
     for sc, (lo, hi) in SCOPE_POINTS.items():
         x, s = diff(hi, lo, simO, D_RATE)
-        print(f"  marginale scope {sc}: sim {x:+.4f} ± {s:.4f}")
+        print(f"  marginal scope {sc}: sim {x:+.4f} ± {s:.4f}")
         rows.append(["extra", f"marginal_scope{sc}", f"{x:.6f}", f"{s:.6f}", "", "",
                      "senza soglia", ""])
     x, s = diff("S36", "P0", simO)
     xl, sl = diff("S36", "P0", lab)
-    print(f"  netto S36 - P0 (A9): sim {x:+.4f} ± {s:.4f}  lab {xl:+.4f} ± {sl:.4f}")
+    print(f"  net S36 - P0 (A9): sim {x:+.4f} ± {s:.4f}  lab {xl:+.4f} ± {sl:.4f}")
     rows.append(["extra", "net_S36_P0", f"{x:.6f}", f"{s:.6f}", f"{xl:.6f}", f"{sl:.6f}",
                  "senza soglia", ""])
     for p in POINTS:
         nm, ns = S[p]["nobj"]
-        print(f"  oggetti in cache {p}: {nm:.1f} ± {ns:.1f}")
+        print(f"  objects in cache {p}: {nm:.1f} ± {ns:.1f}")
         rows.append(["extra", f"n_object_{p}", f"{nm:.4f}", f"{ns:.4f}", "", "",
                      "senza soglia", ""])
 
     write(OUT / "criteri.csv", cm, ["criterion", "quantity", "sim", "sim_se", "lab", "lab_se",
                                      "rule", "verdict"], rows)
-    print("\n== Esito")
+    print("\n== Outcome")
     for k, v in crit.items():
         print(f"  {k}: {verdict(v)}")
     if not (crit["M1"] and crit["M2"]):
-        print("  M1 o M2 non passa: simulatore NON valido per la fase 2.")
+        print("  M1 or M2 does not pass: simulator NOT valid for phase 2.")
     elif all(v for k, v in crit.items() if k.startswith("T")):
-        print("  Valido per segni e ampiezze.")
+        print("  Valid for signs and magnitudes.")
     else:
-        print("  Valido SOLO per i segni.")
+        print("  Valid ONLY for signs.")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("step", choices=("gates", "confronto"))
-    ap.add_argument("--nota", default="", help="fonte dei dati del lab (es. copia locale)")
+    ap.add_argument("--nota", default="", help="source of the lab data (e.g. local copy)")
     a = ap.parse_args()
     NOTE = a.nota
     gates() if a.step == "gates" else confronto()

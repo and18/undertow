@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 #
-# calibrate.sh - Calibrazione dell'harness, non presidiata.
+# calibrate.sh - Harness calibration, unattended.
 #
-# Risponde a una sola domanda: il carico e' I/O-BOUND?
+# Answers a single question: is the load I/O-BOUND?
 #
-# Un thread e' occupato mentre e' BLOCCATO, non mentre calcola. Se il
-# lavoro sta in Postgres, i thread si accumulano in attesa e la CPU
-# dell'applicazione resta bassa: allora il pool puo' saturarsi ed e' la
-# risorsa vincolante, che e' la premessa dell'intero esperimento.
-# Se invece la CPU sale e i thread restano vuoti, il vincolo e' il GIL
-# di Python e il pool non si riempira' mai.
+# A thread is busy while it is BLOCKED, not while it computes. If the
+# work sits in Postgres, threads pile up waiting and the application CPU
+# stays low: then the pool can saturate and it is the binding resource,
+# which is the premise of the whole experiment.
+# If instead the CPU rises and the threads stay empty, the constraint is
+# Python's GIL and the pool will never fill up.
 #
-# Misura anche i costi per richiesta A CACHE FREDDA. Misurarli a cache
-# calda restituisce la latenza di Varnish, non quella dell'applicazione:
-# un errore gia' commesso una volta.
+# It also measures per-request costs on a COLD CACHE. Measuring them on a
+# warm cache returns Varnish's latency, not the application's: a mistake
+# already made once.
 #
-# Uso:
+# Usage:
 #   ./load/calibrate.sh
 #   RATES="50 100 200 400" DURATION=45s ./load/calibrate.sh
 #
@@ -27,7 +27,7 @@ cd "$HARNESS"
 RATES="${RATES:-50 100 200 400 800}"
 DURATION="${DURATION:-60s}"
 GAP="${GAP:-15}"
-SAMPLES="${SAMPLES:-20}"          # campioni di occupazione per gradino
+SAMPLES="${SAMPLES:-20}"          # occupancy samples per step
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="$HARNESS/results/calibrate-$STAMP"
@@ -41,22 +41,22 @@ vmq() { curl -s "http://localhost:8428/api/v1/query?query=$1" \
 THREADS_CFG=$(grep -E '^THREADS=' .env | cut -d= -f2 | tr -d ' ')
 
 {
-  echo "CALIBRAZIONE — $(date -Is)"
+  echo "CALIBRATION — $(date -Is)"
   echo "================================================================"
   echo "commit=$(git rev-parse --short HEAD 2>/dev/null || echo n/a)  nproc=$(nproc)"
   grep -E '^(CPUSET_|THREADS|BACKLOG|DB_POOL|VARNISH_SIZE)' .env | sed 's/^/  /'
   echo
 } > "$REPORT"
 
-# --- 1. costi per richiesta a cache fredda -------------------------------
-log "svuoto la cache"
+# --- 1. per-request costs on a cold cache --------------------------------
+log "emptying the cache"
 docker compose restart varnish >/dev/null 2>&1
 sleep 6
 
-log "misuro i costi a cache fredda"
+log "measuring the cold-cache costs"
 {
   echo "----------------------------------------------------------------"
-  echo "COSTO PER RICHIESTA (cache fredda, un URL per volta)"
+  echo "COST PER REQUEST (cold cache, one URL at a time)"
   echo "----------------------------------------------------------------"
 } >> "$REPORT"
 
@@ -78,31 +78,31 @@ for w in $(awk '!/^#/{print $1}' profiles/search-terms.txt | head -12); do
     srch_times="$srch_times $t"
 done
 
-stat() {  # mediana e intervallo in ms
+stat() {  # median and range in ms
     tr ' ' '\n' <<< "$1" | grep -v '^$' | sort -g | awk '
       {v[NR]=$1*1000}
       END{ if(NR==0){print "n/a"; exit}
            m = (NR%2) ? v[(NR+1)/2] : (v[NR/2]+v[NR/2+1])/2
-           printf "mediana %.1f ms   min %.1f   max %.1f   n=%d", m, v[1], v[NR], NR }'
+           printf "median %.1f ms   min %.1f   max %.1f   n=%d", m, v[1], v[NR], NR }'
 }
 
 CH_MED=$(tr ' ' '\n' <<< "$ch_times" | grep -v '^$' | sort -g | awk '{v[NR]=$1*1000} END{print (NR%2)?v[(NR+1)/2]:(v[NR/2]+v[NR/2+1])/2}')
 SR_MED=$(tr ' ' '\n' <<< "$srch_times" | grep -v '^$' | sort -g | awk '{v[NR]=$1*1000} END{print (NR%2)?v[(NR+1)/2]:(v[NR/2]+v[NR/2+1])/2}')
 
 {
-  printf '  capitolo  %s\n' "$(stat "$ch_times")"
-  printf '  ricerca   %s\n' "$(stat "$srch_times")"
+  printf '  chapter   %s\n' "$(stat "$ch_times")"
+  printf '  search    %s\n' "$(stat "$srch_times")"
   echo
-  echo "  Legge di Little: per saturare N thread a lambda req/s serve"
-  echo "  W = N/lambda. Con THREADS=$THREADS_CFG:"
+  echo "  Little's law: to saturate N threads at lambda req/s you need"
+  echo "  W = N/lambda. With THREADS=$THREADS_CFG:"
   awk -v c="$CH_MED" -v s="$SR_MED" -v n="$THREADS_CFG" 'BEGIN{
-    printf "    capitolo (W=%.0f ms): il pool satura a ~%.0f req/s all origine\n", c, n/(c/1000)
-    printf "    ricerca  (W=%.0f ms): il pool satura a ~%.0f req/s all origine\n", s, n/(s/1000)
+    printf "    chapter (W=%.0f ms): the pool saturates at ~%.0f req/s at the origin\n", c, n/(c/1000)
+    printf "    search  (W=%.0f ms): the pool saturates at ~%.0f req/s at the origin\n", s, n/(s/1000)
   }'
   echo
 } >> "$REPORT"
 
-# --- 2. verifica I/O-bound su una scala di ritmi -------------------------
+# --- 2. I/O-bound check over a range of rates ----------------------------
 for endpoint in chapter search; do
   log "verifica I/O-bound: endpoint $endpoint"
   {
@@ -110,7 +110,7 @@ for endpoint in chapter search; do
     echo "ENDPOINT $endpoint"
     echo "----------------------------------------------------------------"
     printf '%-7s %9s %8s %9s %9s %8s %9s %8s\n' \
-           rate inflight 'uso%' 'app CPU%' 'db CPU%' 'db conn' 'p99 ms' 'hit%'
+           rate inflight 'util%' 'app CPU%' 'db CPU%' 'db conn' 'p99 ms' 'hit%'
   } >> "$REPORT"
 
   for rate in $RATES; do
@@ -123,7 +123,7 @@ for endpoint in chapter search; do
       k6 run --quiet /scripts/probe-origin.js < /dev/null > "$OUT/k6-$tag.log" 2>&1 &
     k6pid=$!
 
-    sleep 20   # regime stazionario prima di campionare
+    sleep 20   # steady state before sampling
 
     inf_sum=0; cpu_max=0; dbcpu_max=0; dbc_max=0
     for s in $(seq 1 $SAMPLES); do
@@ -165,34 +165,34 @@ done
 # --- 3. verdetto ----------------------------------------------------------
 {
   echo "================================================================"
-  echo "COME LEGGERE"
+  echo "HOW TO READ"
   echo "================================================================"
   echo
-  echo "  inflight   thread occupati in media. E' la metrica centrale."
-  echo "  uso%       inflight / THREADS. Il ginocchio va cercato dove"
-  echo "             questo si avvicina al 100%."
-  echo "  app CPU%   100% = un core. Se si ferma attorno a 80-100 mentre"
-  echo "             inflight resta basso, il vincolo e' il GIL e NON il"
-  echo "             pool: il carico non e' I/O-bound e gli sweep non"
-  echo "             possono funzionare cosi'."
-  echo "  db CPU%    se alta mentre app CPU e' bassa, il lavoro sta nel"
-  echo "             database: e' la condizione voluta."
-  echo "  hit%       percentuale servita dalla cache. Con capitoli"
-  echo "             casuali su cache piccola deve essere bassa."
+  echo "  inflight   busy threads on average. This is the central metric."
+  echo "  util%      inflight / THREADS. The knee is to be sought where"
+  echo "             this approaches 100%."
+  echo "  app CPU%   100% = one core. If it stops around 80-100 while"
+  echo "             inflight stays low, the constraint is the GIL and NOT the"
+  echo "             pool: the load is not I/O-bound and the sweeps cannot"
+  echo "             work this way."
+  echo "  db CPU%    if high while app CPU is low, the work sits in the"
+  echo "             database: this is the desired condition."
+  echo "  hit%       percentage served from the cache. With random chapters"
+  echo "             on a small cache it must be low."
   echo
-  echo "CONDIZIONE DA VERIFICARE"
+  echo "CONDITION TO CHECK"
   echo
-  echo "  A un ritmo raggiungibile, 'uso%' deve superare il 70% mentre"
-  echo "  'app CPU%' resta sotto il 60%. Se questo accade, l'harness e'"
-  echo "  pronto: si fissa il ritmo operativo appena sopra quel punto e"
-  echo "  gli sweep sulla composizione del traffico possono partire."
+  echo "  At an attainable rate, 'util%' must exceed 70% while"
+  echo "  'app CPU%' stays below 60%. If this happens, the harness is"
+  echo "  ready: fix the operating rate just above that point and the"
+  echo "  sweeps on traffic composition can start."
   echo
-  echo "  Se non accade su nessun ritmo, la leva successiva e' ridurre"
-  echo "  shared_buffers di Postgres, per costringerlo a leggere da disco"
-  echo "  e produrre blocco reale invece di lavoro in memoria."
+  echo "  If it does not happen at any rate, the next lever is to reduce"
+  echo "  Postgres shared_buffers, to force it to read from disk"
+  echo "  and produce real blocking instead of in-memory work."
   echo
-  echo "Dettagli in: $OUT"
+  echo "Details in: $OUT"
 } >> "$REPORT"
 
 echo; cat "$REPORT"; echo
-log "rapporto: $REPORT"
+log "report: $REPORT"

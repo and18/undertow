@@ -1,12 +1,12 @@
 # harness/docker-compose.yml
 #
-# Sistema sotto test + osservazione.
+# System under test + observation.
 #
-# Le CPU sono fissate per container (cpuset) perche' senza questo non si puo'
-# dimostrare quale componente sia il collo di bottiglia. La ripartizione
-# assume almeno 8 core; adattare CPUSET_* in .env su macchine piu' piccole.
+# CPUs are pinned per container (cpuset) because without this one cannot
+# show which component is the bottleneck. The partitioning assumes at
+# least 8 cores; adapt CPUSET_* in .env on smaller machines.
 #
-# Il generatore di carico NON e' qui: gira separatamente (vedi harness/load/).
+# The load generator is NOT here: it runs separately (see harness/load/).
 #
 #   docker compose up -d
 #   docker compose --profile load run --rm k6 run /scripts/null-test.js
@@ -24,8 +24,8 @@ services:
     volumes:
       - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
       - varnishwork:/var/lib/varnish
-    # -n fissa la working directory: senza, varnishd usa una cartella
-    # basata sull'hostname e l'exporter non la trova.
+    # -n fixes the working directory: without it, varnishd uses a folder
+    # based on the hostname and the exporter cannot find it.
     command: >
       varnishd -F -f /etc/varnish/default.vcl
       -n /var/lib/varnish/ut
@@ -55,12 +55,12 @@ services:
     cpuset: "${CPUSET_APP:-3,4}"
     mem_limit: 2g
     volumes:
-      # Montato durante lo sviluppo: elimina l'ambiguita' sul fatto che il
-      # container esegua la versione corrente. Da rimuovere prima della
-      # campagna finale, cosi' l'immagine e' autocontenuta.
+      # Mounted during development: removes any doubt that the container
+      # runs the current version. To be removed before the final campaign,
+      # so that the image is self-contained.
       - ./app/app.py:/srv/app.py:ro
     environment:
-      # --- variabili di sweep: il pool e' la risorsa limitata --------------
+      # --- sweep variables: the pool is the limited resource ---------------
       THREADS: "${THREADS:-32}"
       BACKLOG: "${BACKLOG:-256}"
       DB_POOL_MIN: "${DB_POOL_MIN:-2}"
@@ -122,7 +122,7 @@ services:
     depends_on: [db]
     networks: [ut]
 
-  # --------------------------------------------------------- osservazione --
+  # ------------------------------------------------------- observation --
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.102.1
     container_name: ut-vm
@@ -142,9 +142,9 @@ services:
     image: prom/node-exporter:v1.8.1
     container_name: ut-node-exporter
     cpuset: "${CPUSET_OBS:-7}"
-    # In WSL2 il mount di / con rslave non e' supportato. Si montano
-    # solo /proc e /sys, che sono le fonti effettivamente usate per CPU,
-    # memoria, rete e socket: le metriche filesystem non servono qui.
+    # In WSL2 mounting / with rslave is not supported. Only /proc and /sys
+    # are mounted, which are the sources actually used for CPU, memory,
+    # network and sockets: filesystem metrics are not needed here.
     command:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
@@ -173,7 +173,7 @@ services:
     depends_on: [victoriametrics]
     networks: [ut]
 
-  # ------------------------------------------------------------ strumenti --
+  # --------------------------------------------------------------- tools --
   loader:
     build: ./app
     container_name: ut-loader
@@ -186,8 +186,8 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in harness/.env (see .env.example)}
     volumes:
       - ../cache:/corpus:ro
-      # Montato invece che copiato nell'immagine: elimina ogni ambiguita'
-      # sul fatto che il container esegua la versione corrente del file.
+      # Mounted instead of copied into the image: removes any doubt that
+      # the container runs the current version of the file.
       - ./app/load_corpus.py:/srv/load_corpus.py:ro
     command: ["python", "/srv/load_corpus.py", "--corpus", "/corpus"]
     depends_on:
@@ -216,8 +216,8 @@ services:
     mem_limit: 2g
     volumes:
       - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
-      # Working directory distinta per istanza: due varnishd che
-      # condividono la stessa cartella si sovrascrivono a vicenda.
+      # Separate working directory per instance: two varnishd processes
+      # sharing the same folder overwrite each other.
       - varnishwork-h:/var/lib/varnish
     command: >
       varnishd -F -f /etc/varnish/default.vcl

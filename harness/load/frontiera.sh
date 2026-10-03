@@ -1,45 +1,45 @@
 #!/usr/bin/env bash
 #
-# frontiera.sh - Il buco nella frontiera lavoro/latenza.
+# frontiera.sh - The hole in the work/latency frontier.
 #
-# LA DOMANDA
+# THE QUESTION
 #
-# La campagna del 19 settembre ha prodotto cinque punti al ginocchio
-# (lambda=185, alpha=0,35, beta=0,10, cache 128 MB):
+# The 19 September campaign produced five points at the knee
+# (lambda=185, alpha=0.35, beta=0.10, cache 128 MB):
 #
-#     politica                 servite    p99 umano
-#     A  nessuna               114.692      555,4 ms
-#     D6 budget 6              111.384      212,3 ms
-#     D4 budget 4              107.596      136,4 ms
-#     B  blocco esaustiva       86.911       57,9 ms
-#     C  blocco esaust+agent    84.067       57,8 ms
+#     policy                   served     human p99
+#     A  none                  114,692      555.4 ms
+#     D6 budget 6              111,384      212.3 ms
+#     D4 budget 4              107,596      136.4 ms
+#     B  block exhaustive       86,911       57.9 ms
+#     C  block exhaust+agent    84,067       57.8 ms
 #
-# C e' Pareto-dominata da B: stessa latenza, 2.844 richieste servite in
-# meno. Quella dominanza e' gia' dimostrata e non richiede altro.
+# C is Pareto-dominated by B: same latency, 2,844 fewer requests served.
+# That dominance is already demonstrated and needs nothing more.
 #
-# Ma fra D4 (136 ms) e B (58 ms) non c'e' nessun punto. Non sappiamo se
-# esista un budget con rinvio che raggiunga la latenza del blocco
-# servendo piu' di 86.911 richieste, cioe' se il RINVIO DOMINI IL BLOCCO
-# e non solo la sua variante piu' aggressiva.
+# But between D4 (136 ms) and B (58 ms) there is no point. We do not know
+# whether a budget with deferral exists that reaches the blocking latency
+# while serving more than 86,911 requests, that is, whether DEFERRAL
+# DOMINATES BLOCKING and not just its most aggressive variant.
 #
-# Questo script riempie il buco: budget 1, 2, 3. Gli altri punti sono
-# gia' misurati allo stesso punto operativo e si riusano.
+# This script fills the hole: budget 1, 2, 3. The other points are
+# already measured at the same operating point and are reused.
 #
-# ESITI
-#   p99 <= 60 ms con servite > 86.911  ->  il rinvio domina il blocco
-#   la curva passa sopra B ma non lo raggiunge in latenza
-#                                      ->  i due meccanismi occupano
-#                                          regioni diverse della frontiera
-#   il rinvio resta sempre sotto B     ->  il blocco e' sulla frontiera
+# OUTCOMES
+#   p99 <= 60 ms with served > 86,911  ->  deferral dominates blocking
+#   the curve passes above B but does not reach it in latency
+#                                      ->  the two mechanisms occupy
+#                                          different regions of the frontier
+#   deferral always stays below B      ->  blocking is on the frontier
 #
-# FALSIFICA la tesi della dominanza: se a budget 1 il p99 umano non
-# scende sotto ~90 ms, il rinvio non raggiunge il regime del blocco.
+# FALSIFIES the dominance thesis: if at budget 1 the human p99 does not
+# fall below ~90 ms, deferral does not reach the blocking regime.
 #
-# LIMITE DA DICHIARARE: nella finestra di misura un 503 e un 403 contano
-# entrambi come "non servita", perche' k6 non riprova (RETRY_MAX=0). Il
-# vantaggio concettuale del rinvio - spostamento temporale invece di
-# perdita - NON e' dimostrato da questi dati, e la frontiera regge senza
-# bisogno di assumerlo.
+# LIMIT TO DECLARE: in the measurement window a 503 and a 403 both count
+# as "not served", because k6 does not retry (RETRY_MAX=0). The
+# conceptual advantage of deferral - temporal shifting instead of
+# loss - is NOT demonstrated by these data, and the frontier holds
+# without needing to assume it.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -47,8 +47,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 LAM="${LAM:-185}"
 BUDGETS="${BUDGETS:-3 2 1}"
 
-echo "lambda=$LAM  alpha=0.35  beta=0.10  cache=128MB  3 ripetizioni"
-echo "budget: $BUDGETS   (4 e 6 gia' misurati il 19 settembre)"
+echo "lambda=$LAM  alpha=0.35  beta=0.10  cache=128MB  3 repetitions"
+echo "budget: $BUDGETS   (4 and 6 already measured on 19 September)"
 
 for BU in $BUDGETS; do
   printf '\n######## budget %s ########  %s\n' "$BU" "$(date +%H:%M)"
@@ -59,8 +59,8 @@ done
 
 echo
 echo "================================================================"
-echo "  Il riepilogo qui sopra NON stampa i rinvii, che sono il punto."
-echo "  Estrarli dai JSON con:"
+echo "  The summary above does NOT print the deferrals, which are the point."
+echo "  Extract them from the JSON files with:"
 echo
 echo "    cd ~/undertow/harness/results"
 echo "    for d in \$(ls -td tre-*/ | head -3); do"
@@ -74,9 +74,9 @@ echo "              (.metrics.ut_shed_traversal.values.count//0),"
 echo "              ((.metrics.ut_lat_zipf.values[\"p(99)\"]//0)|round)]|@tsv' \$f"
 echo "    done"
 echo
-echo "  Colonne: umano servito / agentico servito / esaustivo servito /"
-echo "           esaustivo BLOCCATO (deve essere 0) / esaustivo RINVIATO /"
-echo "           p99 umano."
+echo "  Columns: human served / agentic served / exhaustive served /"
+echo "           exhaustive BLOCKED (must be 0) / exhaustive DEFERRED /"
+echo "           human p99."
 echo
-echo "  Il totale servito e' la somma delle prime tre. Confrontalo con"
-echo "  86.911 a 57,9 ms, che e' il punto del blocco per identita'."
+echo "  The total served is the sum of the first three. Compare it with"
+echo "  86,911 at 57.9 ms, which is the blocking point by identity."

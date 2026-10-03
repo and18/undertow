@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
 #
-# treclassi.sh - Costo e latenza per classe, a volume totale costante.
+# treclassi.sh - Cost and latency per class, at constant total volume.
 #
-# Prima campagna del progetto in cui esistono tutte e tre le classi di
-# cui parla la tesi: umana (Zipf), agentica (sessioni corte su capitoli
-# contigui, una persona aspetta) ed esaustiva (scansione, nessuno
-# aspetta).
+# First campaign of the project in which all three classes the thesis
+# talks about exist: human (Zipf), agentic (short sessions over
+# contiguous chapters, a person waits) and exhaustive (scan, nobody
+# waits).
 #
-# MEASURE e' derivato, non scelto: la classe esaustiva deve attraversare
-# tutto il corpus almeno una volta, altrimenti il suo hit ratio e' un
-# campione di una finestra e non una proprieta' del modello di accesso
-# (decisions.md 28). A alpha basso questo costa molto tempo, ed e' il
-# prezzo di una misura valida.
+# MEASURE is derived, not chosen: the exhaustive class must traverse
+# the whole corpus at least once, otherwise its hit ratio is a
+# sample of a window and not a property of the access model
+# (decisions.md 28). At low alpha this takes a lot of time, and it is the
+# price of a valid measurement.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 LAMBDA="${LAMBDA:-110}"
-# MODEL=zipf|agent|traversal isola una classe: e' la calibrazione che
-# farebbe un controllore a costo esogeno.
+# MODEL=zipf|agent|traversal isolates one class: it is the calibration a
+# controller with exogenous cost would do.
 MODEL="${MODEL:-mix}"
 TOTAL_MB="${TOTAL_MB:-128}"
 REPS="${REPS:-2}"
 WARMUP="${WARMUP:-300}"
-# GATE=0 registra i run con errori invece di scartarli: oltre la
-# saturazione gli errori SONO il segnale, e il cancello butterebbe
-# proprio i punti che dimostrano il collasso.
+# GATE=0 records the runs with errors instead of discarding them: beyond
+# saturation the errors ARE the signal, and the gate would throw away
+# exactly the points that demonstrate the collapse.
 GATE="${GATE:-1}"
 CORPUS="${CORPUS:-16954}"
 POINTS="${POINTS:-0.00:0.05 0.10:0.05 0.20:0.05 0.30:0.05 0.40:0.05 0.25:0.02 0.25:0.10 0.25:0.20 0.00:0.05}"
@@ -41,13 +41,13 @@ if grep -q '^VARNISH_SIZE=' .env 2>/dev/null; then
 else
     echo "VARNISH_SIZE=${TOTAL_MB}m" >> .env
 fi
-# app ricreata insieme a varnish: BUDGET_LOW e BUDGET_WAIT sono letti
-# una sola volta all'avvio del processo.
-# L'osservabilita' va tirata su esplicitamente: il "down" di fine
-# campagna la spegne e il profilo non la include. Senza, non esiste
-# nessuna misura di CPU o di occupazione del pool, e "origin rps"
-# conta i miss, non il lavoro. Un miss di 9 KB e uno di 1,9 MB
-# contano uguale, e le classi non chiedono oggetti della stessa taglia.
+# app recreated together with varnish: BUDGET_LOW and BUDGET_WAIT are read
+# only once at process start.
+# Observability must be brought up explicitly: the end-of-campaign "down"
+# shuts it off and the profile does not include it. Without it, there is
+# no measure of CPU or of pool occupancy, and "origin rps"
+# counts misses, not work. A 9 KB miss and a 1.9 MB one
+# count the same, and the classes do not ask for objects of the same size.
 docker compose up -d victoriametrics node-exporter db-exporter varnish-exporter >/dev/null 2>&1
 docker compose up -d --force-recreate varnish app >/dev/null 2>&1; sleep 15
 printf "    budget=%s wait=%s\n" "${BUDGET_LOW:-0}" "${BUDGET_WAIT:-0}"
@@ -57,22 +57,22 @@ trap cleanup EXIT
 
 for pt in $POINTS; do
     A="${pt%%:*}"; B="${pt##*:}"
-    # copertura del corpus per la classe esaustiva
+    # corpus coverage for the exhaustive class
     M=$(awk -v c="$CORPUS" -v l="$LAMBDA" -v a="$A" \
         'BEGIN{ if (a<=0) {print 620} else {m=c/(l*a); print (m<620)?620:int(m+1)} }')
-    # MEASURE_FORCE serve all'esperimento sulla durata: l'hit ratio di una
-    # classe con insieme di lavoro piccolo cresce finche' quell'insieme non
-    # e' carico, quindi una misura troppo corta lo sottostima. A beta basso
-    # la classe agentica passa sul proprio insieme 1,4 volte in 620 s; a
-    # beta alto 20 volte. Se l'endogeneita' e' un effetto di durata, si
-    # vede allungando la misura a quota fissa.
+    # MEASURE_FORCE serves the duration experiment: the hit ratio of a
+    # class with a small working set grows until that set is
+    # loaded, so a measurement that is too short underestimates it. At low beta
+    # the agentic class passes over its own set 1.4 times in 620 s; at
+    # high beta 20 times. If the endogeneity is a duration effect, it
+    # shows when the measurement is lengthened at a fixed share.
     [[ -n "${MEASURE_FORCE:-}" ]] && M="$MEASURE_FORCE"
     printf '\n\033[1m==> alpha=%s beta=%s  measure=%ss\033[0m  (%s)\n' "$A" "$B" "$M" "$(date +%H:%M)"
 
     rep=1; att=0
     while [[ $rep -le $REPS ]]; do
         att=$((att+1))
-        [[ $att -gt $((REPS*2+2)) ]] && { echo "  troppi invalidi, passo oltre"; break; }
+        [[ $att -gt $((REPS*2+2)) ]] && { echo "  too many invalid, moving on"; break; }
         printf '  rep %s (tent %s) ... ' "$rep" "$att"
         docker compose restart varnish >/dev/null 2>&1; sleep 8
 
@@ -93,18 +93,18 @@ for pt in $POINTS; do
         done
 
         f="results/m-a$A-b$B-$rep.json"
-        [[ -f "$f" ]] || { echo "FALLITO"; sleep 15; continue; }
+        [[ -f "$f" ]] || { echo "FAILED"; sleep 15; continue; }
         j="$BASE/m-a$A-b$B-$rep.json"; mv "$f" "$j"
 
         dr=$(jq -r '.metrics.dropped_iterations.values.count // 0' "$j")
         fr=$(jq -r '.metrics.http_req_failed.values.rate // 0' "$j")
         if (( $(awk -v d="$dr" -v x="$fr" 'BEGIN{print (d>0 || x>0.01)?1:0}') )); then
-            printf 'sospetto: scartate=%s errori=%.2f%% ' "$dr" "$(awk -v x="$fr" 'BEGIN{print x*100}')"
+            printf 'suspect: dropped=%s errors=%.2f%% ' "$dr" "$(awk -v x="$fr" 'BEGIN{print x*100}')"
             if [[ "$GATE" == "1" ]]; then
-                echo "— INVALIDO, rifaccio"
+                echo "— INVALID, redoing"
                 mv "$j" "$BASE/invalid-a$A-b$B-$att.json"; sleep 15; continue
             fi
-            echo "— registrato (GATE=0)"
+            echo "— recorded (GATE=0)"
         fi
 
         read -r pz pa pt_ hz ha ht orps <<<"$(jq -r --arg m "$M" '
@@ -122,7 +122,7 @@ for pt in $POINTS; do
           ] | @tsv' "$j")"
 
         echo "$A,$B,$rep,$M,$pz,$pa,$pt_,$hz,$ha,$ht,$orps,$dr,$fr,$(date -Is)" >> "$CSV"
-        printf 'p99 umano=%s agente=%s  hit agente=%s  origine=%s\n' "$pz" "$pa" "$ha" "$orps"
+        printf 'p99 human=%s agent=%s  agent hit=%s  origin=%s\n' "$pz" "$pa" "$ha" "$orps"
         rep=$((rep+1)); sleep 15
     done
 done
@@ -130,7 +130,7 @@ done
 echo
 echo "================================================================"
 printf '%-6s %-6s %4s %9s %9s %9s %8s %8s %8s %9s\n' \
-  "alpha" "beta" "n" "p99 uman" "p99 agen" "p99 trav" "h uman" "h agen" "h trav" "orig rps"
+  "alpha" "beta" "n" "p99 hum" "p99 agen" "p99 trav" "h hum" "h agen" "h trav" "orig rps"
 awk -F, 'NR>1 && $5!="" { k=$1" "$2; n[k]++
     for(i=5;i<=11;i++) s[k,i]+=$i }
   END { for (k in n) { c=n[k]; split(k,f," ")
@@ -138,7 +138,7 @@ awk -F, 'NR>1 && $5!="" { k=$1" "$2; n[k]++
       s[k,5]/c, s[k,6]/c, s[k,7]/c, s[k,8]/c, s[k,9]/c, s[k,10]/c, s[k,11]/c } }' "$CSV" | sort
 
 echo
-echo "  alpha=0.00 compare due volte, in testa e in coda: controllo di deriva."
-echo "  La riga che conta: il p99 e l'hit ratio della classe agentica"
-echo "  mentre cresce la quota esaustiva, a volume totale costante."
-echo "Dati: $CSV"
+echo "  alpha=0.00 appears twice, at the head and at the tail: drift control."
+echo "  The line that matters: the p99 and the hit ratio of the agentic class"
+echo "  as the exhaustive share grows, at constant total volume."
+echo "Data: $CSV"

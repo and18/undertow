@@ -1,26 +1,26 @@
 /*
- * null-test.js - Il generatore e' il collo di bottiglia?
+ * null-test.js - Is the generator the bottleneck?
  *
- * Un solo ritmo per invocazione, pilotato da RATE. Lo sweep sui ritmi lo
- * fa lo script chiamante (null-test.sh).
+ * A single rate per invocation, driven by RATE. The sweep over the rates is
+ * done by the calling script (null-test.sh).
  *
- * Perche' un ritmo per volta e non piu' scenari in cascata: con scenari
- * concatenati, dropped_iterations e' un contatore globale e non si puo'
- * attribuire al gradino che l'ha causato. Separando le invocazioni, ogni
- * numero appartiene a un solo ritmo, e fra un gradino e l'altro le code
- * si svuotano davvero.
+ * Why one rate at a time and not several scenarios in cascade: with
+ * concatenated scenarios, dropped_iterations is a global counter and cannot
+ * be attributed to the step that caused it. By separating the invocations,
+ * every number belongs to a single rate, and between one step and the next
+ * the queues really drain.
  *
- * FASI
- *   ceiling   URL sempre in cache: la risposta esce da Varnish senza
- *             toccare l'applicazione. Il tetto che emerge e' del sistema
- *             generatore+cache.
- *   app       /health, nessun accesso al DB. Tetto dell'applicazione.
+ * PHASES
+ *   ceiling   URL always in cache: the response comes out of Varnish without
+ *             touching the application. The ceiling that emerges is that of
+ *             the generator+cache system.
+ *   app       /health, no DB access. Ceiling of the application.
  *
- * CRITERIO
- *   dropped_iterations DEVE essere 0. Con executor constant-arrival-rate
- *   (open loop) k6 emette a ritmo costante indipendentemente dalle
- *   risposte; se non ci riesce, scarta e conta. Un valore diverso da zero
- *   rende quel punto di misura inservibile.
+ * CRITERION
+ *   dropped_iterations MUST be 0. With a constant-arrival-rate executor
+ *   (open loop) k6 emits at a constant rate regardless of the responses;
+ *   if it cannot keep up, it drops and counts. A non-zero value
+ *   makes that measurement point useless.
  */
 
 import http from 'k6/http';
@@ -42,8 +42,8 @@ export const options = {
       rate: RATE,
       timeUnit: '1s',
       duration: DURATION,
-      // Larghi di proposito: se i VU finiscono, k6 scarta iterazioni per
-      // un motivo che non c'entra con la capacita' reale del generatore.
+      // Wide on purpose: if the VUs run out, k6 drops iterations for a
+      // reason that has nothing to do with the real capacity of the generator.
       preAllocatedVUs: Math.min(Math.max(Math.ceil(RATE * 0.05), 20), 500),
       maxVUs: Math.min(Math.max(Math.ceil(RATE * 0.2), 50), 2000),
       gracefulStop: '10s',
@@ -51,8 +51,8 @@ export const options = {
   },
   discardResponseBodies: true,
   summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'p(99.9)', 'max'],
-  // Nessuna soglia qui: il verdetto lo emette lo script, che vede tutti i
-  // gradini. Le soglie farebbero solo uscire k6 con codice non zero.
+  // No thresholds here: the verdict is issued by the script, which sees all
+  // the steps. Thresholds would only make k6 exit with a non-zero code.
 };
 
 export function setup() {

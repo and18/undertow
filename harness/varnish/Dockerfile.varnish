@@ -1,10 +1,10 @@
-# Build Varnish con supporto parametrico per VARNISH_SIZE e VARNISH_BACKEND.
+# Varnish build with parametric support for VARNISH_SIZE and VARNISH_BACKEND.
 #
-# Accetta variabili d'ambiente:
-#   VARNISH_SIZE    Dimensione della cache (default: 256m)
-#   VARNISH_BACKEND Backend nell'uri host:port (default: app:8000)
+# Accepts environment variables:
+#   VARNISH_SIZE    Cache size (default: 256m)
+#   VARNISH_BACKEND Backend as host:port (default: app:8000)
 #
-# Genera default.vcl dal template e avvia varnishd.
+# Generates default.vcl from the template and starts varnishd.
 
 FROM varnish:7.5
 

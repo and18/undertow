@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-honeypot_deep.py - Analisi sistematica dei log dell'honeypot.
+honeypot_deep.py - Systematic analysis of the honeypot logs.
 
-Sostituisce honeypot_events.py, che copriva otto domande scelte a mano.
-Qui le sezioni seguono il ciclo di vita di una richiesta: chi arriva, su
-che connessione, cosa chiede, cosa ottiene, quanto spreca, con che ritmo,
-e quanto costa.
+Replaces honeypot_events.py, which covered eight hand-picked questions.
+Here the sections follow the life cycle of a request: who arrives, on
+which connection, what it asks for, what it gets, how much it wastes, at what pace,
+and how much it costs.
 
-Ogni sezione dichiara cosa puo' invalidarla. Le sezioni che dipendono da
-campi introdotti il 13 settembre (host, inm, ims) lo segnalano.
+Each section declares what can invalidate it. The sections that depend on
+fields introduced on 13 September (host, inm, ims) flag it.
 
-Uso:
+Usage:
   python3 honeypot_deep.py '/var/log/nginx/agentic.log*' [--split 2026-09-15]
                            [--pages 18720] [--json /tmp/deep.json]
 """
@@ -19,7 +19,7 @@ import argparse, glob, gzip, json, math, re, statistics, sys
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 
-# --------------------------------------------------------------- tassonomia
+# --------------------------------------------------------------- taxonomy
 
 OPS = [
     ("GPTBot",            r"GPTBot",                  "ai-training"),
@@ -93,19 +93,19 @@ def hdr(n, title):
     print(f"\n{'=' * 74}\n{n}. {title}\n{'=' * 74}")
 
 
-# ------------------------------------------------------------------ lettura
+# ------------------------------------------------------------------ reading
 
 ap = argparse.ArgumentParser()
 ap.add_argument("pattern")
 ap.add_argument("--split", default=None,
-                help="data di taglio per il confronto prima/dopo, es. 2026-09-15")
+                help="cut-off date for the before/after comparison, e.g. 2026-09-15")
 ap.add_argument("--pages", type=int, default=18720)
 ap.add_argument("--json", default=None)
 args = ap.parse_args()
 
 files = sorted(glob.glob(args.pattern))
 if not files:
-    sys.exit(f"nessun file corrisponde a {args.pattern}")
+    sys.exit(f"no file matches {args.pattern}")
 
 R = []
 bad = 0
@@ -122,12 +122,12 @@ for path in files:
                 except Exception:
                     bad += 1
     except Exception as e:
-        print(f"ATTENZIONE: {path} non leggibile ({e})", file=sys.stderr)
+        print(f"WARNING: {path} not readable ({e})", file=sys.stderr)
 
 if not R:
-    sys.exit("nessuna riga JSON trovata: controlla permessi e formato")
+    sys.exit("no JSON row found: check permissions and format")
 
-# arricchimento
+# enrichment
 for r in R:
     r["_t"] = parse_ts(r.get("t"))
     r["_op"], r["_cls"] = classify(str(r.get("ua") or "-"))
@@ -154,30 +154,30 @@ for r in R:
     byop[r["_op"]].append(r)
 order = sorted(byop, key=lambda k: -len(byop[k]))
 
-# ------------------------------------------------- 1. inventario e qualita'
+# ------------------------------------------------- 1. inventory and quality
 
-hdr(1, "INVENTARIO E QUALITA' DEL DATO")
-print(f"file letti            {len(files)}")
-print(f"righe valide          {len(R)}   non parsate {bad}")
-print(f"finestra              {days[0]} → {days[-1]}  ({len(days)} giorni)")
-print(f"operatori distinti    {len(byop)}")
+hdr(1, "INVENTORY AND DATA QUALITY")
+print(f"files read            {len(files)}")
+print(f"valid rows            {len(R)}   unparsed {bad}")
+print(f"window                {days[0]} → {days[-1]}  ({len(days)} days)")
+print(f"distinct operators    {len(byop)}")
 
 present = {k: sum(1 for r in R if k in r) for k in
            ("host", "inm", "ims", "conn", "conn_req", "sig_agent", "proto", "rt", "ref")}
-print("\ncampi presenti (righe su totale):")
+print("\nfields present (rows out of total):")
 for k, v in present.items():
-    flag = "" if v == len(R) else "   ← parziale, introdotto in corsa"
+    flag = "" if v == len(R) else "   ← partial, introduced mid-run"
     print(f"  {k:10s} {v:8d} / {len(R)}{flag}")
 
 protos = Counter(str(r.get("proto") or "-") for r in R)
-print("\nversione di protocollo:")
+print("\nprotocol version:")
 for p, n in protos.most_common():
     print(f"  {p:12s} {n:8d}  {100*n/len(R):5.1f}%")
 h2 = sum(n for p, n in protos.items() if "2" in p)
 if h2 == 0:
-    print("  ANOMALIA: zero HTTP/2 mentre nginx ha 'listen 443 ssl http2'.")
-    print("  O nessun client lo negozia (implausibile), o $server_protocol non")
-    print("  lo registra. Ogni conclusione sul riuso delle connessioni ne dipende.")
+    print("  ANOMALY: zero HTTP/2 while nginx has 'listen 443 ssl http2'.")
+    print("  Either no client negotiates it (implausible), or $server_protocol does not")
+    print("  record it. Every conclusion on connection reuse depends on it.")
 
 maxcr = defaultdict(int)
 for r in R:
@@ -187,19 +187,19 @@ for r in R:
         pass
 tetti = [o for o, v in maxcr.items() if v in (1000, 100000)]
 if tetti:
-    print(f"\nTETTO DI MISURA: operatori fermi esattamente su keepalive_requests: "
+    print(f"\nMEASUREMENT CEILING: operators stopped exactly at keepalive_requests: "
           f"{', '.join(tetti)}")
-    print("  Il riuso per questi e' un limite inferiore, non una misura.")
+    print("  The reuse for these is a lower bound, not a measurement.")
 
-# ------------------------------------------------------- 2. composizione
+# ------------------------------------------------------- 2. composition
 
-hdr(2, "COMPOSIZIONE DEL TRAFFICO")
+hdr(2, "TRAFFIC COMPOSITION")
 bycls = Counter(r["_cls"] for r in R)
 for c, n in bycls.most_common():
     print(f"  {c:16s} {n:8d}  {100*n/len(R):5.1f}%")
 
-print(f"\n{'operatore':20s} {'req':>8s} {'quota':>7s} {'MB':>8s} {'giorni':>7s} "
-      f"{'picco/media':>12s} {'prima':>12s} {'ultima':>12s}")
+print(f"\n{'operator':20s} {'req':>8s} {'share':>7s} {'MB':>8s} {'days':>7s} "
+      f"{'peak/mean':>12s} {'first':>12s} {'last':>12s}")
 for o in order[:24]:
     rows = byop[o]
     daily = Counter(r["_t"].date() for r in rows if r["_t"])
@@ -212,44 +212,44 @@ for o in order[:24]:
           f"{min(ts_).strftime('%m-%d %H:%M') if ts_ else '-':>12s} "
           f"{max(ts_).strftime('%m-%d %H:%M') if ts_ else '-':>12s}")
 
-# --------------------------------------------------------- 3. prima/dopo
+# --------------------------------------------------------- 3. before/after
 
 if args.split:
-    hdr(3, f"PRIMA E DOPO IL {args.split}")
+    hdr(3, f"BEFORE AND AFTER {args.split}")
     S = datetime.fromisoformat(args.split)
     pre = [r for r in R if r["_t"] and r["_t"] < S]
     post = [r for r in R if r["_t"] and r["_t"] >= S]
     dpre = len({r["_t"].date() for r in pre}) or 1
     dpost = len({r["_t"].date() for r in post}) or 1
-    print(f"finestra prima: {dpre} giorni, {len(pre)} richieste")
-    print(f"finestra dopo:  {dpost} giorni, {len(post)} richieste")
+    print(f"window before: {dpre} days, {len(pre)} requests")
+    print(f"window after:  {dpost} days, {len(post)} requests")
     if dpost < 3:
-        print("\nATTENZIONE: meno di tre giorni dopo il taglio. Questa sezione")
-        print("fissa la fotografia, non conclude. Rileggerla fra una settimana.")
+        print("\nWARNING: fewer than three days after the cut-off. This section")
+        print("fixes the snapshot, it does not conclude. Reread it in a week.")
     a = Counter(r["_op"] for r in pre)
     b = Counter(r["_op"] for r in post)
     ok_a = Counter(r["_op"] for r in pre if r["_s"] == 200)
     ok_b = Counter(r["_op"] for r in post if r["_s"] == 200)
-    print(f"\n{'operatore':20s} {'req/g prima':>12s} {'req/g dopo':>11s} {'var':>9s} "
-          f"{'200 prima':>10s} {'200 dopo':>9s}")
+    print(f"\n{'operator':20s} {'req/d before':>12s} {'req/d after':>11s} {'change':>9s} "
+          f"{'200 before':>10s} {'200 after':>9s}")
     for o in sorted(set(a) | set(b), key=lambda k: -(a[k] + b[k]))[:20]:
         r1, r2 = a[o] / dpre, b[o] / dpost
         p1 = 100 * ok_a[o] / a[o] if a[o] else 0
         p2 = 100 * ok_b[o] / b[o] if b[o] else 0
-        ch = f"{(r2/r1-1)*100:+.0f}%" if r1 else "nuovo"
+        ch = f"{(r2/r1-1)*100:+.0f}%" if r1 else "new"
         print(f"{o:20s} {r1:12.0f} {r2:11.0f} {ch:>9s} {p1:9.1f}% {p2:8.1f}%")
 
-# ------------------------------------------------------------ 4. identita'
+# ------------------------------------------------------------ 4. identity
 
-hdr(4, "IDENTITA' E PROVENIENZA")
-print(f"{'operatore':20s} {'firmate':>9s} {'% firm':>7s} {'IP':>7s} {'/24':>6s} "
-      f"{'req/IP':>8s} {'conc.max':>9s}")
+hdr(4, "IDENTITY AND ORIGIN")
+print(f"{'operator':20s} {'signed':>9s} {'% sig':>7s} {'IP':>7s} {'/24':>6s} "
+      f"{'req/IP':>8s} {'max conc.':>9s}")
 for o in order[:20]:
     rows = byop[o]
     sig = sum(1 for r in rows if str(r.get("sig_agent") or "").strip() not in ("", "-"))
     ips = {str(r.get("ip")) for r in rows}
     nets = {".".join(str(r.get("ip")).split(".")[:3]) for r in rows}
-    # concorrenza: massimo numero di connessioni distinte viste in 10 s
+    # concurrency: maximum number of distinct connections seen in 10 s
     buckets = defaultdict(set)
     for r in rows:
         if r["_t"]:
@@ -257,14 +257,14 @@ for o in order[:20]:
     conc = max((len(v) for v in buckets.values()), default=0)
     print(f"{o:20s} {sig:9d} {100*sig/len(rows):6.1f}% {len(ips):7d} {len(nets):6d} "
           f"{len(rows)/max(len(ips),1):8.1f} {conc:9d}")
-print("\nconc.max = connessioni distinte aperte dallo stesso operatore in 10 s.")
-print("E' la pressione istantanea, che il totale giornaliero non mostra.")
+print("\nmax conc. = distinct connections opened by the same operator in 10 s.")
+print("It is the instantaneous pressure, which the daily total does not show.")
 
-# --------------------------------------------------------- 5. connessioni
+# --------------------------------------------------------- 5. connections
 
-hdr(5, "RIUSO DELLE CONNESSIONI")
-print(f"{'operatore':20s} {'conn':>8s} {'req/conn':>9s} {'max su 1':>9s} "
-      f"{'mediana':>8s} {'p90':>6s}")
+hdr(5, "CONNECTION REUSE")
+print(f"{'operator':20s} {'conn':>8s} {'req/conn':>9s} {'max on 1':>9s} "
+      f"{'median':>8s} {'p90':>6s}")
 for o in order[:20]:
     rows = byop[o]
     per = Counter()
@@ -275,32 +275,32 @@ for o in order[:20]:
         continue
     print(f"{o:20s} {len(per):8d} {len(rows)/len(per):9.1f} {max(v):9d} "
           f"{statistics.median(v):8.1f} {pct(v, .9):6d}")
-print("\nCaveat: nginx $connection e' un seriale per worker, quindi la chiave")
-print("(ip, conn) sottostima le connessioni distinte e sovrastima il riuso.")
+print("\nCaveat: nginx $connection is a per-worker serial, so the key")
+print("(ip, conn) underestimates the distinct connections and overestimates the reuse.")
 
 # ------------------------------------------------------------- 6. cache
 
-hdr(6, "COMPORTAMENTO VERSO LA CACHE")
+hdr(6, "CACHE BEHAVIOUR")
 cond = [r for r in R if str(r.get("inm") or "").strip() not in ("", "-")
         or str(r.get("ims") or "").strip() not in ("", "-")]
 n304 = [r for r in R if r["_s"] == 304]
 withfield = present["inm"]
-print(f"righe con il campo inm/ims:  {withfield}")
-print(f"richieste condizionali:      {len(cond)}"
-      f"  ({100*len(cond)/max(withfield,1):.4f}% di quelle misurabili)")
-print(f"risposte 304:                {len(n304)}  ({100*len(n304)/len(R):.4f}%)")
+print(f"rows with the inm/ims field:  {withfield}")
+print(f"conditional requests:         {len(cond)}"
+      f"  ({100*len(cond)/max(withfield,1):.4f}% of the measurable ones)")
+print(f"304 responses:                {len(n304)}  ({100*len(n304)/len(R):.4f}%)")
 if withfield == 0:
-    print("  Il campo non esiste nei log letti: 'nessuno rivalida' resta")
-    print("  un'inferenza dal codice di risposta, non una misura.")
+    print("  The field does not exist in the logs read: 'nobody revalidates' remains")
+    print("  an inference from the response code, not a measurement.")
 c = Counter(r["_op"] for r in cond)
 for o, n in c.most_common(8):
-    print(f"    condizionali  {o:20s} {n}")
+    print(f"    conditional   {o:20s} {n}")
 c = Counter(r["_op"] for r in n304)
 for o, n in c.most_common(8):
     print(f"    304           {o:20s} {n}")
 
-print("\nIntervallo di ritorno sullo stesso URL (chi ignora max-age=86400):")
-print(f"{'operatore':20s} {'URL ripetuti':>13s} {'mediana h':>10s} {'<24h':>7s}")
+print("\nReturn interval on the same URL (who ignores max-age=86400):")
+print(f"{'operator':20s} {'repeated URLs':>13s} {'median h':>10s} {'<24h':>7s}")
 for o in order[:16]:
     gaps = []
     seen = defaultdict(list)
@@ -320,11 +320,11 @@ for o in order[:16]:
     print(f"{o:20s} {rep:13d} {statistics.median(gaps):10.1f} "
           f"{100*sum(1 for g in gaps if g < 24)/len(gaps):6.0f}%")
 
-# -------------------------------------------------------------- 7. spreco
+# -------------------------------------------------------------- 7. waste
 
-hdr(7, "SPRECO: QUANTO TRAFFICO NON SERVE A NIENTE")
-print(f"{'operatore':20s} {'200':>7s} {'301':>7s} {'404':>7s} {'altro':>7s} "
-      f"{'utile':>7s} {'MB persi':>9s}")
+hdr(7, "WASTE: HOW MUCH TRAFFIC SERVES NOTHING")
+print(f"{'operator':20s} {'200':>7s} {'301':>7s} {'404':>7s} {'other':>7s} "
+      f"{'useful':>7s} {'MB lost':>9s}")
 for o in order[:20]:
     rows = byop[o]
     c = Counter(r["_s"] for r in rows)
@@ -335,16 +335,16 @@ for o in order[:20]:
     print(f"{o:20s} {100*c[200]/n:6.1f}% {100*c[301]/n:6.1f}% "
           f"{100*c[404]/n:6.1f}% {100*altro/n:6.1f}% {util:6.1f}% {lost:9.2f}")
 if present["host"]:
-    print("\nHost richiesto (il redirect www genera due righe per richiesta utile):")
+    print("\nHost requested (the www redirect generates two rows per useful request):")
     for h, n in Counter(str(r.get("host") or "-") for r in R
                         if "host" in r).most_common(5):
         print(f"  {h:32s} {n:8d}")
 
-# ------------------------------------------------------- 8. strategia
+# ------------------------------------------------------- 8. strategy
 
-hdr(8, "STRATEGIA DI CRAWLING")
-print(f"{'operatore':20s} {'URL':>7s} {'reali':>7s} {'inventati':>10s} "
-      f"{'copertura':>10s} {'gini':>6s} {'req/URL':>8s} {'profondita':>11s}")
+hdr(8, "CRAWLING STRATEGY")
+print(f"{'operator':20s} {'URLs':>7s} {'real':>7s} {'invented':>10s} "
+      f"{'coverage':>10s} {'gini':>6s} {'req/URL':>8s} {'depth':>11s}")
 for o in order[:20]:
     rows = byop[o]
     urls = Counter(r["_u"] for r in rows)
@@ -355,8 +355,8 @@ for o in order[:20]:
           f"{100*len(real)/args.pages:9.2f}% {gini(list(urls.values())):6.3f} "
           f"{len(rows)/max(len(urls),1):8.2f} {depth:11.0f}")
 
-print("\nOrdine di visita (correlazione fra ordine temporale e ordine")
-print("alfabetico degli URL: ~1 = segue la sitemap, ~0 = ordine proprio):")
+print("\nVisit order (correlation between temporal order and alphabetical")
+print("order of the URLs: ~1 = follows the sitemap, ~0 = own order):")
 for o in order[:14]:
     seq = [r["_u"] for r in byop[o] if r["_s"] == 200]
     if len(seq) < 100:
@@ -371,24 +371,24 @@ for o in order[:14]:
     rank = {u: i for i, u in enumerate(sorted(uniq))}
     asc = sum(1 for i in range(len(uniq) - 1)
               if rank[uniq[i+1]] > rank[uniq[i]])
-    print(f"  {o:20s} {asc/(len(uniq)-1):.3f}   ({len(uniq)} URL distinti)")
+    print(f"  {o:20s} {asc/(len(uniq)-1):.3f}   ({len(uniq)} distinct URLs)")
 
-# --------------------------------------------------------- 9. agentici
+# --------------------------------------------------------- 9. agentic
 
-hdr(9, "COMPORTAMENTO AGENTICO")
+hdr(9, "AGENTIC BEHAVIOUR")
 canary = [r for r in R if "canary" in r["_u"]]
-print(f"/canary.html - non linkato, non in sitemap: {len(canary)} richieste")
+print(f"/canary.html - not linked, not in the sitemap: {len(canary)} requests")
 for o, n in Counter(r["_op"] for r in canary).most_common():
     print(f"  {o:20s} {n}")
 if not canary:
-    print("  nessuno. Nessun client ha indovinato quel percorso.")
+    print("  nobody. No client guessed that path.")
 
 for o in [x for x in order if x in AGENTIC]:
     rows = byop[o]
     urls = Counter(r["_u"] for r in rows)
     bogus = {u: v for u, v in urls.items() if u not in served}
-    print(f"\n{o}: {len(rows)} richieste, {len(urls)} URL distinti, "
-          f"{len(bogus)} inesistenti ({100*len(bogus)/max(len(urls),1):.0f}%)")
+    print(f"\n{o}: {len(rows)} requests, {len(urls)} distinct URLs, "
+          f"{len(bogus)} nonexistent ({100*len(bogus)/max(len(urls),1):.0f}%)")
     if bogus:
         pat = Counter()
         for u in bogus:
@@ -396,14 +396,14 @@ for o in [x for x in order if x in AGENTIC]:
                 "llms.txt"     if "llms" in u.lower() else
                 "json/xml"     if re.search(r"\.(json|xml)$", u) else
                 "api/mcp"      if re.search(r"/(api|v1|mcp|\.well-known)", u) else
-                "slug lungo"   if re.search(r"/[a-z0-9]+(-[a-z0-9]+){2,}", u) else
-                "altra estens." if re.search(r"\.[a-z]{2,4}$", u) else
-                "senza estens."] += 1
+                "long slug"    if re.search(r"/[a-z0-9]+(-[a-z0-9]+){2,}", u) else
+                "other ext."   if re.search(r"\.[a-z]{2,4}$", u) else
+                "no ext."] += 1
         for k, v in pat.most_common():
             print(f"    {k:18s} {v:5d}  {100*v/len(bogus):4.0f}%")
         for u, v in sorted(bogus.items(), key=lambda kv: -kv[1])[:6]:
             print(f"      {v:4d}  {u[:74]}")
-    # sessioni: raffiche separate da piu' di 5 minuti
+    # sessions: bursts separated by more than 5 minutes
     ts_ = sorted(r["_t"] for r in rows if r["_t"])
     if len(ts_) > 5:
         sess, cur = [], 1
@@ -413,14 +413,14 @@ for o in [x for x in order if x in AGENTIC]:
             else:
                 cur += 1
         sess.append(cur)
-        print(f"    sessioni: {len(sess)}, mediana {statistics.median(sess):.0f} "
-              f"richieste, massima {max(sess)}")
+        print(f"    sessions: {len(sess)}, median {statistics.median(sess):.0f} "
+              f"requests, maximum {max(sess)}")
 
-# ------------------------------------------------------ 10. impulsivita'
+# ------------------------------------------------------ 10. burstiness
 
-hdr(10, "RITMO E IMPULSIVITA'")
-print(f"{'operatore':20s} {'mediana s':>10s} {'p90 s':>8s} {'<1s':>6s} "
-      f"{'>1h':>6s} {'dispers.':>9s}")
+hdr(10, "PACE AND BURSTINESS")
+print(f"{'operator':20s} {'median s':>10s} {'p90 s':>8s} {'<1s':>6s} "
+      f"{'>1h':>6s} {'disp.':>9s}")
 for o in order[:18]:
     ts_ = sorted(r["_t"] for r in byop[o] if r["_t"])
     if len(ts_) < 30:
@@ -433,12 +433,12 @@ for o in order[:18]:
     print(f"{o:20s} {statistics.median(g):10.2f} {pct(g,.9):8.1f} "
           f"{100*sum(1 for x in g if x<1)/len(g):5.0f}% "
           f"{100*sum(1 for x in g if x>3600)/len(g):5.0f}% {disp:9.1f}")
-print("\ndispers. = varianza/media delle richieste al minuto. 1 = arrivi casuali")
-print("(Poisson). Valori alti = raffiche. Il dimensionamento sulla media")
-print("e' sbagliato di tanto quanto questo numero e' sopra 1.")
+print("\ndisp. = variance/mean of the requests per minute. 1 = random arrivals")
+print("(Poisson). High values = bursts. Sizing on the mean")
+print("is wrong by as much as this number is above 1.")
 
-print("\nOra del giorno UTC (# > 66% del picco, + > 33%, . resto):")
-print(f"{'operatore':20s} " + "".join(f"{h:>2d}" for h in range(0, 24, 2)))
+print("\nHour of the day UTC (# > 66% of the peak, + > 33%, . rest):")
+print(f"{'operator':20s} " + "".join(f"{h:>2d}" for h in range(0, 24, 2)))
 for o in order[:14]:
     ts_ = [r["_t"] for r in byop[o] if r["_t"]]
     if len(ts_) < 200:
@@ -449,10 +449,10 @@ for o in order[:14]:
         f"{'#' if hh[h] > .66*m else '+' if hh[h] > .33*m else '.' if hh[h] else ' ':>2s}"
         for h in range(12)))
 
-# --------------------------------------------------------------- 11. costo
+# --------------------------------------------------------------- 11. cost
 
-hdr(11, "COSTO: I MISS NON COSTANO UGUALE")
-print(f"{'operatore':20s} {'n':>7s} {'KB med':>8s} {'KB p99':>9s} "
+hdr(11, "COST: MISSES DO NOT COST THE SAME")
+print(f"{'operator':20s} {'n':>7s} {'KB med':>8s} {'KB p99':>9s} "
       f"{'ms med':>8s} {'ms p99':>8s}")
 for o in order[:18]:
     rows = [r for r in byop[o] if r["_s"] == 200]
@@ -463,18 +463,18 @@ for o in order[:18]:
     print(f"{o:20s} {len(rows):7d} {statistics.median(b)/1024:8.1f} "
           f"{pct(b,.99)/1024:9.1f} {1000*statistics.median(t):8.1f} "
           f"{1000*pct(t,.99):8.1f}")
-print("\nSe la taglia mediana varia molto fra operatori su contenuto statico,")
-print("allora classi diverse chiedono oggetti di costo diverso. Sul banco")
-print("prova questo significa che contare i miss non equivale a contare il")
-print("lavoro, ed e' il limite principale della metrica origin rps.")
+print("\nIf the median size varies a lot between operators on static content,")
+print("then different classes ask for objects of different cost. On the test")
+print("bench this means that counting misses is not the same as counting")
+print("work, and it is the main limit of the origin rps metric.")
 
-# --------------------------------------------------- 12. sovrapposizione
+# --------------------------------------------------- 12. overlap
 
-hdr(12, "SOVRAPPOSIZIONE FRA OPERATORI")
+hdr(12, "OVERLAP BETWEEN OPERATORS")
 sets = {o: {r["_u"] for r in byop[o] if r["_s"] == 200} for o in order[:10]}
 sets = {o: s for o, s in sets.items() if len(s) > 200}
 names = list(sets)
-print("Jaccard sugli URL serviti con 200 (1 = stesse pagine, 0 = disgiunti):")
+print("Jaccard on the URLs served with 200 (1 = same pages, 0 = disjoint):")
 print(f"{'':18s}" + "".join(f"{n[:8]:>9s}" for n in names))
 for a_ in names:
     row = ""
@@ -482,8 +482,8 @@ for a_ in names:
         u = len(sets[a_] | sets[b_])
         row += f"{len(sets[a_] & sets[b_])/u:9.2f}" if u else f"{'-':>9s}"
     print(f"{a_[:18]:18s}{row}")
-print("\nSovrapposizione alta = gli operatori si riscaldano la cache a vicenda.")
-print("E' l'analogo di campo dell'esternalita' misurata sul banco prova.")
+print("\nHigh overlap = the operators warm the cache for each other.")
+print("It is the field analogue of the externality measured on the test bench.")
 
 # ------------------------------------------------------------------- json
 
@@ -494,4 +494,4 @@ if args.json:
            "operators": {o: len(byop[o]) for o in order}}
     with open(args.json, "w") as f:
         json.dump(out, f, indent=1)
-    print(f"\nriepilogo in {args.json}")
+    print(f"\nsummary in {args.json}")

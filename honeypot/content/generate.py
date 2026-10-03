@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-generate.py - Generatore di contenuto per theslowshelf.org
+generate.py - Content generator for theslowshelf.org
 
-Scarica testi di pubblico dominio da Project Gutenberg, li divide in capitoli
-e produce un sito statico navigabile in profondita', con indici multipli e
-sitemap.xml.
+Downloads public-domain texts from Project Gutenberg, splits them into chapters
+and produces a static site that can be navigated in depth, with multiple indexes
+and sitemap.xml.
 
-L'obiettivo strutturale non e' "avere pagine" ma avere una CODA LUNGA
-navigabile: molte pagine raggiungibili solo seguendo link, con densita' di
-collegamenti sufficiente a invitare un crawl profondo e ripetuto.
+The structural goal is not "having pages" but having a navigable LONG TAIL:
+many pages reachable only by following links, with a link density
+sufficient to invite a deep and repeated crawl.
 
-Nota: alcuni ISP residenziali sono bloccati da gutenberg.org. Se i download
-falliscono in timeout, esegui lo script da un host con connessione datacenter
-(la VM dell'honeypot va benissimo). Lo script prova comunque piu' mirror.
+Note: some residential ISPs are blocked by gutenberg.org. If downloads
+fail with a timeout, run the script from a host with a datacenter connection
+(the honeypot VM is fine). The script tries several mirrors anyway.
 
-Uso:
+Usage:
     pip install requests
     python honeypot/content/generate.py --books 50
 
-Cache in ./cache, output in ./site (entrambi da tenere fuori da git).
+Cache in ./cache, output in ./site (both to be kept out of git).
 """
 
 import argparse
@@ -33,14 +33,14 @@ from pathlib import Path
 try:
     import requests
 except ImportError:
-    sys.exit("Serve la libreria requests:  pip install requests")
+    sys.exit("The requests library is needed:  pip install requests")
 
 
 BASE_URL = "https://theslowshelf.org"
 GUTENDEX = "https://gutendex.com/books"
 USER_AGENT = "theslowshelf-builder/1.0 (+https://theslowshelf.org/about.html)"
 
-# Mirror provati in cascata dopo l'URL fornito dal catalogo.
+# Mirrors tried in cascade after the URL provided by the catalogue.
 MIRRORS = [
     "https://www.gutenberg.org/cache/epub/{id}/pg{id}.txt",
     "https://gutenberg.pglaf.org/{path}/{id}/{id}-0.txt",
@@ -49,31 +49,31 @@ MIRRORS = [
     "https://aleph.gutenberg.org/{path}/{id}/{id}.txt",
 ]
 
-# (timeout di connessione, timeout di lettura) in secondi.
+# (connection timeout, read timeout) in seconds.
 TIMEOUT = (10, 30)
 
-# Capitoli piu' corti di questa soglia vengono scartati: pagine povere di
-# testo non sono utili ne' ai lettori ne' alla misurazione.
+# Chapters shorter than this threshold are discarded: pages poor in
+# text are useful neither to readers nor to the measurement.
 MIN_CHAPTER_CHARS = 1200
 MAX_CHAPTERS_PER_BOOK = 60
 
 
 # --------------------------------------------------------------------------
-# Acquisizione
+# Acquisition
 # --------------------------------------------------------------------------
 
 def fetch_catalog(n_books, cache_dir):
-    """Interroga Gutendex per ottenere i metadati dei libri piu' scaricati."""
+    """Queries Gutendex to get the metadata of the most downloaded books."""
     cache_file = cache_dir / "catalog.json"
     if cache_file.exists():
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
         if len(cached) >= n_books:
-            print("catalogo: uso la cache")
+            print("catalogue: using the cache")
             return cached[:n_books]
 
     books, page = [], 1
     while len(books) < n_books:
-        print(f"catalogo: pagina {page}")
+        print(f"catalogue: page {page}")
         r = requests.get(
             GUTENDEX,
             params={"languages": "en", "sort": "popular", "page": page},
@@ -109,40 +109,40 @@ def fetch_catalog(n_books, cache_dir):
 
 
 def _mirror_path(book_id):
-    """I mirror organizzano i file una cartella per cifra: 1342 -> 1/3/4."""
+    """The mirrors organise files one folder per digit: 1342 -> 1/3/4."""
     s = str(book_id)
     return "/".join(s[:-1]) if len(s) > 1 else "0"
 
 
 def fetch_text(book, cache_dir):
-    """Scarica il testo grezzo provando piu' mirror. Cache su disco."""
+    """Downloads the raw text trying several mirrors. Cached on disk."""
     cache_file = cache_dir / f"{book['id']}.txt"
     if cache_file.exists():
         return cache_file.read_text(encoding="utf-8", errors="replace")
 
-    print(f"  scarico {book['id']}: {book['title'][:50]}")
+    print(f"  downloading {book['id']}: {book['title'][:50]}")
     urls = [book["text_url"]] + [
         m.format(id=book["id"], path=_mirror_path(book["id"])) for m in MIRRORS
     ]
 
-    last_err = "nessun tentativo"
+    last_err = "no attempt"
     for url in urls:
         try:
             r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
             if r.status_code == 200 and len(r.content) > 5000:
                 text = r.content.decode("utf-8", errors="replace")
                 cache_file.write_text(text, encoding="utf-8")
-                time.sleep(1.0)  # cortesia verso i server di Gutenberg
+                time.sleep(1.0)  # courtesy towards the Gutenberg servers
                 return text
             last_err = f"HTTP {r.status_code}"
         except Exception as e:
             last_err = type(e).__name__
 
-    raise RuntimeError(f"tutti i mirror falliti ({last_err})")
+    raise RuntimeError(f"all mirrors failed ({last_err})")
 
 
 # --------------------------------------------------------------------------
-# Segmentazione
+# Segmentation
 # --------------------------------------------------------------------------
 
 START_RE = re.compile(r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG.*?\*\*\*", re.I)
@@ -156,7 +156,7 @@ CHAPTER_RE = re.compile(
 
 
 def strip_boilerplate(text):
-    """Rimuove le intestazioni legali di Project Gutenberg."""
+    """Removes the legal headers of Project Gutenberg."""
     m = START_RE.search(text)
     if m:
         text = text[m.end():]
@@ -167,7 +167,7 @@ def strip_boilerplate(text):
 
 
 def split_chapters(text):
-    """Divide il testo in capitoli. Senza marcatori, spezza a blocchi."""
+    """Splits the text into chapters. Without markers, splits into blocks."""
     text = strip_boilerplate(text)
     matches = list(CHAPTER_RE.finditer(text))
 
@@ -268,7 +268,7 @@ def paragraphs_html(body):
 
 
 # --------------------------------------------------------------------------
-# Costruzione del sito
+# Building the site
 # --------------------------------------------------------------------------
 
 def build(books, out, cache_dir, seed=42):
@@ -278,18 +278,18 @@ def build(books, out, cache_dir, seed=42):
     built = []
     failed = 0
 
-    print("\nfase 1: download e segmentazione")
+    print("\nphase 1: download and segmentation")
     for book in books:
         try:
             raw = fetch_text(book, cache_dir)
         except Exception as e:
-            print(f"  ! salto {book['id']}: {e}")
+            print(f"  ! skipping {book['id']}: {e}")
             failed += 1
             continue
 
         chapters = split_chapters(raw)
         if len(chapters) < 2:
-            print(f"  ! salto {book['id']}: segmentazione insufficiente")
+            print(f"  ! skipping {book['id']}: insufficient segmentation")
             failed += 1
             continue
 
@@ -306,16 +306,16 @@ def build(books, out, cache_dir, seed=42):
         ]
         built.append(book)
 
-    print(f"\nlibri utilizzabili: {len(built)}  (scartati: {failed})")
+    print(f"\nusable books: {len(built)}  (discarded: {failed})")
     if not built:
         raise SystemExit(
-            "Nessun libro scaricato. Se sei su rete residenziale, gutenberg.org "
-            "potrebbe bloccare il tuo ISP: esegui lo script dalla VM."
+            "No book downloaded. If you are on a residential network, gutenberg.org "
+            "may be blocking your ISP: run the script from the VM."
         )
 
-    print("\nfase 2: generazione pagine")
+    print("\nphase 2: page generation")
     for book in built:
-        raw = fetch_text(book, cache_dir)  # gia' in cache
+        raw = fetch_text(book, cache_dir)  # already in cache
         chapters = split_chapters(raw)
         author = ", ".join(book["authors"])
 
@@ -332,8 +332,8 @@ def build(books, out, cache_dir, seed=42):
                       if next_ else '<span></span>')
             pager += '</nav>'
 
-            # Link laterali verso altri libri: aumentano la densita' del grafo
-            # e creano percorsi che un crawler segue ma un umano quasi mai.
+            # Side links to other books: they increase the graph density
+            # and create paths that a crawler follows but a human almost never does.
             others = [o for o in rng.sample(built, min(5, len(built)))
                       if o["slug"] != book["slug"]][:4]
             related = "".join(
@@ -358,7 +358,7 @@ def build(books, out, cache_dir, seed=42):
                 body,
             ))
 
-    # --- indice per libro ----------------------------------------------
+    # --- index per book ------------------------------------------------
     for book in built:
         author = ", ".join(book["authors"])
         toc = "".join(
@@ -384,7 +384,7 @@ def build(books, out, cache_dir, seed=42):
             body,
         ))
 
-    # --- indice per autore ---------------------------------------------
+    # --- index per author ----------------------------------------------
     by_author = {}
     for book in built:
         for a in book["authors"]:
@@ -402,7 +402,7 @@ def build(books, out, cache_dir, seed=42):
             f'<h1>{html.escape(author)}</h1><ul>{items}</ul>',
         ))
 
-    # --- indice per soggetto -------------------------------------------
+    # --- index per subject ---------------------------------------------
     by_subject = {}
     for book in built:
         for s in book["subjects"]:
@@ -421,7 +421,7 @@ def build(books, out, cache_dir, seed=42):
             f'<h1>{html.escape(subject)}</h1><ul>{items}</ul>',
         ))
 
-    # --- indici principali ---------------------------------------------
+    # --- main indexes --------------------------------------------------
     lib = "".join(
         f'<li><a href="/book/{b["slug"]}/">{html.escape(b["title"])}</a> '
         f'<span class="meta">{html.escape(", ".join(b["authors"]))} &middot; '
@@ -470,7 +470,7 @@ def build(books, out, cache_dir, seed=42):
     pages.append(write(out, "index.html", "The Slow Shelf",
                        "A quiet archive of public domain literature.", home))
 
-    # --- sitemap --------------------------------------------------------
+    # --- sitemap -------------------------------------------------------
     today = time.strftime("%Y-%m-%d")
     entries = "\n".join(
         f"  <url><loc>{BASE_URL}/{p}</loc><lastmod>{today}</lastmod></url>"
@@ -503,10 +503,10 @@ def main():
     print(f"output: {out}\ncache:  {cache}\n")
 
     books = fetch_catalog(args.books, cache)
-    print(f"catalogo: {len(books)} libri")
+    print(f"catalogue: {len(books)} books")
     n_pages, n_books = build(books, out, cache, args.seed)
 
-    print(f"\nfatto: {n_pages} pagine da {n_books} libri in {out}")
+    print(f"\ndone: {n_pages} pages from {n_books} books in {out}")
 
 
 if __name__ == "__main__":

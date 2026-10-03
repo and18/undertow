@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 """
-honeypot_window.py - Insieme di lavoro dentro una finestra temporale.
+honeypot_window.py - Working set within a time window.
 
-PERCHE'
-  honeypot_scope.py conta gli URL distinti per client sull'intero periodo di
-  osservazione. Per la cache quella grandezza non serve: un oggetto sopravvive
-  solo se rivisitato entro il tempo caratteristico T_C = capienza / tasso di
-  miss, che sul nostro banco vale ~143 s. Quello che conta e' quanti oggetti
-  distinti un client tocca DENTRO una finestra di quell'ordine.
+WHY
+  honeypot_scope.py counts the distinct URLs per client over the whole
+  observation period. For the cache that quantity is not what matters: an object survives
+  only if revisited within the characteristic time T_C = capacity / miss
+  rate, which on our testbed is ~143 s. What matters is how many distinct
+  objects a client touches WITHIN a window of that order.
 
-  La misura su 40 giorni sovrastima l'insieme di lavoro istantaneo. Dato che lo
-  sweep ha mostrato che il costo marginale agentico passa da -0,048 a +0,438
-  al variare dell'ampiezza dell'insieme, questo e' ora il numero piu'
-  importante che l'honeypot possa fornire.
+  The 40-day measurement overestimates the instantaneous working set. Since the
+  sweep showed that the agentic marginal cost goes from -0.048 to +0.438
+  as the width of the set varies, this is now the most
+  important number the honeypot can provide.
 
-COSA FA
-  Per ogni client e per ogni finestra scorrevole di durata W, conta gli URL
-  distinti. Riporta la distribuzione del massimo per client, che e' il valore
-  che il generatore dovrebbe riprodurre.
+WHAT IT DOES
+  For each client and each sliding window of duration W, it counts the distinct
+  URLs. It reports the distribution of the per-client maximum, which is the value
+  the generator should reproduce.
 
-COSA NON PUO' DIMOSTRARE
-  Niente sul costo. E' una taratura, e vale per questo sito.
+WHAT IT CANNOT PROVE
+  Nothing about cost. It is a calibration, and it holds for this site.
 
 PRIVACY
-  Nessun IP viene stampato o scritto: solo hash troncati come chiave.
+  No IP is printed or written: only truncated hashes as a key.
 
-Uso:  sudo python3 honeypot_window.py /var/log/nginx --pages 18720
+Usage:  sudo python3 honeypot_window.py /var/log/nginx --pages 18720
 """
 import sys, os, json, gzip, glob, hashlib, argparse
 from collections import defaultdict, Counter, deque
@@ -34,7 +34,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("path", nargs="?", default="/var/log/nginx")
 ap.add_argument("--pages", type=int, default=18720)
 ap.add_argument("--windows", default="143,600,3600",
-                help="durate in secondi, separate da virgola; 143 = T_C del banco")
+                help="durations in seconds, comma-separated; 143 = T_C of the testbed")
 ap.add_argument("--min-req", type=int, default=5)
 A = ap.parse_args()
 WINDOWS = [int(w) for w in A.windows.split(",")]
@@ -52,7 +52,7 @@ def lines(path):
                         try: yield json.loads(ln)
                         except Exception: pass
         except Exception as e:
-            print(f"  (salto {os.path.basename(f)}: {e})", file=sys.stderr)
+            print(f"  (skipping {os.path.basename(f)}: {e})", file=sys.stderr)
 
 def classify(ua):
     u = (ua or "").lower()
@@ -68,7 +68,7 @@ def classify(ua):
     return "unknown"
 
 def epoch(ts):
-    """2026-09-21T00:00:21+00:00 -> secondi, senza dipendenze esterne."""
+    """2026-09-21T00:00:21+00:00 -> seconds, without external dependencies."""
     try:
         d, t = ts[:19].split("T")
         Y, M, D = (int(x) for x in d.split("-"))
@@ -84,7 +84,7 @@ anon = lambda s: hashlib.sha256(str(s).encode()).hexdigest()[:10]
 ev = defaultdict(list)          # client -> [(t, url)]
 cls = defaultdict(Counter)
 total = 0
-print(f"lettura di {A.path} ...", file=sys.stderr)
+print(f"reading {A.path} ...", file=sys.stderr)
 for r in lines(A.path):
     u, ip, ua, ts = r.get("u"), r.get("ip"), r.get("ua", ""), r.get("t")
     if not (u and ip and ts): continue
@@ -93,9 +93,9 @@ for r in lines(A.path):
     c = anon(ip)
     ev[c].append((e, u)); cls[c][classify(ua)] += 1; total += 1
 
-print(f"\n{'='*70}\n  INSIEME DI LAVORO IN FINESTRA — quello che la cache vede davvero\n{'='*70}")
-print(f"richieste {total:,}   client {len(ev):,}   sito {A.pages:,} pagine")
-print(f"finestre: {', '.join(str(w)+'s' for w in WINDOWS)}   (143 s = T_C del banco)\n")
+print(f"\n{'='*70}\n  WORKING SET IN WINDOW — what the cache really sees\n{'='*70}")
+print(f"requests {total:,}   clients {len(ev):,}   site {A.pages:,} pages")
+print(f"windows: {', '.join(str(w)+'s' for w in WINDOWS)}   (143 s = T_C of the testbed)\n")
 
 def pct(v, q):
     if not v: return 0
@@ -115,9 +115,9 @@ for W in WINDOWS:
                 if seen[ou] == 0: del seen[ou]
             best = max(best, len(seen))
         peak[cls[c].most_common(1)[0][0]].append(best)
-    print(f"--- finestra {W}s: URL distinti al picco, per client")
-    print(f"{'classe':12s} {'client':>7s} {'mediana':>8s} {'media':>8s} {'p90':>7s} {'max':>7s}"
-          f" {'scope mediano':>14s} {'scope p90':>10s}")
+    print(f"--- window {W}s: distinct URLs at the peak, per client")
+    print(f"{'class':12s} {'clients':>7s} {'median':>8s} {'mean':>8s} {'p90':>7s} {'max':>7s}"
+          f" {'median scope':>14s} {'p90 scope':>10s}")
     for cl in CLS:
         P = peak.get(cl)
         if not P: continue
@@ -126,8 +126,8 @@ for W in WINDOWS:
     print()
 
 print(f"{'='*70}")
-print("  Da confrontare con AGENT_SCOPE del generatore: 0,02 = 339 basi = 1 017")
-print("  oggetti nominali. Lo sweep ha misurato il costo marginale agentico a")
-print("  0,02 / 0,06 / 0,20, cioe' 1 017 / 3 052 / 10 172 oggetti contro una")
-print("  capienza di 5 274. Il picco in finestra dice dove cadono gli agenti veri.")
+print("  To compare with the generator's AGENT_SCOPE: 0.02 = 339 bases = 1,017")
+print("  nominal objects. The sweep measured the agentic marginal cost at")
+print("  0.02 / 0.06 / 0.20, i.e. 1,017 / 3,052 / 10,172 objects against a")
+print("  capacity of 5,274. The in-window peak says where the real agents fall.")
 print(f"{'='*70}")

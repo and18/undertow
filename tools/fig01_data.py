@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-fig01_data.py — genera data/derived/fig01_marginal_vs_workingset.csv (FIG-01, claim A1).
+fig01_data.py — generates data/derived/fig01_marginal_vs_workingset.csv (FIG-01, claim A1).
 
-Prima il CSV era scritto a mano. Ora ogni colonna viene da una fonte rintracciabile:
-  - marginale, SE, origin lo/hi: points.csv dei sei run dello sweep (via scope_ttest.py:
-    stesse funzioni, stesso divisore beta*lambda configurato);
-  - W_objects: capitoli DISTINTI del reachable set (scope_ttest.reachable: floor(corpus *
-    scope) basi x AGENT_SESSION capitoli contigui, senza doppioni; a scope 0,20 10 020 su 10 170
-    posizioni); W_positions: le posizioni, con i doppioni;
-  - run: i sei run primari di scope_ttest.RUNS (TRAV_MODE=scen, claims v3.8), nelle colonne
-    run_lo e run_hi;
-  - W_over_capacity: W_objects / capienza media di data/derived/cache_capacity.csv
-    (tools/cache_capacity.py, varnish_main_n_object da VictoriaMetrics).
+The CSV used to be written by hand. Now every column comes from a traceable source:
+  - marginal, SE, origin lo/hi: points.csv of the six sweep runs (via scope_ttest.py:
+    same functions, same configured divisor beta*lambda);
+  - W_objects: DISTINCT chapters of the reachable set (scope_ttest.reachable: floor(corpus *
+    scope) bases x AGENT_SESSION contiguous chapters, without duplicates; at scope 0.20 10,020 out of 10,170
+    positions); W_positions: the positions, with duplicates;
+  - run: the six primary runs of scope_ttest.RUNS (TRAV_MODE=scen, claims v3.8), in the columns
+    run_lo and run_hi;
+  - W_over_capacity: W_objects / mean capacity from data/derived/cache_capacity.csv
+    (tools/cache_capacity.py, varnish_main_n_object from VictoriaMetrics).
 
-Il lab resta in sola lettura: solo `ssh lab cat`.
+The lab stays read-only: only `ssh lab cat`.
 
-Uso:
+Usage:
     python3 tools/fig01_data.py
 """
 import csv
@@ -34,7 +34,7 @@ OUT_CSV = ROOT / "data" / "derived" / "fig01_marginal_vs_workingset.csv"
 
 def capacity():
     if not CAP_CSV.exists():
-        sys.exit(f"manca {CAP_CSV}: lancia prima tools/cache_capacity.py")
+        sys.exit(f"missing {CAP_CSV}: run tools/cache_capacity.py first")
     with CAP_CSV.open() as f:
         return statistics.fmean(float(r["n_object_avg"]) for r in csv.DictReader(f))
 
@@ -54,14 +54,14 @@ def main():
                      f"{lo['mean']:.4f}", f"{math.sqrt(lo['var_mean']):.4f}",
                      f"{hi['mean']:.4f}", f"{math.sqrt(hi['var_mean']):.4f}",
                      min(lo["n"], hi["n"]), lo_id, hi_id])
-        print(f"  scope {scope}: W {w}  W/cap {w / cap:.4f}  marginale {m:+.5f} +/- {se:.5f}")
+        print(f"  scope {scope}: W {w}  W/cap {w / cap:.4f}  marginal {m:+.5f} +/- {se:.5f}")
     with OUT_CSV.open("w", newline="") as f:
         wr = csv.writer(f, lineterminator="\n")
         wr.writerow(["scope", "W_objects", "W_positions", "W_over_capacity", "marginal", "marginal_se",
                      "origin_lo", "origin_lo_se", "origin_hi", "origin_hi_se", "reps",
                      "run_lo", "run_hi"])
         wr.writerows(rows)
-    print(f"capienza usata: {cap:.1f} oggetti\nscritto {OUT_CSV}")
+    print(f"capacity used: {cap:.1f} objects\nwritten {OUT_CSV}")
 
 
 if __name__ == "__main__":

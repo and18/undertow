@@ -1,38 +1,38 @@
 #!/usr/bin/env bash
 #
-# costmap.sh - La mappa dei costi, e il test che puo' uccidere N1.
+# costmap.sh - The cost map, and the test that can kill N1.
 #
-# IPOTESI SOTTO ESAME
+# HYPOTHESIS UNDER TEST
 #
-# Il costo per richiesta di una classe non e' una proprieta' della classe:
-# dipende dalla composizione del traffico. Se e' vero, un controllore di
-# ammissione che usa costi calibrati in isolamento - cioe' tutti quelli
-# pubblicati: DAGOR con priorita' dichiarate, Rajomon con prezzi per API,
-# UCP con curve di utilita' isolate - usa un input falso.
+# The per-request cost of a class is not a property of the class: it
+# depends on the composition of the traffic. If this is true, an admission
+# controller that uses costs calibrated in isolation - that is, all the
+# published ones: DAGOR with declared priorities, Rajomon with per-API
+# prices, UCP with isolated utility curves - uses a false input.
 #
-# E l'errore si auto-conferma: se strozza la classe agentica perche' la
-# crede cara, ne abbassa la quota, e a quota bassa quella classe E'
-# davvero cara. La misura successiva gli da' ragione. Aggancio a un punto
-# operativo peggiore con retroazione positiva.
+# And the error is self-confirming: if it throttles the agentic class
+# because it believes it expensive, it lowers its share, and at a low share
+# that class IS really expensive. The next measurement proves it right.
+# A lock-in to a worse operating point through positive feedback.
 #
-# PRIMA DI COSTRUIRE QUALSIASI CONTROLLORE si misura la mappa e si calcola
-# a tavolino la decisione che ciascuno prenderebbe. Se coincidono, l'idea
-# muore in una notte invece che in due settimane.
+# BEFORE BUILDING ANY CONTROLLER we measure the map and compute on paper
+# the decision each one would take. If they coincide, the idea dies in one
+# night instead of two weeks.
 #
-# BLOCCO 1 - isolamento. Ogni classe da sola, ai volumi che ha nelle
-#   miscele del blocco 2. E' la calibrazione del controllore statico.
-#   Nota: non esiste un volume "giusto" a cui calibrare, ed e' parte del
-#   problema.
+# BLOCK 1 - isolation. Each class alone, at the volumes it has in the
+#   mixes of block 2. This is the calibration of the static controller.
+#   Note: there is no "right" volume to calibrate at, and that is part of
+#   the problem.
 #
-# BLOCCO 2 - miscele. La stessa grandezza misurata in situ.
-#   La differenza fra blocco 1 e blocco 2, allo stesso volume di classe,
-#   E' l'errore del costo esogeno.
+# BLOCK 2 - mixes. The same quantity measured in situ.
+#   The difference between block 1 and block 2, at the same class volume,
+#   IS the error of the exogenous cost.
 #
-# BLOCCO 3 - la minaccia. Con TTL 60 s il beneficio di sistema del
-#   traffico agentico quasi sparisce (R9: da -7,2% a -0,6%). Se non
-#   esiste un punto operativo migliore, il controllore statico non sta
-#   sbagliando niente di importante e N1 vale solo per contenuto che
-#   cambia lentamente. Va saputo ORA, non dopo aver costruito.
+# BLOCK 3 - the threat. With TTL 60 s the system-level benefit of agentic
+#   traffic almost disappears (R9: from -7.2% to -0.6%). If no better
+#   operating point exists, the static controller is not getting anything
+#   important wrong and N1 only holds for slowly changing content. We must
+#   know NOW, not after building.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -42,8 +42,8 @@ run() {
     shift; env "$@" bash treclassi.sh
 }
 
-# --- blocco 1: isolamento -------------------------------------------------
-# traversal: POINTS alpha=1.00 perche' MEASURE deve coprire il corpus
+# --- block 1: isolation ----------------------------------------------------
+# traversal: POINTS alpha=1.00 because MEASURE must cover the corpus
 run "ISO traversal @22"  MODEL=traversal LAMBDA=22 REPS=2 POINTS="1.00:0.00"
 run "ISO traversal @44"  MODEL=traversal LAMBDA=44 REPS=2 POINTS="1.00:0.00"
 run "ISO agent @5"       MODEL=agent     LAMBDA=5  REPS=2 POINTS="0.00:1.00"
@@ -51,20 +51,20 @@ run "ISO agent @22"      MODEL=agent     LAMBDA=22 REPS=2 POINTS="0.00:1.00"
 run "ISO zipf @44"       MODEL=zipf      LAMBDA=44 REPS=2 POINTS="0.00:0.00"
 run "ISO zipf @88"       MODEL=zipf      LAMBDA=88 REPS=2 POINTS="0.00:0.00"
 
-# --- blocco 2: miscele ----------------------------------------------------
-run "MIX griglia" LAMBDA=110 REPS=2 GATE=0 \
+# --- block 2: mixes ---------------------------------------------------------
+run "MIX grid" LAMBDA=110 REPS=2 GATE=0 \
     POINTS="0.20:0.05 0.20:0.20 0.30:0.05 0.30:0.20 0.40:0.05 0.40:0.20"
 
-# --- blocco 3: la stessa griglia con scadenza realistica ------------------
-run "MIX griglia TTL=60s" OBJECT_TTL=60 LAMBDA=110 REPS=2 GATE=0 \
+# --- block 3: the same grid with realistic expiry ---------------------
+run "MIX grid TTL=60s" OBJECT_TTL=60 LAMBDA=110 REPS=2 GATE=0 \
     POINTS="0.25:0.02 0.25:0.10 0.25:0.20 0.25:0.30"
 
 echo
 echo "================================================================"
-echo "  Costo per richiesta di una classe = 1 - hit ratio della classe."
-echo "  ISO: quello che crede un controllore statico."
-echo "  MIX: quello che e' vero in situ."
-echo "  L'errore e' la differenza, allo stesso volume di classe."
-echo "  Blocco 3: se a TTL 60 il carico all'origine non scende piu' al"
-echo "  crescere di beta, non c'e' un punto operativo migliore da"
-echo "  mancare, e N1 vale solo per contenuto lento."
+echo "  Per-request cost of a class = 1 - the class's hit ratio."
+echo "  ISO: what a static controller believes."
+echo "  MIX: what is true in situ."
+echo "  The error is the difference, at the same class volume."
+echo "  Block 3: if at TTL 60 the origin load no longer falls as beta"
+echo "  grows, there is no better operating point to miss, and N1 only"
+echo "  holds for slow content."

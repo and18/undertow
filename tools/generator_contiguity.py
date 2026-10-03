@@ -1,40 +1,40 @@
 #!/usr/bin/env python3
 """
-generator_contiguity.py — la metrica di contiguita' di honeypot_scope.py (sezione 4),
-calcolata sulle richieste agentiche del generatore (harness/load/workload.js).
+generator_contiguity.py — the contiguity metric of honeypot_scope.py (section 4),
+computed on the agentic requests of the generator (harness/load/workload.js).
 
-METRICA (identica a honeypot_scope.py, sezione 4)
-  Per ogni «sessione» con almeno 2 richieste, in ordine: coppie di richieste
-  consecutive (x, y) in cui entrambe si mappano su (libro, capitolo).
-    contigua  stesso libro e |capitolo_y − capitolo_x| = 1 (successivo O precedente)
-    ripetuta  stesso libro e stesso capitolo
-  contiguita' = coppie contigue / coppie. Il denominatore conta COPPIE, non sessioni.
+METRIC (identical to honeypot_scope.py, section 4)
+  For each «session» with at least 2 requests, in order: pairs of consecutive
+  requests (x, y) in which both map to (book, chapter).
+    contiguous  same book and |chapter_y − chapter_x| = 1 (next OR previous)
+    repeated    same book and same chapter
+  contiguity = contiguous pairs / pairs. The denominator counts PAIRS, not sessions.
 
-IPOTESI SUL GENERATORE (dichiarate, non misurate)
-  1. «Sessione» dell'honeypot = connessione; qui = VU di k6: ogni VU tiene la propria
-     connessione (noConnectionReuse falso) e il proprio stato agSession.
-  2. Si considerano solo le richieste agentiche di ogni VU, in ordine: le sessioni del
-     generatore (AGENT_SESSION capitoli contigui dalla base) si susseguono una dopo
-     l'altra; le richieste di altre classi eseguite dallo stesso VU sono ignorate.
-  3. Le iterazioni (λ·measure) sono assegnate ai VU in giro (--assign rr, coda FIFO dei
-     VU liberi) oppure a caso (--assign random); VU = preAllocatedVUs di workload.js,
-     min(max(ceil(2·RATE), 200), 4000). Ogni iterazione e' agentica con probabilita' β.
-  4. Una sola invocazione k6 (la fase di misura): lo stato di sessione parte vuoto.
-  5. Indice globale -> (libro, capitolo) come locate() di workload.js, sul vettore
-     cumulativo che k6 ha davvero usato: setup_data (ids, cum) registrato nel JSON di k6
-     del run (--run, --json), letto con `ssh lab cat`. Il 24 settembre setup_data e'
-     risultato identico nei 117 JSON di misura dei 29 run dal 16 al 22 settembre, e
-     identico, posizione per posizione, a data/corpus/books.csv (ORDER BY title, 485
-     titoli distinti su 495: da solo non garantisce l'ordine fra titoli uguali); con
-     --books lo script ripete il confronto.
-  Base di sessione: rango r = min(scope−1, floor(scope·u^(1/(1−skew)))),
-  base = (r·AGENT_MUL + SEED) mod N, capitoli base, base+1, ... mod N.
+ASSUMPTIONS ON THE GENERATOR (declared, not measured)
+  1. Honeypot «session» = connection; here = k6 VU: each VU keeps its own
+     connection (noConnectionReuse false) and its own agSession state.
+  2. Only the agentic requests of each VU are considered, in order: the generator's
+     sessions (AGENT_SESSION contiguous chapters from the base) follow one after
+     the other; requests of other classes executed by the same VU are ignored.
+  3. The iterations (λ·measure) are assigned to the VUs round-robin (--assign rr, FIFO queue of
+     free VUs) or at random (--assign random); VU = preAllocatedVUs of workload.js,
+     min(max(ceil(2·RATE), 200), 4000). Each iteration is agentic with probability β.
+  4. A single k6 invocation (the measurement phase): the session state starts empty.
+  5. Global index -> (book, chapter) as locate() of workload.js, on the cumulative
+     vector that k6 really used: setup_data (ids, cum) recorded in the run's k6 JSON
+     (--run, --json), read with `ssh lab cat`. On 24 September setup_data turned out
+     identical in the 117 measurement JSONs of the 29 runs from 16 to 22 September, and
+     identical, position by position, to data/corpus/books.csv (ORDER BY title, 485
+     distinct titles out of 495: on its own it does not guarantee the order between equal titles); with
+     --books the script repeats the comparison.
+  Session base: rank r = min(scope−1, floor(scope·u^(1/(1−skew)))),
+  base = (r·AGENT_MUL + SEED) mod N, chapters base, base+1, ... mod N.
 
-SCRIVE
-  data/derived/generator_contiguity.csv  (--out): una riga, medie sui semi di coppie,
-  contigue, ripetute, quote in %, VU con coppie, sessioni avviate, e i parametri usati.
+WRITES
+  data/derived/generator_contiguity.csv  (--out): one row, means over the seeds of pairs,
+  contiguous, repeated, shares in %, VUs with pairs, sessions started, and the parameters used.
 
-Uso:
+Usage:
     python3 tools/generator_contiguity.py [--rate 95 --beta 0.1263 --scope 0.02]
 """
 import argparse
@@ -51,32 +51,32 @@ from pathlib import Path
 SEED = 42
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--rate", type=float, default=95.0, help="λ, req/s (default: run a 12 req/s)")
+ap.add_argument("--rate", type=float, default=95.0, help="λ, req/s (default: the 12 req/s run)")
 ap.add_argument("--beta", type=float, default=0.1263)
 ap.add_argument("--scope", type=float, default=0.02)
 ap.add_argument("--session", type=int, default=3)
 ap.add_argument("--skew", type=float, default=0.6)
-ap.add_argument("--mul", type=int, default=3266489917, help="AGENT_MUL (separata)")
+ap.add_argument("--mul", type=int, default=3266489917, help="AGENT_MUL (separate)")
 ap.add_argument("--measure", type=int, default=620)
 ap.add_argument("--assign", choices=("rr", "random"), default="rr")
 ap.add_argument("--seeds", type=int, default=5)
-ap.add_argument("--run", default="tre-20260921-150237", help="run da cui leggere setup_data")
-ap.add_argument("--json", default="m-a0.2947-b0.1263-1.json", help="JSON di k6 del run")
+ap.add_argument("--run", default="tre-20260921-150237", help="run to read setup_data from")
+ap.add_argument("--json", default="m-a0.2947-b0.1263-1.json", help="k6 JSON of the run")
 ap.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "data" / "derived"
                                      / "generator_contiguity.csv"))
 ap.add_argument("--books", default=None,
-                help="confronta setup_data con questo CSV (gutenberg_id, n_chapters)")
+                help="compare setup_data with this CSV (gutenberg_id, n_chapters)")
 A = ap.parse_args()
 
 
 def library():
-    """Vettore cumulativo usato da k6: setup_data del JSON di misura del run."""
+    """Cumulative vector used by k6: setup_data of the run's measurement JSON."""
     out = subprocess.run(["ssh", "lab", f"cat ~/undertow/harness/results/{A.run}/{A.json}"],
                          capture_output=True, text=True, check=True)
     sd = json.loads(out.stdout)["setup_data"]
     ids, cum = [str(i) for i in sd["ids"]], sd["cum"]
     if not ids or cum[-1] != sd["total"]:
-        sys.exit(f"setup_data incoerente in {A.run}/{A.json}")
+        sys.exit(f"setup_data inconsistent in {A.run}/{A.json}")
     if A.books:
         with open(A.books, newline="") as f:
             rows = list(csv.DictReader(f))
@@ -86,9 +86,9 @@ def library():
             t += int(r["n_chapters"])
             bc.append(t)
         diff = [i for i, (x, y) in enumerate(zip(ids, bi)) if x != y]
-        print(f"confronto con {A.books}: libri {len(bi)} contro {len(ids)}, posizioni con id "
-              f"diverso {len(diff) + abs(len(bi) - len(ids))}, vettore cumulativo "
-              f"{'identico' if bc == cum else 'DIVERSO'}")
+        print(f"comparison with {A.books}: books {len(bi)} versus {len(ids)}, positions with different "
+              f"id {len(diff) + abs(len(bi) - len(ids))}, cumulative vector "
+              f"{'identical' if bc == cum else 'DIFFERENT'}")
     return ids, cum, sd["total"]
 
 
@@ -127,16 +127,16 @@ def run(seed, ids, cum, n):
 
 def main():
     ids, cum, n = library()
-    print(f"corpus {len(ids)} libri, {n} capitoli; λ {A.rate}  β {A.beta}  scope {A.scope}  "
-          f"sessione {A.session}  AGENT_MUL {A.mul}  measure {A.measure} s  assegnazione {A.assign}")
+    print(f"corpus {len(ids)} books, {n} chapters; λ {A.rate}  β {A.beta}  scope {A.scope}  "
+          f"session {A.session}  AGENT_MUL {A.mul}  measure {A.measure} s  assignment {A.assign}")
     res = [run(s, ids, cum, n) for s in range(1, A.seeds + 1)]
     for s, (p, a, r, c, ss) in enumerate(res, 1):
-        print(f"  seme {s}: coppie {p}  contigue {a} ({a / p:.4f})  ripetute {r} ({r / p:.4f})  "
-              f"VU con coppie {c}  sessioni avviate {ss}")
+        print(f"  seed {s}: pairs {p}  contiguous {a} ({a / p:.4f})  repeated {r} ({r / p:.4f})  "
+              f"VUs with pairs {c}  sessions started {ss}")
     share = [a / p for p, a, *_ in res]
     rshare = [r / p for p, _, r, *_ in res]
-    print(f"contiguita' media {statistics.fmean(share):.4f}  "
-          f"(min {min(share):.4f}, max {max(share):.4f}, {len(res)} semi)")
+    print(f"mean contiguity {statistics.fmean(share):.4f}  "
+          f"(min {min(share):.4f}, max {max(share):.4f}, {len(res)} seeds)")
     m = lambda i: statistics.fmean(x[i] for x in res)
     with open(A.out, "w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
@@ -149,7 +149,7 @@ def main():
                     f"{100 * max(share):.2f}", f"{100 * statistics.fmean(rshare):.2f}",
                     f"{m(3):.0f}", f"{m(4):.0f}", len(res), A.rate, A.beta, A.scope,
                     A.session, A.mul, A.measure, A.assign, A.run])
-    print(f"scritto {A.out}")
+    print(f"written {A.out}")
 
 
 if __name__ == "__main__":

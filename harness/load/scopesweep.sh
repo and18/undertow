@@ -1,56 +1,57 @@
 #!/usr/bin/env bash
 #
-# scopesweep.sh - L'ultimo esperimento: la sensibilita' del costo di una classe
-# in funzione di dove sta il suo insieme di lavoro rispetto alla capienza.
+# scopesweep.sh - The last experiment: the sensitivity of a class's cost
+# as a function of where its working set sits relative to the capacity.
 #
-# IPOTESI (registrata prima del run)
-#   La sensibilita' del costo per richiesta di una classe alla composizione del
-#   traffico non dipende dal fatto che la classe abbia localita', ma dal
-#   rapporto fra il suo insieme di lavoro e la capienza della cache.
+# HYPOTHESIS (recorded before the run)
+#   The sensitivity of a class's per-request cost to the traffic
+#   composition does not depend on the class having locality, but on the
+#   ratio between its working set and the cache capacity.
 #
-# PREVISIONE (forma, non soglia)
-#   Misurando la sensibilita' S(scope) = escursione del miss ratio agentico fra
-#   quota 13% e quota 30%, la relazione S contro (insieme di lavoro / capienza)
-#   deve essere NON MONOTONA: bassa quando l'insieme e' molto sotto la capienza,
-#   massima nell'intorno della capienza, di nuovo bassa quando e' molto sopra.
+# PREDICTION (shape, not threshold)
+#   Measuring the sensitivity S(scope) = excursion of the agentic miss
+#   ratio between share 13% and share 30%, the relation of S against
+#   (working set / capacity) must be NON-MONOTONIC: low when the set is
+#   far below the capacity, highest around the capacity, low again when
+#   it is far above.
 #
-# FALSIFICAZIONE
-#   S monotona in scope, oppure S statisticamente indistinguibile fra i tre
-#   punti. Il criterio e' un test sulla forma, non una soglia scelta a mano:
-#   serve S(centrale) maggiore di S(basso) E di S(alto), ciascuno con
-#   separazione di almeno 2 errori standard combinati.
+# FALSIFICATION
+#   S monotonic in scope, or S statistically indistinguishable among the
+#   three points. The criterion is a test on the shape, not a hand-picked
+#   threshold: it requires S(central) greater than S(low) AND S(high),
+#   each with a separation of at least 2 combined standard errors.
 #
-# SE E' NEGATIVO
-#   Il meccanismo del confine di residenza cade. Resta la caratterizzazione
-#   empirica (4,09x contro 1,02x e 1,03x) senza spiegazione meccanicistica:
-#   livello 2, pubblicabile, piu' debole.
+# IF IT IS NEGATIVE
+#   The residency-boundary mechanism falls. What remains is the empirical
+#   characterisation (4.09x against 1.02x and 1.03x) without a
+#   mechanistic explanation: level 2, publishable, weaker.
 #
-# PREREQUISITI, entrambi obbligatori
-#   1. capacity.sh eseguito: la capienza reale e' nota
-#   2. patch-agentenv.py applicato: AGENT_SCOPE arriva dentro k6
+# PREREQUISITES, both mandatory
+#   1. capacity.sh executed: the real capacity is known
+#   2. patch-agentenv.py applied: AGENT_SCOPE reaches k6
 #
-# Uso:  SCOPE_LOW=... SCOPE_HIGH=... bash scopesweep.sh
-#   I due valori si ricavano dalla tabella stampata da capacity.sh:
-#   SCOPE_LOW  -> insieme ~0,1x la capienza
-#   SCOPE_HIGH -> insieme ~10x la capienza
-#   Il punto centrale (scope 0,02) NON si rilancia: e' gia' misurato ieri.
+# Usage:  SCOPE_LOW=... SCOPE_HIGH=... bash scopesweep.sh
+#   The two values come from the table printed by capacity.sh:
+#   SCOPE_LOW  -> set ~0.1x the capacity
+#   SCOPE_HIGH -> set ~10x the capacity
+#   The central point (scope 0.02) is NOT rerun: it was measured yesterday.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-: "${SCOPE_LOW:?manca SCOPE_LOW - prendilo dalla tabella di capacity.sh}"
-: "${SCOPE_HIGH:?manca SCOPE_HIGH - prendilo dalla tabella di capacity.sh}"
+: "${SCOPE_LOW:?SCOPE_LOW is missing - take it from the capacity.sh table}"
+: "${SCOPE_HIGH:?SCOPE_HIGH is missing - take it from the capacity.sh table}"
 REPS="${REPS:-5}"
 
-echo "sweep AGENT_SCOPE: $SCOPE_LOW e $SCOPE_HIGH   ($REPS ripetizioni)"
-echo "punto centrale 0.02 gia' misurato il 21 settembre, non rilanciato"
-echo "mappatura separata attiva in tutti i punti (AGENT_MUL=3266489917)"
+echo "AGENT_SCOPE sweep: $SCOPE_LOW and $SCOPE_HIGH   ($REPS repetitions)"
+echo "central point 0.02 already measured on 21 September, not rerun"
+echo "separate mapping active at all points (AGENT_MUL=3266489917)"
 echo
 
 for SC in "$SCOPE_LOW" "$SCOPE_HIGH"; do
   for PT in "95:0.2947:0.1263" "119:0.2353:0.3025"; do
     LAM="${PT%%:*}"; REST="${PT#*:}"; A="${REST%%:*}"; B="${REST##*:}"
-    printf '\n######## scope=%s  quota=%s  lambda=%s ########  %s\n' \
+    printf '\n######## scope=%s  share=%s  lambda=%s ########  %s\n' \
       "$SC" "$B" "$LAM" "$(date +%H:%M)"
     AGENT_MUL=3266489917 AGENT_SCOPE="$SC" \
       LAMBDA="$LAM" REPS="$REPS" GATE=0 WARMUP=300 MEASURE_FORCE=620 \
@@ -60,11 +61,11 @@ done
 
 echo
 echo "================================================================"
-echo "  Confronto da fare: per ciascuno scope, escursione del miss"
-echo "  ratio agentico fra quota 13% e quota 30%."
-echo "  Riferimento gia' misurato a scope 0,02: 0,180 -> 0,044 = 4,09x"
+echo "  Comparison to make: for each scope, the excursion of the agentic"
+echo "  miss ratio between share 13% and share 30%."
+echo "  Reference already measured at scope 0.02: 0.180 -> 0.044 = 4.09x"
 echo
-echo "  Estrarre con:"
+echo "  Extract with:"
 echo "    cd ~/undertow/harness/results"
 echo "    for d in \$(ls -td tre-* | head -4); do"
 echo "      printf '%-26s scope=%-8s ' \"\$d\" \\"

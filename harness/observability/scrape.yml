@@ -1,9 +1,9 @@
 # observability/scrape.yml
 #
-# Risoluzione 1 secondo. E' insolitamente alta per un sistema di metriche,
-# ma necessaria: il collasso del sistema e' un transitorio che a 15 secondi
-# di intervallo appare come un singolo punto, mentre la sua dinamica e'
-# proprio l'oggetto della misura.
+# 1-second resolution. It is unusually high for a metrics system, but
+# necessary: the collapse of the system is a transient that at a 15-second
+# interval shows up as a single point, while its dynamics are exactly
+# what we are measuring.
 
 global:
   scrape_interval: 1s
@@ -22,8 +22,8 @@ scrape_configs:
   - job_name: postgres
     static_configs:
       - targets: ["db-exporter:9187"]
-    # Le query di sistema di Postgres sono costose: a 1s si perturberebbe
-    # il bersaglio. Qui la risoluzione piu' bassa e' deliberata.
+    # Postgres system queries are expensive: at 1s they would perturb the
+    # target. The lower resolution here is deliberate.
     scrape_interval: 5s
 
   - job_name: node

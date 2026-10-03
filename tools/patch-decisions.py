@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 """
-patch-decisions.py - Continua il log delle decisioni.
+patch-decisions.py - Continues the decision log.
 
-decisions.md e' un log append-only: "scritto mentre le decisioni sono prese,
-non ricostruito dopo". Modificare le sezioni vecchie violerebbe il suo stesso
-principio, quindi questo script AGGIUNGE le sezioni 30-33 prima del changelog
-e vi accoda le nuove voci. Niente viene riscritto.
+decisions.md is an append-only log: "written while the decisions are made,
+not reconstructed afterwards". Modifying the old sections would violate its own
+principle, so this script ADDS sections 30-33 before the changelog
+and appends the new entries to it. Nothing is rewritten.
 
-Le nuove sezioni chiudono due richieste che il documento aveva lasciato
-aperte: 18 chiedeva che l'impronta della cache fosse misurata invece che
-derivata, e 24 contava le ritrattazioni.
+The new sections close two requests that the document had left
+open: 18 asked for the cache footprint to be measured instead of
+derived, and 24 counted the retractions.
 
-Uso:  cd ~/undertow && python3 tools/patch-decisions.py
+Usage:  cd ~/undertow && python3 tools/patch-decisions.py
 """
 import sys, os
 
 P = "docs/decisions.md"
 if not os.path.exists(P):
-    sys.exit(f"{P} non trovato: esegui dalla radice del repo (~/undertow)")
+    sys.exit(f"{P} not found: run from the repo root (~/undertow)")
 s = open(P, encoding="utf-8").read()
 if "## 30." in s:
-    sys.exit("patch gia' applicata (sezione 30 presente)")
+    sys.exit("patch already applied (section 30 present)")
 
 ANCHOR = "## Changelog"
 if ANCHOR not in s:
-    sys.exit("ancora '## Changelog' non trovata, niente scritto")
+    sys.exit("anchor '## Changelog' not found, nothing written")
 
 BODY = "\n## 30. La capienza della cache si misura, non si deriva (chiude §18)\n\n**Decisione.** La capienza della cache e' letta da `varnish_main_n_object`\ncon la cache piena, e riportata in **oggetti**, non in byte di corpus.\n\n**Perche' — l'evidenza.** §18 chiedeva che l'impronta effettiva fosse\nmisurata invece che derivata, e la richiesta e' rimasta aperta per tre\nsettimane. Nel frattempo e' stata derivata comunque, e sbagliata: dividendo\n128 MB per 192,4 KB si ottengono 681 oggetti, e su quel numero era stata\ncostruita un'intera spiegazione meccanicistica.\n\nI 192,4 KB venivano da `classcost.py` e sono i **byte di lavoro a\nPostgreSQL per richiesta** — corpo del capitolo, righe di indice, byte dei\ncapitoli correlati. Non sono la dimensione dell'oggetto HTTP che Varnish\nmemorizza. Due grandezze diverse, confuse da una divisione.\n\nMisura diretta, 22 settembre 2026, cache satura (134 196 368 byte occupati,\n21 360 liberi):\n\n| grandezza | valore |\n|---|---|\n| oggetti in cache | **5 274** |\n| oggetto medio | **24,8 KB** |\n| frazione del corpus residente | **31,1%** di 16 954 |\n\nLa stima era sbagliata di **7,75 volte**, e con essa il rapporto fra\nl'insieme di lavoro agentico e la capienza: 0,19× invece di 1,49×.\n\n**Principio, ora enunciato cinque volte in questo log.** §6: un parametro\ndel generatore non derivato dal carico e' incontrollato. §20: la casualita'\nnon seminata e' un input non misurato. §26: un parametro derivato dal\nregime nominale e' incontrollato nel regime saturo. §28: una durata scelta\na mano e' una dimensione di campionamento non dichiarata. Qui: **un numero\nderivato per divisione e' un'assunzione travestita da misura, finche' non\nsi verifica cosa misura il divisore.**\n\n---\n\n## 31. Ogni parametro del generatore deve raggiungere il generatore\n\n**Decisione.** `treclassi.sh` inoltra a k6 tutti i parametri della classe\nagentica — `AGENT_MUL`, `AGENT_SCOPE`, `AGENT_SESSION`, `AGENT_SKEW` —\ncon i default letti da `workload.js`. Ogni directory di run scrive\n`env.txt` con l'ambiente completo e l'hash del commit. Trenta secondi dopo\nogni lancio si verifica che la variabile manipolata compaia in `env.txt`.\n\n**Perche' — l'evidenza.** L'invocazione di k6 inoltrava solo `MODEL`,\n`ALPHA`, `BETA`, `RATE`, `DURATION`, `TARGET`, `TRAV_SKIP` e `OUTFILE`.\nQualunque altra variabile impostata dal driver restava fuori dal container.\nLa campagna di separazione working-set del 20 settembre e' girata con\n`AGENT_MUL` al default, cioe' con la stessa permutazione della classe\numana, **rieseguendo per quattro ore la configurazione del 14 settembre**.\n\nIl no-op e' rimasto invisibile ventiquattro ore perche' le directory di run\nnon registravano la propria configurazione. Conseguenza collaterale: per\ntutti i run precedenti al 21 settembre la configurazione **non e'\nrecuperabile**, e per lo sweep di capienza del 10-11 settembre la dimensione\nnominale della cache e' definitivamente persa. Quei punti restano\nordinabili solo per hit ratio umano osservato, ed e' il motivo per cui la\nfigura corrispondente resta in appendice.\n\n**Corollario di §27** — un controllo che non controlla e' peggio di nessun\ncontrollo: **un parametro che non viene registrato non e' stato\ncontrollato, anche quando lo si e' impostato.**\n\n---\n\n## 32. La domanda centrale si e' stretta ancora (amend §23)\n\n**Da:** *cosa costa ciascuna classe di traffico, e quale budget di risorse\nmerita?*\n\n**A:** *il costo per richiesta di una classe e' abbastanza stabile, al\nvariare della composizione e dello stato condiviso, da poter essere\ntrattato come una proprieta' della classe?*\n\n**Perche'.** La domanda di §23 presupponeva che «il costo di una classe»\nfosse una grandezza. Lo sweep di `AGENT_SCOPE` mostra che non lo e': a\nparita' di classe, volumi, cache e corpus, cambiando solo l'ampiezza\ndell'insieme di lavoro, il costo marginale agentico passa da\n−0,0477 ± 0,0054 a +0,4383 ± 0,0055 richieste all'origine per\nrichiesta. La domanda precedente chiedeva quale valore assegnare a una\nvariabile che cambia segno.\n\n**Cosa conserva.** Tutto il misurato. La frontiera lavoro/latenza resta la\nconseguenza decisionale; il costo marginale resta la grandezza; il\nconfronto fra classi resta il risultato. Cambia che non cerchiamo piu' *il*\ncosto di una classe, ma le condizioni sotto cui un costo fisso e' adeguato.\n\n**Cosa NON rivendichiamo, e va scritto qui perche' e' la tentazione\nprincipale.** Il modello che spiega il fenomeno — l'approssimazione a\ntempo caratteristico — non e' nostro: Fagin 1977 per l'origine, Che et al.\n2002 per la riscoperta e il nome, Fricker, Robert e Roberts 2012 per la\nformalizzazione. Si adatta a tre dei nostri quattro punti con zero\nparametri liberi, ed e' esattamente questo a renderlo credibile. Il\ncontributo non e' il modello: e' quale classe stia in quale regime, la\nquantificazione della sovrapposizione come bias di misura, e il criterio\nche ne discende.\n\n---\n\n## 33. Il conteggio delle ritrattazioni (amend §24)\n\n§24 ne registrava quattro. Sono **dieci**. Le sei nuove, tutte fra il 19 e\nil 22 settembre 2026, sono in `docs/retractions.md` con la storia completa:\nil rinvio che dominerebbe il blocco; il traffico agentico che ridurrebbe il\nlavoro all'origine; la separazione working-set che avrebbe falsificato la\ncritica; il confine di residenza a 681 oggetti; la dominanza di Pareto di B\nsu C; la previsione quantitativa del tempo caratteristico.\n\n**Tutte e sei erano interpretazioni, nessuna era una misura.** Nessun dato\nmisurato e' mai stato smentito in questo progetto: sono cadute le\nspiegazioni appoggiate sopra i dati. E tutte e sei sono state trovate prima\ndella pubblicazione, da controlli decisi da noi.\n\nTre delle sei hanno la stessa origine, ed e' la regola che §24 non aveva\nancora: **non ragionare sull'esito di un controllo prima di averlo\neseguito.** §24 dice che il momento in cui un risultato e' entusiasmante e'\nquello in cui il controllo di novita' e' meno probabile. Questo e' il suo\ngemello: il momento in cui un meccanismo e' elegante e' quello in cui la\nverifica del meccanismo e' meno probabile.\n\n---\n"
 ADD  = "\n- **2026-09-19/20** — Campagna di politiche al ginocchio, otto punti.\n  Blocco e rinvio giacciono su un'unica curva convessa a pendenza monotona:\n  la tesi che il rinvio domini il blocco e' ritirata. CPU PostgreSQL lineare\n  in origin_rps, R² = 0,998.\n- **2026-09-20** — Campagna di separazione working-set: **no-op**.\n  `AGENT_MUL` non inoltrato a k6. Quattro ore perse, difetto invisibile\n  perche' i run non registravano la configurazione. Vedi §31.\n- **2026-09-21** — Capienza della cache misurata: 5 274 oggetti, oggetto\n  medio 24,8 KB. La stima precedente era sbagliata di 7,75×. Vedi §30.\n  Separazione working-set eseguita davvero: la sovrapposizione fra insiemi\n  di lavoro vale 0,061 di hit ratio agentico e 0,71 req/s all'origine.\n- **2026-09-21/22** — Sweep di `AGENT_SCOPE` a 0,02 / 0,06 / 0,20. Il costo\n  marginale agentico passa da −0,048 a +0,438 richieste all'origine per\n  richiesta. Previsione pre-registrata sul tempo caratteristico: fallita\n  sul criterio quantitativo, confermata su direzione e ordinamento.\n  Fase sperimentale chiusa.\n- **2026-09-22** — Congelamento dell'evidenza: 72 run classificati in\n  `docs/registry.csv`, sei ritrattazioni in `docs/retractions.md`,\n  mappa dei claim in `docs/claims.md`. Letteratura verificata su fonti\n  primarie. Vedi §32 e §33.\n"
@@ -32,12 +32,12 @@ ADD  = "\n- **2026-09-19/20** — Campagna di politiche al ginocchio, otto punti
 s = s.replace(ANCHOR, BODY.lstrip("\n") + "\n" + ANCHOR, 1)
 s = s.rstrip("\n") + "\n" + ADD
 open(P, "w", encoding="utf-8").write(s)
-print(f"{P}: sezioni 30-33 aggiunte, changelog esteso di 5 voci")
+print(f"{P}: sections 30-33 added, changelog extended by 5 entries")
 print()
-print("Due incongruenze trovate leggendo il documento, NON corrette:")
-print("  - 17 dice che GPTBot riusa le connessioni 217 volte; il capitolo 5")
-print("    dice 20,4 richieste per connessione. Media contro massimo, o un")
-print("    errore. Va riconciliato prima della scrittura.")
-print("  - 5 e 18 usano 245 MB e 438 MB come denominatori diversi per la")
-print("    stessa grandezza. 30 aggiunge il terzo numero, quello misurato.")
-print("    Nel paper ne deve comparire uno solo, con il suo denominatore.")
+print("Two inconsistencies found while reading the document, NOT corrected:")
+print("  - 17 says GPTBot reuses connections 217 times; chapter 5")
+print("    says 20.4 requests per connection. Mean against maximum, or an")
+print("    error. It must be reconciled before writing.")
+print("  - 5 and 18 use 245 MB and 438 MB as different denominators for the")
+print("    same quantity. 30 adds the third number, the measured one.")
+print("    Only one of them must appear in the paper, with its denominator.")

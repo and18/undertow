@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-fase2b.py — artefatto della traversata esaustiva (docs/PREREG-simulatore-fase2b.md).
+fase2b.py — artefact of the exhaustive traversal (docs/PREREG-simulatore-fase2b.md).
 
-TRAV-GLOB: generatore della fase 1 (trace.phase): indice esaustivo dall'indice globale di
-           iterazione, come workload.js:276-278.
-TRAV-OWN:  identico, ma l'indice esaustivo e' permuteTrav(offset + c), c = richieste esaustive
-           gia' fatte nella ripetizione (da 0 all'inizio del warm-up, prosegue nella misura).
-           Stessi numeri casuali dell'originale: a parita' di seme cambia solo il capitolo
-           esaustivo.
+TRAV-GLOB: generator of phase 1 (trace.phase): exhaustive index from the global iteration
+           index, as workload.js:276-278.
+TRAV-OWN:  identical, but the exhaustive index is permuteTrav(offset + c), c = exhaustive
+           requests already made in the repetition (from 0 at the start of the warm-up, continues in the measurement).
+           Same random numbers as the original: at equal seed only the exhaustive
+           chapter changes.
 
-  python3 tools/sim/fase2b.py       R0b, poi il lancio unico e i criteri
+  python3 tools/sim/fase2b.py       R0b, then the single launch and the criteria
 
-Ogni numero e' SIMULATO. Nessun dato del lab.
+Every number is SIMULATED. No lab data.
 """
 import csv
 import math
@@ -23,25 +23,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import trace as tr  # noqa: E402  (tools/sim/trace.py, non il modulo standard)
+import trace as tr  # noqa: E402  (tools/sim/trace.py, not the standard module)
 import fase1  # noqa: E402
 import fase2  # noqa: E402
 from net_agentic import t_quantile  # noqa: E402
 from policies import POLICIES  # noqa: E402
 
-assert hasattr(tr, "repetition"), "importato il modulo standard trace invece di tools/sim/trace.py"
+assert hasattr(tr, "repetition"), "imported the standard trace module instead of tools/sim/trace.py"
 
 ROOT = fase1.ROOT
 OUT = ROOT / "data" / "sim" / "fase2b"
 PTS = ("P0", "S12", "S36")
 POLS = ("LRU", "S3FIFO")
 VARIANTS = ("GLOB", "OWN")
-RATE = {p: fase1.POINTS[p][0] * fase1.POINTS[p][1] for p in PTS}   # alpha*lambda configurati
+RATE = {p: fase1.POINTS[p][0] * fase1.POINTS[p][1] for p in PTS}   # configured alpha*lambda
 
 
 def phase_own(rnd, n, lam, alpha, beta, scope, agent_mul, duration, c0, session=3, skew=0.6):
-    """trace.phase con l'indice esaustivo da un contatore proprio della classe. Restituisce
-    (richieste, contatore finale). Consumo di numeri casuali identico a trace.phase."""
+    """trace.phase with the exhaustive index from the class's own counter. Returns
+    (requests, final counter). Random number consumption identical to trace.phase."""
     iters = int(round(lam * duration))
     nvu = min(max(math.ceil(2 * lam), 200), 4000)
     s_bases = max(1, math.floor(n * scope))
@@ -85,8 +85,8 @@ def repetition(variant, seed, name):
 
 
 def reuse(warm, meas, lam):
-    """Quota di richieste esaustive della misura che ritrovano un capitolo gia' chiesto
-    dall'esaustiva nella ripetizione, e intervallo mediano (s)."""
+    """Share of the exhaustive requests of the measurement that find again a chapter already asked
+    for by the exhaustive class in the repetition, and median interval (s)."""
     last = {}
     for i, rec in enumerate(warm):
         if rec[0] == tr.TRAV:
@@ -126,7 +126,7 @@ def write(name, cm, header, rows):
         w.writerow(header + ["stato"])
         for r in rows:
             w.writerow(list(r) + ["SIMULATO"])
-    print(f"scritto {path.relative_to(ROOT)}")
+    print(f"written {path.relative_to(ROOT)}")
 
 
 def main():
@@ -138,7 +138,7 @@ def main():
           [[r["variant"], r["policy"]] + fase2.fmt(r) +
            [f"{r['reuse_share']:.6f}", f"{r['reuse_median_s']:.3f}"] for r in res])
 
-    # R0b: TRAV-GLOB = fase 2, cifra per cifra
+    # R0b: TRAV-GLOB = phase 2, digit by digit
     with open(ROOT / "data" / "sim" / "fase2" / "reps.csv") as f:
         ref = {(r["session"], r["policy"], r["point"], r["seed"]): r
                for r in csv.DictReader(line for line in f if not line.startswith("#"))}
@@ -152,12 +152,12 @@ def main():
         diff += any(got[k] != want[k] for k in keys)
     n_glob = sum(r["variant"] == "GLOB" for r in res)
     ok = diff == 0
-    print(f"== R0b: TRAV-GLOB contro data/sim/fase2/reps.csv: {n_glob} righe, diverse {diff}  "
+    print(f"== R0b: TRAV-GLOB against data/sim/fase2/reps.csv: {n_glob} rows, different {diff}  "
           f"{'PASSA' if ok else 'NON PASSA'}")
     rows = [["R0b", "rows_different", diff, "", "", "PASSA" if ok else "NON PASSA"]]
     if not ok:
         write("criteri.csv", cm, ["criterion", "quantity", "value", "se", "t", "note"], rows)
-        sys.exit("R0b non passa: ci si ferma")
+        sys.exit("R0b does not pass: stopping")
 
     by = {}
     for r in res:
@@ -173,9 +173,9 @@ def main():
                       statistics.fmean(r["reuse_median_s"] for r in g(p))) for p in PTS}
             print(f"\n==== {pol}  TRAV-{v}")
             for p in PTS:
-                print(f"  {p}: miss esaustivo {me[p][0]:.4f} ± {me[p][1]:.4f}   origin_rps "
-                      f"{O[p][0]:.3f} ± {O[p][1]:.3f}   riuso esaustivo {100 * ru[p][0]:.2f}% "
-                      f"(mediana {ru[p][1]:.0f} s)")
+                print(f"  {p}: exhaustive miss {me[p][0]:.4f} ± {me[p][1]:.4f}   origin_rps "
+                      f"{O[p][0]:.3f} ± {O[p][1]:.3f}   exhaustive reuse {100 * ru[p][0]:.2f}% "
+                      f"(median {ru[p][1]:.0f} s)")
                 rows.append([f"{pol}_{v}", f"miss_exh_{p}", f"{me[p][0]:.6f}", f"{me[p][1]:.6f}",
                              "", f"origin {O[p][0]:.6f} ± {O[p][1]:.6f}; reuse {ru[p][0]:.6f}, "
                              f"median {ru[p][1]:.3f} s"])
@@ -183,34 +183,34 @@ def main():
                 d, se, t, _ = fase2.welch(me[a], me["P0"])
                 if a == "S36":
                     delta[(pol, v)] = (d, se)
-                print(f"  Δ_esa {a} − P0: {d:+.4f} ± {se:.4f}  (t {t:+.2f})")
+                print(f"  Δ_exh {a} − P0: {d:+.4f} ± {se:.4f}  (t {t:+.2f})")
                 rows.append([f"{pol}_{v}", f"delta_exh_{a}_P0", f"{d:.6f}", f"{se:.6f}", f"{t:.3f}",
                              ""])
             n_, se_, t_, df_ = fase2.welch(O["S36"], O["P0"])
             q = t_quantile(0.975, df_)
-            print(f"  netto S36 − P0: {n_:+.4f} ± {se_:.4f}  t {t_:+.2f}  IC95 "
+            print(f"  net S36 − P0: {n_:+.4f} ± {se_:.4f}  t {t_:+.2f}  IC95 "
                   f"[{n_ - q * se_:+.4f}, {n_ + q * se_:+.4f}]")
             rows.append([f"{pol}_{v}", "net_S36_P0", f"{n_:.6f}", f"{se_:.6f}", f"{t_:.3f}",
                          f"IC95 [{n_ - q * se_:.6f}, {n_ + q * se_:.6f}] df {df_:.3f}"])
             tm =(RATE["S36"] * me["S36"][0] - RATE["S12"] * me["S12"][0],
                   math.sqrt((RATE["S36"] * me["S36"][1]) ** 2 + (RATE["S12"] * me["S12"][1]) ** 2))
             dm, sm, tt, _ = fase2.welch(O["S36"], O["S12"])
-            print(f"  termine esaustivo di B2 (S12 -> S36): {tm[0]:+.4f} ± {tm[1]:.4f} req/s;  "
-                  f"m a 0,02: {dm / fase1.D_RATE:+.4f} ± {sm / fase1.D_RATE:.4f} "
+            print(f"  exhaustive term of B2 (S12 -> S36): {tm[0]:+.4f} ± {tm[1]:.4f} req/s;  "
+                  f"m at 0.02: {dm / fase1.D_RATE:+.4f} ± {sm / fase1.D_RATE:.4f} "
                   f"(t {tt:+.2f})")
             rows.append([f"{pol}_{v}", "B2_exh_term_S12_S36", f"{tm[0]:.6f}", f"{tm[1]:.6f}", "",
                          "req/s, rate configurati"])
             rows.append([f"{pol}_{v}", "m_0.02", f"{dm / fase1.D_RATE:.6f}",
                          f"{sm / fase1.D_RATE:.6f}", f"{tt:.3f}", ""])
-    print("\n==== Criterio (TRAV-OWN): |Δ_esa(S36 − P0)| < 3 SE -> artefatto; altrimenti effetto "
-          "della cache")
+    print("\n==== Criterion (TRAV-OWN): |Δ_exh(S36 − P0)| < 3 SE -> artefact; otherwise cache "
+          "effect")
     for pol in POLS:
         d, se = delta[(pol, "OWN")]
         dg, _ = delta[(pol, "GLOB")]
         art = abs(d) < 3 * se
         verdict = "ARTEFATTO DEL GENERATORE" if art else f"EFFETTO DELLA CACHE (segno {'+' if d > 0 else '−'})"
         print(f"  {pol}: Δ_OWN {d:+.4f} ± {se:.4f} (|Δ|/SE {abs(d) / se:.2f}); Δ_GLOB {dg:+.4f}; "
-              f"quota del calo che resta {d / dg:.3f}  ->  {verdict}")
+              f"share of the drop that remains {d / dg:.3f}  ->  {verdict}")
         rows.append(["criterio", f"{pol}", f"{d:.6f}", f"{se:.6f}", f"{abs(d) / se:.3f}",
                      f"delta_GLOB {dg:.6f}; ratio {d / dg:.6f}; {verdict}"])
     write("criteri.csv", cm, ["criterion", "quantity", "value", "se", "t", "note"], rows)

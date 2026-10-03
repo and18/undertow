@@ -1,12 +1,12 @@
 vcl 4.1;
 
-# Configurazione volutamente minima.
+# Deliberately minimal configuration.
 #
-# Ogni euristica aggiunta qui e' una variabile che andrebbe giustificata
-# nella metodologia. Il comportamento della cache deve dipendere SOLO
-# dagli header Cache-Control emessi dall'applicazione, cosi' che la
-# distinzione fra cacheable e non cacheable sia una proprieta' del
-# workload e non della configurazione.
+# Every heuristic added here is a variable that would have to be justified
+# in the methodology. The cache behaviour must depend ONLY on the
+# Cache-Control headers emitted by the application, so that the distinction
+# between cacheable and non-cacheable is a property of the workload and not
+# of the configuration.
 
 backend default {
     .host = "app";
@@ -14,15 +14,15 @@ backend default {
     .connect_timeout = 5s;
     .first_byte_timeout = 120s;
     .between_bytes_timeout = 30s;
-    # Il pool di connessioni verso l'origine e' esso stesso una risorsa
-    # limitata: alzarlo troppo maschera la saturazione a valle.
+    # The connection pool towards the origin is itself a limited resource:
+    # raising it too much masks saturation downstream.
     .max_connections = 200;
 }
 
 sub vcl_recv {
-    # Nessuna normalizzazione della chiave di cache: un URL diverso e'
-    # un oggetto diverso, che e' precisamente cio' che rende il traffico
-    # agentico distruttivo per la cache.
+    # No normalisation of the cache key: a different URL is a different
+    # object, which is precisely what makes agentic traffic destructive
+    # for the cache.
     if (req.method != "GET" && req.method != "HEAD") {
         return (pass);
     }
@@ -30,24 +30,23 @@ sub vcl_recv {
 }
 
 sub vcl_backend_response {
-    # TTL e sfratto derivano da Cache-Control dell'applicazione.
-    # Nessun default nascosto.
+    # TTL and eviction derive from the application's Cache-Control.
+    # No hidden defaults.
     if (beresp.http.Cache-Control ~ "no-store") {
         set beresp.uncacheable = true;
         set beresp.ttl = 0s;
         return (deliver);
     }
-    # Nessun grace, nessun keep: si vuole misurare il miss vero, non
-    # una risposta stantia che lo maschererebbe.
+    # No grace, no keep: we want to measure the true miss, not a stale
+    # response that would mask it.
     set beresp.grace = 0s;
     set beresp.keep = 0s;
     return (deliver);
 }
 
 sub vcl_deliver {
-    # Header diagnostico: permette al generatore di carico di
-    # registrare hit e miss per singola richiesta, non solo in
-    # aggregato dalle statistiche di Varnish.
+    # Diagnostic header: lets the load generator record hits and misses
+    # per request, not only in aggregate from Varnish's statistics.
     if (obj.hits > 0) {
         set resp.http.X-Cache = "HIT";
     } else {

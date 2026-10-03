@@ -1,58 +1,58 @@
 #!/usr/bin/env python3
 """
-honeypot_aggregate.py — tutti gli aggregati dell'honeypot usati nel paper, su una finestra
-temporale fissa [--from, --to) in UTC (claim C3, C5, C6; FIG-A3).
+honeypot_aggregate.py — all the honeypot aggregates used in the paper, over a fixed time
+window [--from, --to) in UTC (claim C3, C5, C6; FIG-A3).
 
-PERCHE'
-  honeypot_scope.py e honeypot_window.py leggono tutto quello che trovano nella cartella dei
-  log: con la rotazione, il periodo cambia a ogni lancio. Questo script fissa la finestra e
-  ricalcola gli stessi aggregati con la stessa logica, cosi' i numeri del paper si
-  riottengono da uno snapshot dei log.
+WHY
+  honeypot_scope.py and honeypot_window.py read everything they find in the log folder:
+  with rotation, the period changes at every launch. This script fixes the window and
+  recomputes the same aggregates with the same logic, so that the paper's numbers can be
+  obtained again from a snapshot of the logs.
 
-LOGICA RIUSATA (identica, salvo il filtro temporale)
-  classify(), bookchap(), field(), pct() da honeypot_scope.py; finestra scorrevole da
+REUSED LOGIC (identical, except the time filter)
+  classify(), bookchap(), field(), pct() from honeypot_scope.py; sliding window from
   honeypot_window.py.
-  C3  per ogni client con almeno --min-req richieste nella finestra del paper: massimo di URL
-      distinti in una finestra scorrevole di --window s (143 = T_C del banco); classe del
-      client = classe piu' frequente delle sue richieste. Per classe: client, mediana, media,
-      p90, max (pct: indice int(q*n) sui valori ordinati, come negli script originali).
-  C5  honeypot_scope.py, sezione 4: per ogni connessione (client, conn) con almeno 2
-      richieste, ordinate per conn_req, coppie consecutive che si mappano su (libro,
-      capitolo); contigua = stesso libro e |Δcapitolo| = 1, ripetuta = stesso libro e stesso
-      capitolo. Classe della connessione = classe dell'ultima richiesta letta (conn_meta).
-      Il denominatore sono COPPIE. Si riportano anche le connessioni che contribuiscono
-      almeno una coppia, i client distinti di quelle connessioni e tutte le connessioni
-      della classe.
-  C6  honeypot_scope.py, sezione 6: richiesta firmata se sig_agent o sig_input e' presente e
-      non vuoto; firmate / totali per classe della richiesta.
-  Totali: richieste nella finestra, client, connessioni; righe scartate e fuori finestra.
+  C3  for each client with at least --min-req requests in the paper's window: maximum of distinct
+      URLs in a sliding window of --window s (143 = T_C of the testbed); client class =
+      most frequent class of its requests. Per class: clients, median, mean,
+      p90, max (pct: index int(q*n) on the sorted values, as in the original scripts).
+  C5  honeypot_scope.py, section 4: for each connection (client, conn) with at least 2
+      requests, ordered by conn_req, consecutive pairs that map to (book,
+      chapter); contiguous = same book and |Δchapter| = 1, repeated = same book and same
+      chapter. Connection class = class of the last request read (conn_meta).
+      The denominator is PAIRS. Also reported are the connections that contribute
+      at least one pair, the distinct clients of those connections and all the connections
+      of the class.
+  C6  honeypot_scope.py, section 6: signed request if sig_agent or sig_input is present and
+      non-empty; signed / total per request class.
+  Totals: requests in the window, clients, connections; discarded and out-of-window lines.
 
-DIFFERENZE DAGLI SCRIPT ORIGINALI (solo queste)
-  1. Filtro sulla finestra [--from, --to) in UTC.
-  2. honeypot_window.epoch() ignorava il fuso orario del timestamp; qui il timestamp e' letto
-     con il suo offset e convertito in UTC, poi troncato al secondo come epoch(). I fusi
-     trovati sono stampati: se sono tutti +00:00, la differenza e' nulla.
-  3. Conseguenza del filtro: per C5/C6 le righe senza timestamp valido, che
-     honeypot_scope.py contava, qui sono escluse perche' non collocabili nella finestra;
-     il loro numero e' stampato e scritto nei totali (lines_without_valid_timestamp).
-  Selezione delle righe: C3 esattamente come honeypot_window.py (campi u, ip, ua, t letti
-  con r.get, riga tenuta se u, ip e t non sono vuoti); C5/C6 e totali esattamente come
-  honeypot_scope.py (field() con i nomi alternativi, riga tenuta se url e ip ci sono,
-  «GET /x HTTP/1.1» ridotto al percorso).
+DIFFERENCES FROM THE ORIGINAL SCRIPTS (only these)
+  1. Filter on the window [--from, --to) in UTC.
+  2. honeypot_window.epoch() ignored the time zone of the timestamp; here the timestamp is read
+     with its offset and converted to UTC, then truncated to the second as epoch(). The time zones
+     found are printed: if they are all +00:00, the difference is nil.
+  3. Consequence of the filter: for C5/C6 the lines without a valid timestamp, which
+     honeypot_scope.py counted, are excluded here because they cannot be placed in the window;
+     their number is printed and written in the totals (lines_without_valid_timestamp).
+  Row selection: C3 exactly as honeypot_window.py (fields u, ip, ua, t read
+  with r.get, row kept if u, ip and t are not empty); C5/C6 and totals exactly as
+  honeypot_scope.py (field() with the alternative names, row kept if url and ip are there,
+  «GET /x HTTP/1.1» reduced to the path).
 
 PRIVACY
-  L'IP serve solo come chiave di raggruppamento in memoria, attraverso un HMAC con una chiave
-  casuale nuova a ogni lancio: nessun IP, nessun hash, nessuna riga di log viene stampata o
-  scritta. Nei CSV ci sono solo conteggi e quantili per classe.
+  The IP is used only as an in-memory grouping key, through an HMAC with a random key
+  new at every launch: no IP, no hash, no log row is printed or
+  written. The CSVs hold only counts and quantiles per class.
 
-SCRIVE (data/derived/)
-  honeypot_totals.csv        quantita', valore
-  honeypot_window.csv        classe, client, mediana, media, p90, max       (C3)
-  honeypot_contiguity.csv    classe, coppie, contigue, ripetute, quote,
-                             connessioni con coppie, client, connessioni    (C5)
-  honeypot_signed.csv        classe, firmate, totali, quota                 (C6)
+WRITES (data/derived/)
+  honeypot_totals.csv        quantity, value
+  honeypot_window.csv        class, clients, median, mean, p90, max         (C3)
+  honeypot_contiguity.csv    class, pairs, contiguous, repeated, shares,
+                             connections with pairs, clients, connections   (C5)
+  honeypot_signed.csv        class, signed, total, share                    (C6)
 
-Uso:
+Usage:
     python3 tools/honeypot_aggregate.py --logs data/hplogs/snapshot-20260924 \\
         --from 2026-08-12T00:00:00+00:00 --to 2026-09-22T00:00:00+00:00
 """
@@ -78,15 +78,15 @@ CLS = ["agent", "training", "search", "other-bot", "browser", "unknown"]
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--logs", required=True, help="cartella dello snapshot dei log")
-    ap.add_argument("--from", dest="t0", required=True, help="inizio, ISO 8601 con fuso")
-    ap.add_argument("--to", dest="t1", required=True, help="fine esclusa, ISO 8601 con fuso")
-    ap.add_argument("--window", type=int, default=143, help="secondi; 143 = T_C del banco")
-    ap.add_argument("--min-req", type=int, default=5, help="come gli script originali")
+    ap.add_argument("--logs", required=True, help="folder of the log snapshot")
+    ap.add_argument("--from", dest="t0", required=True, help="start, ISO 8601 with time zone")
+    ap.add_argument("--to", dest="t1", required=True, help="end excluded, ISO 8601 with time zone")
+    ap.add_argument("--window", type=int, default=143, help="seconds; 143 = T_C of the testbed")
+    ap.add_argument("--min-req", type=int, default=5, help="as the original scripts")
     return ap.parse_args()
 
 
-# ---- da honeypot_scope.py, invariati --------------------------------------------------
+# ---- from honeypot_scope.py, unchanged ------------------------------------------------
 def lines(path):
     files = sorted(glob.glob(os.path.join(path, "*"))) if os.path.isdir(path) else [path]
     for f in files:
@@ -103,7 +103,7 @@ def lines(path):
                         except Exception:
                             pass
         except Exception as e:
-            print(f"  (salto {os.path.basename(f)}: {type(e).__name__})", file=sys.stderr)
+            print(f"  (skipping {os.path.basename(f)}: {type(e).__name__})", file=sys.stderr)
 
 
 def field(r, *names):
@@ -144,23 +144,23 @@ def pct(v, q):
 
 
 def to_utc(ts):
-    """Timestamp ISO 8601 -> (secondi UTC, fuso come scritto nel log)."""
+    """ISO 8601 timestamp -> (UTC seconds, time zone as written in the log)."""
     s = str(ts).strip()
     m = re.search(r"(Z|[+-]\d{2}:?\d{2})$", s)
-    tz = m.group(1) if m else "(nessuno)"
+    tz = m.group(1) if m else "(none)"
     try:
         d = datetime.fromisoformat(s.replace("Z", "+00:00"))
     except ValueError:
         return None, tz
     if d.tzinfo is None:
-        return None, tz          # senza fuso non si puo' collocare nella finestra
+        return None, tz          # without a time zone it cannot be placed in the window
     return d.astimezone(timezone.utc).timestamp(), tz
 
 
 def iso_bound(s):
     d = datetime.fromisoformat(s.replace("Z", "+00:00"))
     if d.tzinfo is None:
-        sys.exit(f"--from/--to senza fuso orario: {s}")
+        sys.exit(f"--from/--to without a time zone: {s}")
     return d.astimezone(timezone.utc).timestamp()
 
 
@@ -169,7 +169,7 @@ def write(name, header, rows):
         w = csv.writer(f, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
-    print(f"scritto data/derived/{name}")
+    print(f"written data/derived/{name}")
 
 
 def main():
@@ -179,20 +179,20 @@ def main():
     anon = lambda ip: hmac.new(key, str(ip).encode(), hashlib.sha256).digest()
 
     ev = defaultdict(list)                  # client -> [(t, url)]         C3
-    ccls = defaultdict(Counter)             # client -> classi delle richieste
+    ccls = defaultdict(Counter)             # client -> classes of the requests
     conns = defaultdict(list)               # (client, conn) -> [(n, url)]   C5
     conn_meta = {}
-    clients = set()                         # client delle righe di C5/C6 (come honeypot_scope)
-    signed = defaultdict(Counter)           # classe -> {True/False}        C6
+    clients = set()                         # clients of the C5/C6 rows (as honeypot_scope)
+    signed = defaultdict(Counter)           # class -> {True/False}        C6
     tzs, tzs_in = Counter(), Counter()
     n_lines = n_skip = n_nots = n_out = n_in = 0
     first = last = None
 
-    print(f"lettura di {A.logs} ...", file=sys.stderr)
+    print(f"reading {A.logs} ...", file=sys.stderr)
     for r in lines(A.logs):
         n_lines += 1
-        # C3: stessa selezione e stessi campi di honeypot_window.py (r.get di u, ip, ua, t;
-        # secondi interi come epoch(), che scartava le frazioni), ma in UTC
+        # C3: same selection and same fields as honeypot_window.py (r.get of u, ip, ua, t;
+        # whole seconds as epoch(), which discarded the fractions), but in UTC
         wu, wip, wts = r.get("u"), r.get("ip"), r.get("t")
         if wu and wip and wts:
             we, _ = to_utc(wts)
@@ -239,12 +239,12 @@ def main():
 
     del key
     iso = lambda e: datetime.fromtimestamp(e, timezone.utc).isoformat() if e else ""
-    print(f"\nrighe JSON lette {n_lines:,}; scartate senza url o ip {n_skip:,}; "
-          f"senza timestamp valido {n_nots:,}; fuori finestra {n_out:,}; nella finestra {n_in:,}")
-    print(f"prima e ultima richiesta nella finestra (UTC): {iso(first)} -> {iso(last)}")
-    print("fusi orari nei timestamp (tutte le righe con timestamp):")
+    print(f"\nJSON lines read {n_lines:,}; discarded without url or ip {n_skip:,}; "
+          f"without valid timestamp {n_nots:,}; outside window {n_out:,}; in the window {n_in:,}")
+    print(f"first and last request in the window (UTC): {iso(first)} -> {iso(last)}")
+    print("time zones in the timestamps (all rows with a timestamp):")
     for tz, n in tzs.most_common():
-        print(f"  {tz:10s} {n:,}   (nella finestra: {tzs_in.get(tz, 0):,})")
+        print(f"  {tz:10s} {n:,}   (in the window: {tzs_in.get(tz, 0):,})")
 
     # ---- C3 -------------------------------------------------------------------------
     W = A.window
@@ -263,14 +263,14 @@ def main():
             best = max(best, len(seen))
         peak[ccls[c].most_common(1)[0][0]].append(best)
     rows = []
-    print(f"\nC3 — URL distinti al picco in {W} s, client con almeno {A.min_req} richieste")
+    print(f"\nC3 — distinct URLs at the peak in {W} s, clients with at least {A.min_req} requests")
     for cl in CLS:
         P = peak.get(cl)
         if not P:
             continue
         row = [cl, len(P), pct(P, .5), f"{sum(P) / len(P):.1f}", pct(P, .9), max(P)]
         rows.append(row)
-        print("  {:10s} client {:>6,}  mediana {:>5}  media {:>7}  p90 {:>5}  max {:>5}".format(*row))
+        print("  {:10s} clients {:>6,}  median {:>5}  mean {:>7}  p90 {:>5}  max {:>5}".format(*row))
     write("honeypot_window.csv", ["class", "clients", "median", "mean", "p90", "max"], rows)
 
     # ---- C5 -------------------------------------------------------------------------
@@ -295,7 +295,7 @@ def main():
             conn_with_pairs[conn_meta[k]] += 1
             cli_with_pairs[conn_meta[k]].add(k[0])
     rows = []
-    print("\nC5 — contiguita' (honeypot_scope.py sez. 4; denominatore = coppie)")
+    print("\nC5 — contiguity (honeypot_scope.py sec. 4; denominator = pairs)")
     for cl in CLS:
         s = adj.get(cl)
         if not s or not s[2]:
@@ -303,8 +303,8 @@ def main():
         row = [cl, s[2], s[0], s[1], f"{100 * s[0] / s[2]:.2f}", f"{100 * s[1] / s[2]:.2f}",
                conn_with_pairs[cl], len(cli_with_pairs[cl]), conn_multi[cl], conn_all[cl]]
         rows.append(row)
-        print("  {:10s} coppie {:>7,}  contigue {:>6,}  ripetute {:>6,}  {:>6}%  {:>6}%  "
-              "conn. con coppie {:>6,}  client {:>5,}  conn. >=2 rich. {:>6,}  conn. {:>7,}"
+        print("  {:10s} pairs {:>7,}  contiguous {:>6,}  repeated {:>6,}  {:>6}%  {:>6}%  "
+              "conn. with pairs {:>6,}  clients {:>5,}  conn. >=2 req. {:>6,}  conn. {:>7,}"
               .format(*row))
     write("honeypot_contiguity.csv",
           ["class", "pairs", "contiguous", "repeated", "contiguous_pct", "repeated_pct",
@@ -313,7 +313,7 @@ def main():
 
     # ---- C6 -------------------------------------------------------------------------
     rows = []
-    print("\nC6 — richieste firmate (sig_agent o sig_input)")
+    print("\nC6 — signed requests (sig_agent or sig_input)")
     for cl in CLS:
         c = signed.get(cl)
         if not c:
@@ -323,7 +323,7 @@ def main():
     ts_ = sum(c[True] for c in signed.values()); tt = sum(sum(c.values()) for c in signed.values())
     rows.append(["total", ts_, tt, f"{100 * ts_ / tt:.2f}" if tt else ""])
     for row in rows:
-        print("  {:10s} firmate {:>8,}  totali {:>8,}  {:>6}%".format(*row))
+        print("  {:10s} signed {:>8,}  total {:>8,}  {:>6}%".format(*row))
     write("honeypot_signed.csv", ["class", "signed", "requests", "signed_pct"], rows)
 
     # ---- totali ---------------------------------------------------------------------
@@ -335,7 +335,7 @@ def main():
             ["window_s", W], ["min_requests_per_client", A.min_req]]
     for cl in CLS:
         rows.append([f"requests_{cl}", sum(signed[cl].values())])
-    print(f"\ntotali: richieste {n_in:,}  client {len(clients):,}  connessioni {len(conns):,}")
+    print(f"\ntotals: requests {n_in:,}  clients {len(clients):,}  connections {len(conns):,}")
     write("honeypot_totals.csv", ["quantity", "value"], rows)
 
 

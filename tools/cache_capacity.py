@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-cache_capacity.py — ricostruisce C2 (capienza della cache in oggetti) da fonte rintracciabile.
+cache_capacity.py — rebuilds C2 (cache capacity in objects) from a traceable source.
 
-Il valore di C2 (5 274 oggetti) era annotato solo in docs/decisions.md §30, dall'output
-di harness/load/capacity.sh, mai archiviato. Qui lo si rilegge da VictoriaMetrics, dove
-varnish-exporter lo ha registrato durante le campagne: per i due run a scope 0,20
-(insieme agentico 1,93x la capienza, quindi cache satura), per ogni ripetizione si
-prende la finestra di misura [ts - measure, ts] e si interrogano
-  varnish_main_n_object            oggetti in cache (min, media, max nella finestra)
-  varnish_sma_s0_g_bytes / g_space byte occupati e liberi dello storage s0 (media;
-                                   transient e' uno storage separato, escluso)
-  varnish_main_n_lru_nuked         evizioni LRU nella finestra (prova di saturazione)
-Scrive data/derived/cache_capacity.csv (una riga per ripetizione) e stampa la media.
+The value of C2 (5,274 objects) was only noted in docs/decisions.md §30, from the output
+of harness/load/capacity.sh, never archived. Here it is re-read from VictoriaMetrics, where
+varnish-exporter recorded it during the campaigns: for the two runs at scope 0.20
+(agentic set 1.93x the capacity, hence a saturated cache), for each repetition the
+measurement window [ts - measure, ts] is taken and the following are queried
+  varnish_main_n_object            objects in cache (min, mean, max in the window)
+  varnish_sma_s0_g_bytes / g_space bytes used and free of storage s0 (mean;
+                                   transient is a separate storage, excluded)
+  varnish_main_n_lru_nuked         LRU evictions in the window (proof of saturation)
+Writes data/derived/cache_capacity.csv (one row per repetition) and prints the mean.
 
-Il lab resta in sola lettura: points.csv via `ssh lab cat`, VictoriaMetrics via il
-tunnel aperto da chi lancia lo script.
+The lab stays read-only: points.csv via `ssh lab cat`, VictoriaMetrics via the
+tunnel opened by whoever launches the script.
 
-Uso:
+Usage:
     ssh lab 'cd ~/undertow/harness && docker compose up -d victoriametrics'
-    ssh -N -L 8428:localhost:8428 lab &   # tunnel in background
+    ssh -N -L 8428:localhost:8428 lab &   # tunnel in the background
     python3 tools/cache_capacity.py
     kill %1
     ssh lab 'cd ~/undertow/harness && docker compose stop victoriametrics'
@@ -35,7 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_CSV = ROOT / "data" / "derived" / "cache_capacity.csv"
-RUNS = ["tre-20260922-002958", "tre-20260922-015010"]      # scope 0,20
+RUNS = ["tre-20260922-002958", "tre-20260922-015010"]      # scope 0.20
 VM_URL = "http://localhost:8428/api/v1/query"
 QUERIES = {
     "n_object_min": "min_over_time(varnish_main_n_object[{d}s])",
@@ -58,9 +58,9 @@ def query(q, end_ts):
     with urllib.request.urlopen(url, timeout=10) as resp:
         result = json.load(resp).get("data", {}).get("result", [])
     if not result:
-        raise RuntimeError(f"nessun risultato da VictoriaMetrics per time={end_ts} (query: {q})")
+        raise RuntimeError(f"no result from VictoriaMetrics for time={end_ts} (query: {q})")
     if len(result) > 1:
-        raise RuntimeError(f"{len(result)} serie per {q}: attese una")
+        raise RuntimeError(f"{len(result)} series for {q}: expected one")
     return float(result[0]["value"][1])
 
 
@@ -74,7 +74,7 @@ def main():
             rows.append({"run": run, "rep": p["rep"], "ts": p["ts"], "measure": d, **v})
             print(f"  {run} rep {p['rep']}  n_object min/avg/max {v['n_object_min']:.0f} / "
                   f"{v['n_object_avg']:.1f} / {v['n_object_max']:.0f}  "
-                  f"usati {v['bytes_used']:.0f} B  liberi {v['bytes_free']:.0f} B  "
+                  f"used {v['bytes_used']:.0f} B  free {v['bytes_free']:.0f} B  "
                   f"lru_nuked {v['lru_nuked']:.0f}")
 
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
@@ -84,17 +84,17 @@ def main():
         w.writeheader()
         for r in rows:
             w.writerow({k: (f"{r[k]:.1f}" if isinstance(r[k], float) else r[k]) for k in cols})
-    print(f"scritto {OUT_CSV}")
+    print(f"written {OUT_CSV}")
 
     avg = [r["n_object_avg"] for r in rows]
     cap = statistics.fmean(avg)
     se = statistics.stdev(avg) / len(avg) ** 0.5
     used = statistics.fmean(r["bytes_used"] for r in rows)
     free = statistics.fmean(r["bytes_free"] for r in rows)
-    print(f"\ncapienza (media delle {len(rows)} finestre): {cap:.1f} +/- {se:.1f} oggetti   "
+    print(f"\ncapacity (mean of the {len(rows)} windows): {cap:.1f} +/- {se:.1f} objects   "
           f"min {min(r['n_object_min'] for r in rows):.0f}  max {max(r['n_object_max'] for r in rows):.0f}")
-    print(f"byte occupati {used:.0f}  liberi {free:.0f}  oggetto medio {used / cap / 1024:.2f} KiB")
-    print(f"scostamento da 5 274: {100 * (cap - 5274) / 5274:+.2f}%")
+    print(f"bytes used {used:.0f}  free {free:.0f}  average object {used / cap / 1024:.2f} KiB")
+    print(f"deviation from 5,274: {100 * (cap - 5274) / 5274:+.2f}%")
 
 
 if __name__ == "__main__":

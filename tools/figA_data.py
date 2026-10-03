@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 """
-figA_data.py — genera i CSV di FIG-A1 e FIG-A2 (prima scritti a mano).
+figA_data.py — generates the CSVs of FIG-A1 and FIG-A2 (previously written by hand).
 
-Dai points.csv dei sei run dello sweep AGENT_SCOPE (stessi run di FIG-01, via
-scope_ttest.py) e con la stessa capienza di fig01_data.py (media di n_object_avg in
+From the points.csv of the six AGENT_SCOPE sweep runs (same runs as FIG-01, via
+scope_ttest.py) and with the same capacity as fig01_data.py (mean of n_object_avg in
 data/derived/cache_capacity.csv):
 
-  data/derived/figA1_human_externality.csv   (claim B5) — run a quota 30%:
-      human_p99_ms / _se   media e SE di p99_zipf sulle ripetizioni
-      human_hit            media di h_zipf
-      origin_rps / _se     media e SE di origin_rps
+  data/derived/figA1_human_externality.csv   (claim B5) — runs at 30% share:
+      human_p99_ms / _se   mean and SE of p99_zipf over the repetitions
+      human_hit            mean of h_zipf
+      origin_rps / _se     mean and SE of origin_rps
 
   data/derived/figA2_elasticity_model.csv    (claim B3, B4):
-      observed             elasticita' del miss agentico = media(1 - h_agent) a quota 13%
-                           / media(1 - h_agent) a quota 30% (rapporto delle medie)
-      prior, tolerance     previsione scritta prima dei primi risultati a scope 0,06 e 0,20
-                           (docs/PREREGISTRAZIONE-scopesweep.md, tabella righe 61-62,
-                           tolleranza riga 65): costanti copiate, non misure
-      posthoc_realdist     ricalcolo a posteriori con la distribuzione reale del generatore
-                           (docs/RISULTATO-scopesweep.md, righe 33-35): costanti copiate
+      observed             elasticity of the agentic miss = mean(1 - h_agent) at 13% share
+                           / mean(1 - h_agent) at 30% share (ratio of the means)
+      prior, tolerance     prediction written before the first results at scope 0.06 and 0.20
+                           (docs/PREREGISTRAZIONE-scopesweep.md, table lines 61-62,
+                           tolerance line 65): copied constants, not measurements
+      posthoc_realdist     post hoc recomputation with the generator's real distribution
+                           (docs/RISULTATO-scopesweep.md, lines 33-35): copied constants
 
-Run: quelli primari di scope_ttest.RUNS (TRAV_MODE=scen, claims v3.8), scritti nelle colonne
-run (A1) e run_lo / run_hi (A2); W_over_capacity con i capitoli distinti del reachable set
+Runs: the primary ones of scope_ttest.RUNS (TRAV_MODE=scen, claims v3.8), written in the columns
+run (A1) and run_lo / run_hi (A2); W_over_capacity with the distinct chapters of the reachable set
 (scope_ttest.reachable).
 
-Il lab resta in sola lettura: solo `ssh lab cat`.
+The lab stays read-only: only `ssh lab cat`.
 
-Uso:
+Usage:
     python3 tools/figA_data.py
 """
 import csv
@@ -54,7 +54,7 @@ MODEL = {
 def points(run):
     rows = list(csv.DictReader(st.lab_cat(run, "points.csv").splitlines()))
     if not rows:
-        sys.exit(f"points.csv vuoto: {run}")
+        sys.exit(f"points.csv empty: {run}")
     return rows
 
 
@@ -80,9 +80,9 @@ def main():
         miss_hi = statistics.fmean(1 - float(r["h_agent"]) for r in hi)
         obs = miss_lo / miss_hi
         a2.append([scope, ratio, f"{obs:.4f}", *MODEL[scope], lo_id, hi_id])
-        print(f"  scope {scope}: W/cap {ratio}  p99 umano {p99:.3f} +/- {p99_se:.3f}  "
-              f"hit umano {hit:.4f}  origin {org:.4f} +/- {org_se:.4f}  "
-              f"miss agentico {miss_lo:.4f} -> {miss_hi:.4f}  elasticita' {obs:.4f}")
+        print(f"  scope {scope}: W/cap {ratio}  human p99 {p99:.3f} +/- {p99_se:.3f}  "
+              f"human hit {hit:.4f}  origin {org:.4f} +/- {org_se:.4f}  "
+              f"agentic miss {miss_lo:.4f} -> {miss_hi:.4f}  elasticity {obs:.4f}")
     for path, header, rows in (
         (OUT_A1, ["scope", "W_over_capacity", "human_p99_ms", "human_p99_se", "human_hit",
                   "origin_rps", "origin_se", "run"], a1),
@@ -93,8 +93,8 @@ def main():
             wr = csv.writer(f, lineterminator="\n")
             wr.writerow(header)
             wr.writerows(rows)
-        print(f"scritto {path}")
-    print(f"capienza usata: {cap:.1f} oggetti")
+        print(f"written {path}")
+    print(f"capacity used: {cap:.1f} objects")
 
 
 if __name__ == "__main__":

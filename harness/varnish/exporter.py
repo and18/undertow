@@ -1,10 +1,10 @@
 """
-exporter.py - Espone le statistiche di Varnish in formato Prometheus.
+exporter.py - Exposes Varnish statistics in Prometheus format.
 
-Sostituisce un exporter di terze parti: varnishstat -j fornisce gia'
-tutti i contatori, e la conversione e' banale. Meno dipendenze esterne
-significa meno cose che possono rompersi o sparire fra due anni, il che
-conta in un lavoro che deve restare riproducibile.
+Replaces a third-party exporter: varnishstat -j already provides
+all the counters, and the conversion is trivial. Fewer external dependencies
+means fewer things that can break or vanish in two years, which
+matters in a work that must remain reproducible.
 """
 
 import json

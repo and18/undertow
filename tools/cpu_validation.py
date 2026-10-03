@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-cpu_validation.py — ricostruisce C1 da fonte rintracciabile.
+cpu_validation.py — rebuilds C1 from a traceable source.
 
-Per le 5 politiche della frontiera del 19 settembre (A, B, C, D4, D6):
-legge i punti.csv dei run gia' usati in FIG-03/FIG-05, per ogni ripetizione
-prende la finestra di misura [ts - measure, ts] e interroga VictoriaMetrics
-sul lab (via tunnel SSH su localhost:8428) per la CPU media in core di
-PostgreSQL (node_cpu_seconds_total{cpu=~"3|4|5",mode!="idle"}, core 3-5,
-vedi harness/.env: CPUSET_DB=3,4,5, CPUSET_APP=2 — i default "3,4"/"5" di
-harness/docker-compose.yml non sono quelli in uso sul lab). Media le
-ripetizioni per politica e scrive data/derived/fig06_cpu_validation.csv.
+For the 5 frontier policies of 19 September (A, B, C, D4, D6):
+reads the points.csv of the runs already used in FIG-03/FIG-05, for each repetition
+takes the measurement window [ts - measure, ts] and queries VictoriaMetrics
+on the lab (via SSH tunnel on localhost:8428) for the mean CPU in cores of
+PostgreSQL (node_cpu_seconds_total{cpu=~"3|4|5",mode!="idle"}, cores 3-5,
+see harness/.env: CPUSET_DB=3,4,5, CPUSET_APP=2 — the defaults "3,4"/"5" of
+harness/docker-compose.yml are not the ones in use on the lab). Averages the
+repetitions per policy and writes data/derived/fig06_cpu_validation.csv.
 
-Il lab resta in sola lettura: questo script legge points.csv via `ssh lab
-cat ...` e interroga VictoriaMetrics via il tunnel gia' aperto da chi lo
-lancia. Non avvia, non ferma e non modifica nulla sul lab.
+The lab stays read-only: this script reads points.csv via `ssh lab
+cat ...` and queries VictoriaMetrics through the tunnel already opened by whoever
+launches it. It starts, stops and modifies nothing on the lab.
 
-Uso:
+Usage:
     ssh lab 'cd ~/undertow/harness && docker compose up -d victoriametrics'
-    ssh -N -L 8428:localhost:8428 lab &   # tunnel in background
+    ssh -N -L 8428:localhost:8428 lab &   # tunnel in the background
     python3 tools/cpu_validation.py
-    kill %1                                # chiude il tunnel
+    kill %1                                # closes the tunnel
     ssh lab 'cd ~/undertow/harness && docker compose stop victoriametrics'
 """
 import csv
@@ -61,7 +61,7 @@ def query_cpu_cores(end_ts, duration_s):
         payload = json.load(resp)
     result = payload.get("data", {}).get("result", [])
     if not result:
-        raise RuntimeError(f"nessun risultato da VictoriaMetrics per time={end_ts} dur={duration_s}s "
+        raise RuntimeError(f"no result from VictoriaMetrics for time={end_ts} dur={duration_s}s "
                             f"(query: {q})")
     cpu_seconds = float(result[0]["value"][1])
     return cpu_seconds / duration_s
@@ -86,7 +86,7 @@ def main():
     for policy, run in RUNS.items():
         pts = fetch_points_csv(run)
         if not pts:
-            sys.exit(f"points.csv vuoto per {policy} ({run})")
+            sys.exit(f"points.csv empty for {policy} ({run})")
         origin_vals = []
         cpu_vals = []
         for row in pts:
@@ -110,16 +110,16 @@ def main():
         w.writerow(["policy", "origin_rps", "cpu_cores", "reps"])
         for policy, origin_mean, cpu_mean, reps in rows_out:
             w.writerow([policy, f"{origin_mean:.4f}", f"{cpu_mean:.6f}", reps])
-    print(f"scritto {OUT_CSV}")
+    print(f"written {OUT_CSV}")
 
     xs = [r[1] for r in rows_out]
     ys = [r[2] for r in rows_out]
     a, b, r2, resid = _fit(xs, ys)
     max_resid = max(abs(r) for r in resid)
     print(f"\nfit: CPU = {a:.6f} + {b:.6f} x origin_rps   R^2 = {r2:.6f}   "
-          f"residuo max = {max_resid:.2f}%")
+          f"max residual = {max_resid:.2f}%")
     for (policy, x, y, _reps), e in zip(rows_out, resid):
-        print(f"  {policy}: origin_rps={x:.3f} cpu_cores={y:.4f} residuo={e:+.2f}%")
+        print(f"  {policy}: origin_rps={x:.3f} cpu_cores={y:.4f} residual={e:+.2f}%")
 
 
 if __name__ == "__main__":

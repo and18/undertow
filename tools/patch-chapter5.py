@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-patch-chapter5.py - Correzioni fattuali al Capitolo 5. VERSIONE 2.
+patch-chapter5.py - Factual corrections to Chapter 5. VERSION 2.
 
-La v1 falliva su un'ancora: la bibliografia usa "535–542" con en dash, non
-con trattino. Stesso problema in 5.10, che usa un em dash. Corretti entrambi.
+v1 failed on an anchor: the bibliography uses "535–542" with an en dash, not
+with a hyphen. Same problem in 5.10, which uses an em dash. Both corrected.
 
-PERCHE' UN PATCH E NON UNA RISCRITTURA
-  Il capitolo e' passato per un audit il 17 settembre e ogni affermazione
-  quantitativa porta fonte, denominatore e finestra. Riscriverlo per intero
-  significherebbe rimettere in gioco mille righe verificate per cambiarne
-  sette. La revisione STRUTTURALE si fa nella fase di scrittura.
+WHY A PATCH AND NOT A REWRITE
+  The chapter went through an audit on 17 September and every quantitative
+  statement carries source, denominator and window. Rewriting it entirely
+  would put a thousand verified lines back in play to change
+  seven. The STRUCTURAL revision is done in the writing phase.
 
-Ogni sostituzione e' ancorata: se un'ancora non si trova, non scrive nulla.
+Every replacement is anchored: if an anchor is not found, nothing is written.
 
-Uso:  cd ~/undertow && python3 tools/patch-chapter5.py
+Usage:  cd ~/undertow && python3 tools/patch-chapter5.py
 """
 import sys, os
 
@@ -22,10 +22,10 @@ EM = "\u2014"
 
 P = "docs/chapter5-where-the-web-is-going.md"
 if not os.path.exists(P):
-    sys.exit(f"{P} non trovato: esegui dalla radice del repo (~/undertow)")
+    sys.exit(f"{P} not found: run from the repo root (~/undertow)")
 s = open(P, encoding="utf-8").read()
 if "5.3.5" in s:
-    sys.exit("patch gia' applicata (5.3.5 presente)")
+    sys.exit("patch already applied (5.3.5 present)")
 
 E = []
 
@@ -183,16 +183,16 @@ E.append((
 
 for old, new in E:
     if old not in s:
-        sys.exit("ANCORA NON TROVATA, niente scritto. Attesa:\n---\n" + old[:200] + "\n---")
+        sys.exit("ANCHOR NOT FOUND, nothing written. Expected:\n---\n" + old[:200] + "\n---")
     s = s.replace(old, new, 1)
 
 open(P, "w", encoding="utf-8").write(s)
-print(f"{P}: {len(E)} correzioni applicate\n")
-print("NON corretto, e va deciso nella fase di scrittura:")
-print("  - la tabella 5.3.2 usa un classificatore a 8 categorie su 443.232 richieste")
-print("    in 36 giorni; le analisi del 21-22 settembre ne usano 6 su 520.038 in 41.")
-print("    NON sono confrontabili e non le ho fuse.")
-print("  - 5.3.3 riporta GPTBot a 20,4 richieste per connessione; decisions.md 17")
-print("    dice 217. Le due cifre vanno riconciliate o distinte (media contro massimo).")
-print("  - la collocazione del capitolo: cosi' com'e' e' prospettico e precede i")
-print("    risultati.")
+print(f"{P}: {len(E)} corrections applied\n")
+print("NOT corrected, and to be decided in the writing phase:")
+print("  - table 5.3.2 uses an 8-category classifier on 443,232 requests")
+print("    over 36 days; the analyses of 21-22 September use 6 on 520,038 over 41.")
+print("    They are NOT comparable and I did not merge them.")
+print("  - 5.3.3 reports GPTBot at 20.4 requests per connection; decisions.md 17")
+print("    says 217. The two figures must be reconciled or distinguished (mean against maximum).")
+print("  - the placement of the chapter: as it stands it is prospective and precedes the")
+print("    results.")

@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-net_agentic.py — netto 0 -> 36 req/s agentici a scope 0,02 (riga A9 di claims.md).
+net_agentic.py — net 0 -> 36 agentic req/s at scope 0.02 (row A9 of claims.md).
 
-Confronta il run senza classe agentica (tre-20260920-102015, beta = 0) con il run a
-quota agentica 30% (tre-20260921-162248, beta*lambda = 36), mappatura separata,
-5 ripetizioni ciascuno. Per ogni ripetizione:
-  - origin_rps da points.csv;
-  - rate MISURATO di ogni classe dal JSON di k6 della ripetizione
-    (m-a<alpha>-b<beta>-<rep>.json): (ut_hit_<classe> + ut_miss_<classe>) / measure,
-    la stessa normalizzazione di origin_rps in treclassi.sh; lambda misurato = somma.
-Poi: netto = media(origin_hi) - media(origin_0), SE combinato, t di Welch, gradi di
-liberta' di Welch-Satterthwaite, IC 95% con il quantile t di Student.
+Compares the run without the agentic class (tre-20260920-102015, beta = 0) with the run at
+agentic share 30% (tre-20260921-162248, beta*lambda = 36), separate mapping,
+5 repetitions each. For each repetition:
+  - origin_rps from points.csv;
+  - MEASURED rate of each class from the k6 JSON of the repetition
+    (m-a<alpha>-b<beta>-<rep>.json): (ut_hit_<class> + ut_miss_<class>) / measure,
+    the same normalisation as origin_rps in treclassi.sh; measured lambda = sum.
+Then: net = mean(origin_hi) - mean(origin_0), combined SE, Welch t, Welch-Satterthwaite
+degrees of freedom, 95% CI with the Student t quantile.
 
-Serve perche' il run a beta = 0 e' del 20 settembre, anteriore a env.txt: lambda e i
-rate per classe non sono registrati nella configurazione e vanno ricostruiti dalle
-richieste effettivamente generate.
+It is needed because the run at beta = 0 is from 20 September, before env.txt: lambda and the
+per-class rates are not recorded in the configuration and must be rebuilt from the
+requests actually generated.
 
-Il lab resta in sola lettura: solo `ssh lab cat`.
+The lab stays read-only: only `ssh lab cat`.
 
-Uso:
+Usage:
     python3 tools/net_agentic.py
 """
 import csv
@@ -42,7 +42,7 @@ def lab_cat(run, name):
 def read_run(run):
     rows = list(csv.DictReader(lab_cat(run, "points.csv").splitlines()))
     if not rows:
-        sys.exit(f"points.csv vuoto: {run}")
+        sys.exit(f"points.csv empty: {run}")
     reps = []
     for r in rows:
         name = f"m-a{r['alpha']}-b{r['beta']}-{r['rep']}.json"
@@ -59,7 +59,7 @@ def read_run(run):
     return reps
 
 
-# ── t di Student senza scipy: CDF via funzione beta incompleta regolarizzata ──
+# ── Student's t without scipy: CDF via regularised incomplete beta function ──
 def _betacf(a, b, x):
     qab, qap, qam = a + b, a + 1, a - 1
     c, d = 1.0, 1 - qab * x / qap
@@ -111,19 +111,19 @@ def t_quantile(q, df):
 def summary(reps, label):
     for r in reps:
         print(f"  rep {r['rep']}  alpha={r['alpha']} beta={r['beta']} measure={r['measure']:.0f}s  "
-              f"umana {r['human']:.3f}  esaustiva {r['exhaustive']:.3f}  agentica {r['agentic']:.3f}  "
+              f"human {r['human']:.3f}  exhaustive {r['exhaustive']:.3f}  agentic {r['agentic']:.3f}  "
               f"lambda {r['lambda']:.3f}  origin {r['origin']:.2f}")
     for k in ("human", "exhaustive", "agentic", "lambda"):
         v = [r[k] for r in reps]
-        print(f"  {label} media {k:10s} {statistics.fmean(v):8.3f} req/s  "
+        print(f"  {label} mean {k:10s} {statistics.fmean(v):8.3f} req/s  "
               f"(min {min(v):.3f}, max {max(v):.3f})")
 
 
 def main():
     zero, hi = read_run(RUN_ZERO), read_run(RUN_HI)
-    print(f"== {RUN_ZERO} (agentica a 0)")
+    print(f"== {RUN_ZERO} (agentic at 0)")
     summary(zero, "0 ")
-    print(f"\n== {RUN_HI} (agentica a 36)")
+    print(f"\n== {RUN_HI} (agentic at 36)")
     summary(hi, "36")
 
     o0 = [r["origin"] for r in zero]
@@ -137,12 +137,12 @@ def main():
     df = (v0 + v1) ** 2 / (v0 ** 2 / (n0 - 1) + v1 ** 2 / (n1 - 1))
     q = t_quantile(0.975, df)
     p_two = 2 * (1 - t_cdf(abs(t), df))
-    print("\n== netto 0 -> 36 req/s agentici (origin req/s)")
-    print(f"  origin a 0 : {m0:.4f} +/- {math.sqrt(v0):.4f}  (n = {n0})")
-    print(f"  origin a 36: {m1:.4f} +/- {math.sqrt(v1):.4f}  (n = {n1})")
-    print(f"  netto      : {net:+.4f} +/- {se:.4f}")
-    print(f"  t di Welch : {t:+.3f}   df = {df:.2f}   p bilaterale = {p_two:.4f}")
-    print(f"  IC 95%     : [{net - q * se:+.4f}, {net + q * se:+.4f}]   (t_0.975 = {q:.4f})")
+    print("\n== net 0 -> 36 agentic req/s (origin req/s)")
+    print(f"  origin at 0 : {m0:.4f} +/- {math.sqrt(v0):.4f}  (n = {n0})")
+    print(f"  origin at 36: {m1:.4f} +/- {math.sqrt(v1):.4f}  (n = {n1})")
+    print(f"  net        : {net:+.4f} +/- {se:.4f}")
+    print(f"  Welch t    : {t:+.3f}   df = {df:.2f}   two-sided p = {p_two:.4f}")
+    print(f"  95% CI     : [{net - q * se:+.4f}, {net + q * se:+.4f}]   (t_0.975 = {q:.4f})")
 
 
 if __name__ == "__main__":

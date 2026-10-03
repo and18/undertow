@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-test_policies.py — cancello K della fase 2 (docs/PREREG-simulatore-fase2.md, «Collaudo prima
-dell'uso», con l'emendamento 1). Committato prima di qualunque traccia della fase 2.
+test_policies.py — gate K of phase 2 (docs/PREREG-simulatore-fase2.md, «Collaudo prima
+dell'uso», with amendment 1). Committed before any trace of phase 2.
 
-1. Tracce piccole, oggetti di dimensione 1 (H = 0), capienza 3 o 4: la sequenza hit/miss
-   attesa e' derivata a mano (commento accanto a ogni passo) e scritta qui prima di eseguire.
-   Per W-TinyLFU con capienza 4 la finestra (1% = 0 byte) e' vuota: ogni oggetto la salta ed
-   e' subito candidato (Algoritmo 1, righe 6-7); si collauda l'ammissione.
-2. Invarianti su tracce casuali di 10 000 richieste con le dimensioni reali
+1. Small traces, objects of size 1 (H = 0), capacity 3 or 4: the expected hit/miss sequence
+   is derived by hand (comment next to each step) and written here before running.
+   For W-TinyLFU with capacity 4 the window (1% = 0 bytes) is empty: every object skips it and
+   is immediately a candidate (Algorithm 1, lines 6-7); the admission is tested.
+2. Invariants on random traces of 10,000 requests with the real sizes
    (data/derived/chapter_sizes.csv).
 
-Uso:  python3 tools/sim/test_policies.py      (esce con codice 1 se un test non passa)
+Usage:  python3 tools/sim/test_policies.py      (exits with code 1 if a test fails)
 """
 import random
 import sys
@@ -28,7 +28,7 @@ def run(cache, trace):
 
 def check(name, got, want):
     ok = got == want
-    print(f"  {'PASSA' if ok else 'NON PASSA'}  {name}: atteso {want}  ottenuto {got}")
+    print(f"  {'PASSA' if ok else 'NON PASSA'}  {name}: expected {want}  obtained {got}")
     if not ok:
         FAIL.append(name)
 
@@ -54,70 +54,70 @@ def contents(cache):
 
 
 def small():
-    print("== 1. tracce piccole, sequenze derivate a mano")
+    print("== 1. small traces, sequences derived by hand")
 
-    # LRU, capienza 3. A B C | A hit (B C A) | D sfratta B | B sfratta C | E sfratta A | A sfratta D
+    # LRU, capacity 3. A B C | A hit (B C A) | D evicts B | B evicts C | E evicts A | A evicts D
     c = LRU(unit("ABCDE"), 0, 3)
-    check("LRU canonica", run(c, "ABCADBEA"), "MMMHMMMM")
+    check("LRU canonical", run(c, "ABCADBEA"), "MMMHMMMM")
 
-    # SIEVE, capienza 3. [C B A]; A hit (A.v=1). D: lancetta dalla coda: A visitato -> A.v=0,
-    # avanza a B; B non visitato -> sfrattato, lancetta su C. [D C A]. B: C sfrattato, lancetta
-    # su D. [B D A]. E: D sfrattato, lancetta su B. [E B A]. A hit (A.v=1). B hit, E hit.
-    # F: B visitato -> 0, E visitato -> 0, testa superata -> ritorno alla coda: A visitato -> 0,
-    # B non visitato -> sfrattato, lancetta su E. [F E A]. G: E sfrattato. [G F A]. A hit.
+    # SIEVE, capacity 3. [C B A]; A hit (A.v=1). D: hand from the tail: A visited -> A.v=0,
+    # moves on to B; B not visited -> evicted, hand on C. [D C A]. B: C evicted, hand
+    # on D. [B D A]. E: D evicted, hand on B. [E B A]. A hit (A.v=1). B hit, E hit.
+    # F: B visited -> 0, E visited -> 0, head passed -> back to the tail: A visited -> 0,
+    # B not visited -> evicted, hand on E. [F E A]. G: E evicted. [G F A]. A hit.
     c = SIEVE(unit("ABCDEFG"), 0, 3)
-    check("SIEVE lancetta e ritorno alla coda", run(c, "ABCADBEABEFGA"), "MMMHMMMHHHMMH")
+    check("SIEVE hand and return to the tail", run(c, "ABCADBEABEFGA"), "MMMHMMMHHHMMH")
 
-    # S3-FIFO, capienza 4 (S >= 0,4 -> si sfratta da S se S non e' vuota).
-    # A A A: fA=2. B C D: S=[A B C D]. E: cache piena, sfratto da S: A (f=2) -> M con f=0;
-    # B (f=0) -> G; S=[C D], poi E -> S=[C D E]. Oggetto visto una volta (B) esce senza M.
+    # S3-FIFO, capacity 4 (S >= 0.4 -> evict from S if S is not empty).
+    # A A A: fA=2. B C D: S=[A B C D]. E: cache full, evict from S: A (f=2) -> M with f=0;
+    # B (f=0) -> G; S=[C D], then E -> S=[C D E]. An object seen once (B) leaves without M.
     c = S3FIFO(unit("ABCDE"), 0, 4)
-    check("S3-FIFO visto una volta -> G, f>1 -> M", run(c, "AAABCDE"), "MHHMMMM")
-    check("S3-FIFO stato: M=[A] S=[C D E] G=[B]",
+    check("S3-FIFO seen once -> G, f>1 -> M", run(c, "AAABCDE"), "MHHMMMM")
+    check("S3-FIFO state: M=[A] S=[C D E] G=[B]",
           (list(c.M), list(c.S), list(c.G)), (["A"], ["C", "D", "E"], ["B"]))
 
     # A A A B B B: fA=fB=2, S=[A B]. C D: S=[A B C D]. E: A -> M, B -> M, C -> G; S=[D E].
-    # F: D -> G (G=[C D]); S=[E F]. D (in G): E -> G, G oltre |M|=2 -> esce C: G=[D E];
-    # D ritorna dal fantasma direttamente in M: M=[A B D], G=[E], S=[F].
+    # F: D -> G (G=[C D]); S=[E F]. D (in G): E -> G, G beyond |M|=2 -> C leaves: G=[D E];
+    # D returns from the ghost directly into M: M=[A B D], G=[E], S=[F].
     # A hit (fA=1). E (in G): F -> G=[E F]; E in M: M=[A B D E], G=[F], S=[].
-    # X: S vuota -> sfratto da M: A (f=1) reinserito in testa con f=0; B (f=0) sfrattato;
-    # S=[X]. A hit (sopravvissuto), B miss.
+    # X: S empty -> evict from M: A (f=1) reinserted at the head with f=0; B (f=0) evicted;
+    # S=[X]. A hit (survived), B miss.
     c = S3FIFO(unit("ABCDEFX"), 0, 4)
     got = run(c, "AAABBBCDEFD")
-    check("S3-FIFO ritorno dal fantasma in M", got, "MHHMHHMMMMM")
-    check("S3-FIFO stato: M=[A B D] S=[F] G=[E]",
+    check("S3-FIFO return from the ghost into M", got, "MHHMHHMMMMM")
+    check("S3-FIFO state: M=[A B D] S=[F] G=[E]",
           (list(c.M), list(c.S), list(c.G)), (["A", "B", "D"], ["F"], ["E"]))
-    check("S3-FIFO reinserimento in M con freq-1", run(c, "AEXAB"), "HMMHM")
+    check("S3-FIFO reinsertion in M with freq-1", run(c, "AEXAB"), "HMMHM")
 
-    # W-TinyLFU, capienza 4: finestra 0, principale 4, protetta 3.
-    # A A: A in prova poi protetta. B B, C C: protetta [A B C]. D D: protetta [A B C D] > 3 ->
-    # A torna in prova. E (stima 1) contro vittima A (stima 2): respinto; A promosso ->
-    # protetta [B C D A] -> B in prova. E (stima 2) contro B (stima 2): 2 >= 2, ammesso, B esce.
-    # B (stima 3) contro E (stima 2): ammesso, E esce.
+    # W-TinyLFU, capacity 4: window 0, main 4, protected 3.
+    # A A: A on probation then protected. B B, C C: protected [A B C]. D D: protected [A B C D] > 3 ->
+    # A goes back on probation. E (estimate 1) against victim A (estimate 2): rejected; A promoted ->
+    # protected [B C D A] -> B on probation. E (estimate 2) against B (estimate 2): 2 >= 2, admitted, B leaves.
+    # B (estimate 3) against E (estimate 2): admitted, E leaves.
     c = WTinyLFU(unit("ABCDE"), 0, 4)
     got = run(c, "AABBCCDDE")
-    check("W-TinyLFU respinto contro vittima piu' frequente", got, "MHMHMHMHM")
-    check("W-TinyLFU dopo il rifiuto: E assente, A in protetta",
+    check("W-TinyLFU rejected against a more frequent victim", got, "MHMHMHMHM")
+    check("W-TinyLFU after the rejection: E absent, A in protected",
           (present(c, "E"), "A" in c.prot, list(c.prob)), (False, True, ["B"]))
-    check("W-TinyLFU pareggio ammesso (>=), poi B rientra", run(c, "EB"), "MM")
-    check("W-TinyLFU stato: prova=[B]", list(c.prob), ["B"])
+    check("W-TinyLFU tie admitted (>=), then B comes back", run(c, "EB"), "MM")
+    check("W-TinyLFU state: probation=[B]", list(c.prob), ["B"])
 
-    # Scansione: protetta [A B C]; X1..X6 visti una volta si sostituiscono in prova; A B C hit.
+    # Scan: protected [A B C]; X1..X6 seen once replace each other in probation; A B C hit.
     c = WTinyLFU(unit(["A", "B", "C", "X1", "X2", "X3", "X4", "X5", "X6"]), 0, 4)
     got = run(c, ["A", "A", "B", "B", "C", "C", "X1", "X2", "X3", "X4", "X5", "X6", "A", "B", "C"])
-    check("W-TinyLFU scansione non sposta la protetta", got, "MHMHMH" + "M" * 6 + "HHH")
+    check("W-TinyLFU scan does not move the protected", got, "MHMHMH" + "M" * 6 + "HHH")
 
-    # Vittime aggregate: A(1) protetta, B(1) C(1) in prova; Z (dimensione 3, stima 1) deve
-    # sfrattare B e C (somma stime 2): respinto, B e C promossi (protetta [A B C]).
-    # Z di nuovo (stima 2): vittime A (2) e B (1), somma 3 > 2: respinto.
+    # Aggregate victims: A(1) protected, B(1) C(1) on probation; Z (size 3, estimate 1) must
+    # evict B and C (sum of estimates 2): rejected, B and C promoted (protected [A B C]).
+    # Z again (estimate 2): victims A (2) and B (1), sum 3 > 2: rejected.
     c = WTinyLFU(unit("ABC", {"Z": 3}), 0, 4)
-    check("W-TinyLFU vittime aggregate (AV)", run(c, "AABCZZ"), "MHMMMM")
-    check("W-TinyLFU stato: Z assente, protetta [C A B]",
+    check("W-TinyLFU aggregate victims (AV)", run(c, "AABCZZ"), "MHMMMM")
+    check("W-TinyLFU state: Z absent, protected [C A B]",
           (present(c, "Z"), list(c.prot)), (False, ["C", "A", "B"]))
 
 
 def invariants():
-    print("\n== 2. invarianti su tracce casuali (10 000 richieste, dimensioni reali)")
+    print("\n== 2. invariants on random traces (10,000 requests, real sizes)")
     import trace as tr
     import fase1
     sizes = fase1.sizes()
@@ -137,20 +137,20 @@ def invariants():
                 bad += c.used > cap
             real = sum(sizes[k] + 512 for k in contents(c))
             ok = bad == 0 and real == c.used
-            print(f"  {'PASSA' if ok else 'NON PASSA'}  {name} capienza {cap}: violazioni {bad}, "
-                  f"byte contati {real} = occupati {c.used}")
+            print(f"  {'PASSA' if ok else 'NON PASSA'}  {name} capacity {cap}: violations {bad}, "
+                  f"bytes counted {real} = occupied {c.used}")
             if not ok:
-                FAIL.append(f"invarianti {name} {cap}")
+                FAIL.append(f"invariants {name} {cap}")
     total = sum(s + 512 for s in sizes)
     distinct = len(set(keys))
     for name, cls in POLICIES.items():
         c = cls(sizes, 512, total)
         miss = sum(not c.get(k, i / 100) for i, k in enumerate(keys))
         ok = miss == distinct
-        print(f"  {'PASSA' if ok else 'NON PASSA'}  {name} capienza = tutto il corpus: "
-              f"miss {miss}, obbligatori {distinct}")
+        print(f"  {'PASSA' if ok else 'NON PASSA'}  {name} capacity = whole corpus: "
+              f"miss {miss}, compulsory {distinct}")
         if not ok:
-            FAIL.append(f"miss obbligatori {name}")
+            FAIL.append(f"compulsory misses {name}")
 
 
 if __name__ == "__main__":

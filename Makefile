@@ -23,12 +23,12 @@ HP_TO ?= 2026-09-22T00:00:00+00:00
 data: data-vm data-honeypot data-lab
 
 data-honeypot:
-	@test -d $(HP_SNAPSHOT) || { echo "manca lo snapshot $(HP_SNAPSHOT)"; exit 1; }
+	@test -d $(HP_SNAPSHOT) || { echo "snapshot $(HP_SNAPSHOT) is missing"; exit 1; }
 	$(PY) tools/honeypot_aggregate.py --logs $(HP_SNAPSHOT) --from $(HP_FROM) --to $(HP_TO)
 
 data-vm:
 	@curl -sf -o /dev/null http://localhost:8428/health || \
-		{ echo "VictoriaMetrics non raggiungibile su localhost:8428: apri il tunnel (tools/cache_capacity.py)"; exit 1; }
+		{ echo "VictoriaMetrics not reachable on localhost:8428: open the tunnel (tools/cache_capacity.py)"; exit 1; }
 	$(PY) tools/cache_capacity.py
 	$(PY) tools/cpu_validation.py
 

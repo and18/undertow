@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
 #
-# poolfix.sh - Il pool applicativo puo' essere troppo grande?
+# poolfix.sh - Can the application pool be too large?
 #
-# L'IPOTESI, contraria alla pratica comune
+# THE HYPOTHESIS, contrary to common practice
 #
-# Un pool di thread piu' grande della capacita' del backend non aumenta
-# il throughput. Aumenta soltanto quanto lavoro puo' accumularsi davanti
-# a una risorsa satura, e quindi rende il sistema SENSIBILE alla
-# composizione del traffico. Un pool piu' piccolo lo rende immune,
-# perche' rifiuta a monte invece di accodare.
+# A thread pool larger than the backend's capacity does not increase
+# the throughput. It only increases how much work can pile up in front of
+# a saturated resource, and therefore makes the system SENSITIVE to the
+# traffic composition. A smaller pool makes it immune,
+# because it rejects upstream instead of queueing.
 #
-# Se regge: contro il traffico esaustivo non serve piu' capacita'
-# applicativa, ne serve meno.
+# If it holds: against exhaustive traffic one does not need more
+# application capacity, one needs less.
 #
-# IL DISEGNO
+# THE DESIGN
 #
-# lambda FISSO, varia SOLO il numero di thread. E' la correzione al run
-# del 2026-08-28, dove lambda seguiva N e i due effetti non erano
-# separabili — quello che sembrava immunita' del pool piccolo poteva
-# essere solo carico piu' basso.
+# lambda FIXED, ONLY the number of threads varies. It is the correction to the run
+# of 2026-08-28, where lambda followed N and the two effects were not
+# separable — what looked like immunity of the small pool could have
+# been just lower load.
 #
-# alpha arriva a 0,80 perche' oltre 0,40 il carico all'origine supera la
-# capacita' per qualunque pool: e' li' che si vede se il pool piccolo
-# regge dove il grande crolla.
+# alpha goes up to 0.80 because beyond 0.40 the origin load exceeds the
+# capacity for any pool: that is where one sees whether the small pool
+# holds where the large one collapses.
 #
-# CONTROLLO DI DERIVA
+# DRIFT CHECK
 #
-# Fra un pool e l'altro si rimisura lo stesso punto fisso. Il 2026-08-28
-# il database e' derivato del 31% in otto ore, il che rende i confronti
-# fra l'inizio e la fine della campagna privi di senso. Lo script si
-# ferma invece di produrre dati non comparabili.
+# Between one pool and the next the same fixed point is re-measured. On 2026-08-28
+# the database drifted by 31% in eight hours, which makes comparisons
+# between the beginning and the end of the campaign meaningless. The script stops
+# instead of producing non-comparable data.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -47,7 +47,7 @@ restore() { sed -i 's/^THREADS=.*/THREADS=8/' .env
             docker compose up -d --force-recreate app >/dev/null 2>&1; }
 trap restore EXIT
 
-# Punto fisso: THREADS=8, alpha=0.25, il ginocchio noto.
+# Fixed point: THREADS=8, alpha=0.25, the known knee.
 checkpoint() {
     sed -i 's/^THREADS=.*/THREADS=8/' .env
     docker compose up -d --force-recreate app >/dev/null 2>&1; sleep 12
@@ -66,8 +66,8 @@ checkpoint() {
 }
 
 REF=$(checkpoint)
-echo "riferimento: p99 = ${REF} ms" | tee -a "$SUM"
-[[ "$REF" -lt 100 ]] && { echo "riferimento implausibile, mi fermo" | tee -a "$SUM"; exit 1; }
+echo "reference: p99 = ${REF} ms" | tee -a "$SUM"
+[[ "$REF" -lt 100 ]] && { echo "implausible reference, stopping" | tee -a "$SUM"; exit 1; }
 
 for t in $THREADS_LIST; do
     printf '\n\033[1m==> THREADS=%s  lambda=%s\033[0m  (%s)\n' "$t" "$LAMBDA" "$(date +%H:%M)" | tee -a "$SUM"
@@ -79,21 +79,21 @@ for t in $THREADS_LIST; do
 
     now=$(checkpoint)
     pct=$(awk -v a="$REF" -v b="$now" 'BEGIN{printf "%.0f", 100*(b-a)/a}')
-    echo "   deriva dopo t=$t: ${now} ms contro ${REF} ms (${pct}%)" | tee -a "$SUM"
+    echo "   drift after t=$t: ${now} ms against ${REF} ms (${pct}%)" | tee -a "$SUM"
     awk -v p="$pct" 'BEGIN{exit !(p<-30 || p>30)}' && {
-        echo "DERIVA OLTRE IL 30% — mi fermo" | tee -a "$SUM"; break; }
+        echo "DRIFT BEYOND 30% — stopping" | tee -a "$SUM"; break; }
 done
 
-# --- tabella finale ------------------------------------------------------
-# Le richieste completate per classe sono il numero che decide se il pool
-# piccolo e' una cura o un collo di bottiglia spostato.
+# --- final table ---------------------------------------------------------
+# The completed requests per class are the number that decides whether the small
+# pool is a cure or a bottleneck moved elsewhere.
 {
   echo
   echo "================================================================"
-  echo "RISULTATO — p99 interattivo e throughput, per pool e composizione"
+  echo "RESULT — interactive p99 and throughput, per pool and composition"
   echo "================================================================"
   printf '%-8s %-7s %11s %11s %11s %9s\n' \
-         "THREADS" "alpha" "p99 alta" "ok alta" "ok bassa" "hit"
+         "THREADS" "alpha" "p99 high" "ok high" "ok low" "hit"
   for d in "$BASE"/t*/points.csv; do
     [[ -f "$d" ]] || continue
     t=$(basename "$(dirname "$d")" | tr -d 't')
@@ -113,24 +113,24 @@ done
                (tot>0)?(hh[a]+ha[a])/tot:0 } }' "$d"
   done | sort -n -k1,1 -k2,2
   echo
-  echo "COME LEGGERE"
+  echo "HOW TO READ"
   echo
-  echo "  p99 alta   latenza della classe interattiva. Se resta bassa"
-  echo "             sui pool piccoli anche ad alpha alto, l ipotesi"
-  echo "             regge."
-  echo "  ok alta    richieste interattive servite. NON deve crollare:"
-  echo "             se cala col pool, il pool piccolo non e una cura"
-  echo "             ma un collo di bottiglia spostato."
-  echo "  ok bassa   richieste della classe esaustiva servite."
+  echo "  p99 high   latency of the interactive class. If it stays low"
+  echo "             on the small pools even at high alpha, the hypothesis"
+  echo "             holds."
+  echo "  ok high    interactive requests served. It must NOT collapse:"
+  echo "             if it falls with the pool, the small pool is not a cure"
+  echo "             but a bottleneck moved elsewhere."
+  echo "  ok low     requests of the exhaustive class served."
   echo
-  echo "  IPOTESI CONFERMATA se esiste un pool piccolo con p99 alta"
-  echo "  bassa a ogni alpha E ok alta confrontabile con i pool grandi."
-  echo "  Significa che il pool grande non produce throughput, produce"
-  echo "  solo coda."
+  echo "  HYPOTHESIS CONFIRMED if there is a small pool with low p99 high"
+  echo "  at every alpha AND ok high comparable with the large pools."
+  echo "  It means the large pool does not produce throughput, it produces"
+  echo "  only queue."
   echo
-  echo "  IPOTESI FALSIFICATA se il ginocchio compare a ogni pool,"
-  echo "  oppure se il pool piccolo lo evita solo perche serve meno"
-  echo "  richieste."
+  echo "  HYPOTHESIS FALSIFIED if the knee appears at every pool,"
+  echo "  or if the small pool avoids it only because it serves fewer"
+  echo "  requests."
 } | tee -a "$SUM"
 
-echo; echo "dati in $BASE"
+echo; echo "data in $BASE"

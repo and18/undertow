@@ -1,13 +1,13 @@
 """
-load_corpus.py - Carica il corpus Gutenberg in PostgreSQL.
+load_corpus.py - Loads the Gutenberg corpus into PostgreSQL.
 
-Riusa gli stessi testi gia' scaricati per l'honeypot (directory cache/),
-cosi' che lo stesso corpus alimenti sia il sito pubblico sia
-l'esperimento controllato.
+Reuses the same texts already downloaded for the honeypot (cache/
+directory), so that the same corpus feeds both the public site and
+the controlled experiment.
 
-Costruisce anche un grafo di link fra capitoli, con seed fisso: e' il
-grafo che il profilo agentico attraversa in profondita'. Deterministico,
-quindi lo stesso corpus produce lo stesso grafo su qualunque macchina.
+It also builds a link graph between chapters, with a fixed seed: it is the
+graph that the agentic profile traverses depth-first. Deterministic,
+so the same corpus produces the same graph on any machine.
 
     python load_corpus.py --corpus /corpus
 """
@@ -24,10 +24,10 @@ import psycopg2
 
 MIN_CHAPTER_CHARS = 1200
 MAX_CHAPTERS_PER_BOOK = 60
-# Dodici link uscenti per capitolo, non quattro. E' il numero di elementi
-# correlati che una pagina di CMS reale mostra, e determina il costo di
-# generazione della pagina: con quattro, il capitolo costa ~12 ms e il
-# pool di thread non potrebbe mai saturarsi sotto il tetto imposto dal GIL.
+# Twelve outgoing links per chapter, not four. It is the number of related
+# items a real CMS page shows, and it determines the page generation
+# cost: with four, the chapter costs ~12 ms and the thread pool could
+# never saturate under the ceiling imposed by the GIL.
 LINKS_PER_CHAPTER = 12
 
 START_RE = re.compile(r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG.*?\*\*\*", re.I)
@@ -110,7 +110,7 @@ def main():
     corpus = Path(args.corpus)
     catalog_file = corpus / "catalog.json"
     if not catalog_file.exists():
-        sys.exit(f"catalog.json non trovato in {corpus}")
+        sys.exit(f"catalog.json not found in {corpus}")
 
     catalog = json.loads(catalog_file.read_text(encoding="utf-8"))
     conn = psycopg2.connect(
@@ -120,7 +120,7 @@ def main():
         password=os.environ["PGPASSWORD"],
     )
     cur = conn.cursor()
-    print("creo lo schema")
+    print("creating the schema")
     cur.execute(DDL)
     conn.commit()
 
@@ -146,13 +146,13 @@ def main():
                 (meta["id"], i, title[:200], len(body.split()), body, body))
 
         loaded.append((meta["id"], len(chapters)))
-        print(f"  {meta['id']}: {len(chapters)} capitoli")
+        print(f"  {meta['id']}: {len(chapters)} chapters")
 
     conn.commit()
 
-    # Grafo dei link, deterministico: e' il percorso che il profilo
-    # agentico attraversa in profondita'.
-    print("costruisco il grafo dei link")
+    # Link graph, deterministic: it is the path that the agentic profile
+    # traverses depth-first.
+    print("building the link graph")
     rng = random.Random(args.seed)
     all_ch = [(b, n) for b, cnt in loaded for n in range(1, cnt + 1)]
     rows = []
@@ -168,8 +168,8 @@ def main():
     cur.execute("ANALYZE")
     conn.commit()
 
-    print(f"\nfatto: {len(loaded)} libri, {len(all_ch)} capitoli, "
-          f"{len(rows)} link")
+    print(f"\ndone: {len(loaded)} books, {len(all_ch)} chapters, "
+          f"{len(rows)} links")
     cur.close()
     conn.close()
 

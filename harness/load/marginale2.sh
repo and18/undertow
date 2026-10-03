@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 #
-# marginale2.sh - Barre d'errore sull'agente, e lo stesso disegno per il
-# crawler. L'affermazione da sostenere non e' un numero sull'agente: e'
-# che la calibrazione isolata sbaglia in modo ASIMMETRICO fra le due
-# classi, misurata con metodologia identica.
+# marginale2.sh - Error bars on the agent, and the same design for the
+# crawler. The claim to support is not a number about the agent: it is
+# that the isolated calibration errs ASYMMETRICALLY between the two
+# classes, measured with identical methodology.
 #
-# A  agente: 5 ripetizioni sui punti dove la pendenza cambia segno.
-#    Il primo run (14 set) ha dato marginale +0,047 / +0,023 / -0,014 /
-#    -0,070 con 2 ripetizioni e dispersione 0,1-0,5 req/s sul carico
-#    all'origine: il segno dell'ultimo tratto e' a 2 sigma.
+# A  agent: 5 repetitions on the points where the slope changes sign.
+#    The first run (14 Sep) gave marginal +0.047 / +0.023 / -0.014 /
+#    -0.070 with 2 repetitions and a dispersion of 0.1-0.5 req/s on the
+#    origin load: the sign of the last stretch is at 2 sigma.
 #
-# B  crawler: umano e agente FISSI in valore assoluto (55 e 12 req/s),
-#    crawler da 0 a 42. PREVISIONE REGISTRATA: marginale vicino a 1,0 e
-#    leggermente sopra, perche' il crawler consuma residenza e peggiora
-#    anche gli altri. Se esce ~1,0 piatto mentre l'agente e' decrescente
-#    e negativo, l'asimmetria e' dimostrata.
+# B  crawler: human and agent FIXED in absolute value (55 and 12 req/s),
+#    crawler from 0 to 42. PREDICTION RECORDED: marginal close to 1.0 and
+#    slightly above, because the crawler consumes residency and worsens
+#    the others too. If it comes out ~1.0 flat while the agent is
+#    decreasing and negative, the asymmetry is demonstrated.
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -26,13 +26,13 @@ run() {
         POINTS="$2:$3" bash treclassi.sh
 }
 
-# A - agente, umano 55 + crawler 28 fissi, 5 ripetizioni
-run "A agenti=0"   83  0.3373 0.0000 5
-run "A agenti=12"  95  0.2947 0.1263 5
-run "A agenti=24" 107  0.2617 0.2243 5
-run "A agenti=36" 119  0.2353 0.3025 5
+# A - agent, human 55 + crawler 28 fixed, 5 repetitions
+run "A agents=0"   83  0.3373 0.0000 5
+run "A agents=12"  95  0.2947 0.1263 5
+run "A agents=24" 107  0.2617 0.2243 5
+run "A agents=36" 119  0.2353 0.3025 5
 
-# B - crawler, umano 55 + agente 12 fissi
+# B - crawler, human 55 + agent 12 fixed
 export MF=1211
 run "B crawler=0"   67  0.0000 0.1791 3
 run "B crawler=14"  81  0.1728 0.1481 3
@@ -41,7 +41,7 @@ run "B crawler=42" 109  0.3853 0.1101 3
 
 echo
 echo "================================================================"
-echo "  A: pendenza del carico all'origine contro richieste agentiche,"
-echo "     con 5 ripetizioni per avere una dispersione."
-echo "  B: stessa pendenza per il crawler. Controllo: h uman deve"
-echo "     restare piatto in entrambi i blocchi."
+echo "  A: slope of the origin load against agentic requests,"
+echo "     with 5 repetitions to get a dispersion."
+echo "  B: same slope for the crawler. Check: h hum must"
+echo "     stay flat in both blocks."

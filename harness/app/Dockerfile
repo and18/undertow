@@ -14,13 +14,13 @@ COPY app.py load_corpus.py ./
 
 EXPOSE 8000
 
-# Un solo processo, N thread: la risorsa limitata e' il pool di thread,
-# analogo a un Work Manager WebLogic. THREADS e BACKLOG sono variabili
-# di sweep passate dall'ambiente.
+# A single process, N threads: the limited resource is the thread pool,
+# analogous to a WebLogic Work Manager. THREADS and BACKLOG are sweep
+# variables passed from the environment.
 #
-# --backlog e' la profondita' della coda del socket: le richieste che non
-# trovano un thread libero si accodano qui. Superato il backlog, il kernel
-# rifiuta la connessione — ed e' li' che la curva precipita.
+# --backlog is the depth of the socket queue: requests that find no free
+# thread queue up here. Once the backlog is exceeded, the kernel refuses
+# the connection — and that is where the curve collapses.
 CMD gunicorn \
       --bind 0.0.0.0:8000 \
       --worker-class gthread \

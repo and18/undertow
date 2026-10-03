@@ -1,20 +1,20 @@
 /*
- * probe-origin.js - Carico che raggiunge davvero l'origine.
+ * probe-origin.js - Load that really reaches the origin.
  *
- * A differenza di null-test.js, che martella un URL fisso e quindi
- * misura la cache, questo campiona capitoli distinti da tutto il corpus.
- * Con una cache molto piu' piccola del working set, la maggior parte
- * delle richieste va in miss e arriva all'application server.
+ * Unlike null-test.js, which hammers a fixed URL and therefore
+ * measures the cache, this samples distinct chapters from the whole corpus.
+ * With a cache much smaller than the working set, most of the
+ * requests miss and reach the application server.
  *
- * Serve a verificare la precondizione degli sweep: il carico deve essere
- * I/O-bound, cioe' i thread devono risultare OCCUPATI (bloccati in attesa
- * di Postgres) mentre la CPU dell'applicazione resta bassa. Se invece la
- * CPU sale e i thread restano vuoti, il vincolo e' il GIL e il pool non
- * potra' mai saturarsi.
+ * It serves to check the precondition of the sweeps: the load must be
+ * I/O-bound, that is the threads must show up as BUSY (blocked waiting
+ * for Postgres) while the application CPU stays low. If instead the
+ * CPU rises and the threads stay empty, the constraint is the GIL and the pool
+ * will never be able to saturate.
  *
  * ENDPOINT
- *   chapter   capitoli casuali, cacheable ma nella coda lunga
- *   search    ricerca full-text, non cacheable
+ *   chapter   random chapters, cacheable but in the long tail
+ *   search    full-text search, not cacheable
  *
  *   docker compose --profile load run --rm -T \
  *     -e ENDPOINT=chapter -e RATE=200 -e DURATION=60s k6 run /scripts/probe-origin.js
@@ -29,7 +29,7 @@ const ENDPOINT = __ENV.ENDPOINT || 'chapter';
 const RATE = parseInt(__ENV.RATE || '200');
 const DURATION = __ENV.DURATION || '60s';
 
-// Termini selezionati da tools/pick_terms.py per costo omogeneo.
+// Terms selected by tools/pick_terms.py for homogeneous cost.
 const TERMS = (__ENV.TERMS ||
   'nurse,window,trial,servant,kiss,garden,letter,prayer,horse,silence'
 ).split(',');
@@ -53,8 +53,8 @@ export const options = {
   summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
 };
 
-// Il corpus: 495 libri, fino a 60 capitoli ciascuno. Gli id non sono
-// contigui, quindi si campiona dalla lista reale raccolta in setup.
+// The corpus: 495 books, up to 60 chapters each. The ids are not
+// contiguous, so we sample from the real list collected in setup.
 export function setup() {
   const res = http.get(`${TARGET}/library`, { responseType: 'text' });
   const books = JSON.parse(res.body).map(b => ({ id: b.id, n: b.n_chapters }));

@@ -1,10 +1,10 @@
-# Instrada per classe di traffico. Template: __LOW_BACKEND__ viene
-# risolto da split.sh in varnish-l (partizione) o varnish-h (riferimento
-# condiviso), e il risultato scritto in router.active.conf.
+# Routes by traffic class. Template: split.sh resolves __LOW_BACKEND__ to
+# varnish-l (partition) or varnish-h (shared reference), and writes the
+# result to router.active.conf.
 #
-# Cosi' il riferimento e' una cache davvero condivisa. Prima del 30
-# agosto le due classi finivano sempre su istanze separate: il confronto
-# era fra due partizioni, non fra partizione e condivisione.
+# This way the reference is a truly shared cache. Before 30 August the
+# two classes always ended up on separate instances: the comparison was
+# between two partitions, not between partition and sharing.
 
 map $http_user_agent $cache_upstream {
     default            "varnish-high";

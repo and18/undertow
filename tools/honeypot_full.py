@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Analisi esaustiva dei log honeypot. Produce le misure di campo che
-calibrano i parametri delle classi del banco prova (decisions.md §2).
+Exhaustive analysis of the honeypot logs. Produces the field measurements that
+calibrate the parameters of the testbed classes (decisions.md §2).
 
-Uso:  python3 honeypot_full.py '/var/log/nginx/agentic.log*' --pages 18720 --out /tmp/hp
+Usage:  python3 honeypot_full.py '/var/log/nginx/agentic.log*' --pages 18720 --out /tmp/hp
 """
 import argparse, glob, gzip, json, math, re, sys
 from collections import defaultdict, Counter
@@ -121,7 +121,7 @@ def main():
 
     files = sorted(glob.glob(a.pattern))
     if not files:
-        sys.exit(f"nessun file per {a.pattern}")
+        sys.exit(f"no file for {a.pattern}")
 
     with openf(files[0]) as fh:
         for line in fh:
@@ -130,12 +130,12 @@ def main():
                 F = detect(json.loads(line))
                 break
         else:
-            sys.exit("nessuna riga JSON trovata")
+            sys.exit("no JSON row found")
 
-    print("campi rilevati:", {k: v for k, v in F.items() if v})
+    print("fields detected:", {k: v for k, v in F.items() if v})
     missing = [k for k in ("ua", "uri", "status") if not F[k]]
     if missing:
-        sys.exit(f"campi essenziali mancanti: {missing} — adatta CANDIDATES")
+        sys.exit(f"essential fields missing: {missing} — adapt CANDIDATES")
 
     op = defaultdict(lambda: {
         "req": 0, "urls": Counter(), "conns": set(), "connreq_max": 0,
@@ -145,7 +145,7 @@ def main():
     })
     total = bad = 0
     site_urls = Counter()
-    served = set()   # URL che almeno una volta hanno dato 200
+    served = set()   # URLs that gave 200 at least once
 
     for path in files:
         with openf(path) as fh:
@@ -245,33 +245,33 @@ def main():
            "pct_200", "pct_404", "n_304", "conditional_req", "signed_req",
            "bogus_urls", "peak_over_mean", "active_days", "MB"]
     w = {h: max(len(h), *(len(str(r[h])) for r in rows)) for h in hdr}
-    print("\n=== OPERATORI ===")
+    print("\n=== OPERATORS ===")
     print("  ".join(h.ljust(w[h]) for h in hdr))
     for r in rows:
         print("  ".join(str(r[h]).ljust(w[h]) for h in hdr))
 
-    print("\n=== CODICI DI RISPOSTA PER OPERATORE ===")
+    print("\n=== RESPONSE CODES PER OPERATOR ===")
     for name, d in sorted(op.items(), key=lambda kv: -kv[1]["req"]):
         parts = "  ".join(f"{k}:{100*v/d['req']:.1f}%" for k, v in d["status"].most_common(7))
         print(f"{name:20s} {parts}")
 
-    print("\n=== SINTESI ===")
+    print("\n=== SUMMARY ===")
     tot304 = sum(r["n_304"] for r in rows)
     totcond = sum(r["conditional_req"] for r in rows)
-    print(f"richieste totali      {total}   righe non parsate {bad}")
-    print(f"URL distinti visti    {len(site_urls)} su {a.pages} pagine ({100*len(site_urls)/a.pages:.1f}%)")
-    print(f"304 totali            {tot304}  ({100*tot304/total:.4f}%)")
-    print(f"richieste condizionali {totcond} ({100*totcond/total:.4f}%)")
+    print(f"total requests        {total}   unparsed rows {bad}")
+    print(f"distinct URLs seen    {len(site_urls)} out of {a.pages} pages ({100*len(site_urls)/a.pages:.1f}%)")
+    print(f"total 304s            {tot304}  ({100*tot304/total:.4f}%)")
+    print(f"conditional requests  {totcond} ({100*totcond/total:.4f}%)")
     bycls = Counter()
     for r in rows:
         bycls[r["class"]] += r["requests"]
     for c, n in bycls.most_common():
         print(f"  {c:16s} {n:8d}  {100*n/total:5.1f}%")
 
-    print("\n=== CICLO DI VITA: richieste al giorno per classe ===")
+    print("\n=== LIFE CYCLE: requests per day per class ===")
     days = sorted({d for x in op.values() for d in x["daily"]})
     classes = [c for c, _ in bycls.most_common()]
-    print("data        " + "".join(c[:11].rjust(13) for c in classes))
+    print("date        " + "".join(c[:11].rjust(13) for c in classes))
     for day in days:
         cells = []
         for c in classes:
@@ -279,7 +279,7 @@ def main():
             cells.append(str(n).rjust(13))
         print(day + "".join(cells))
 
-    print("\n=== H8: decomposizione del traffico non classificato ===")
+    print("\n=== H8: decomposition of the unclassified traffic ===")
     for name in ("browser-like", "other"):
         if name not in op:
             continue
@@ -287,13 +287,13 @@ def main():
         uniq = len(d["urls"]) or 1
         conns = len(d["conns"]) or 1
         never200 = sum(v for u, v in d["urls"].items() if u not in known200)
-        print(f"\n{name}: {d['req']} richieste, {uniq} URL distinti")
-        print(f"  rapporto di duplicazione   {d['req']/uniq:.2f}   (>1.5 = ricrawl sistematico)")
-        print(f"  richieste per connessione  {d['req']/conns:.1f}")
+        print(f"\n{name}: {d['req']} requests, {uniq} distinct URLs")
+        print(f"  duplication ratio          {d['req']/uniq:.2f}   (>1.5 = systematic recrawl)")
+        print(f"  requests per connection    {d['req']/conns:.1f}")
         print(f"  404                        {100*d['status']['404']/d['req']:.1f}%")
-        print(f"  con referer                {100*d['ref']/d['req']:.1f}%   (basso = non naviga)")
-        print(f"  URL mai serviti a nessuno  {never200}   (indovina invece di seguire link)")
-        print("  top 8 URL:")
+        print(f"  with referer               {100*d['ref']/d['req']:.1f}%   (low = does not navigate)")
+        print(f"  URLs never served to anyone {never200}   (guesses instead of following links)")
+        print("  top 8 URLs:")
         for u, n in d["urls"].most_common(8):
             print(f"    {n:6d}  {u[:80]}")
 
@@ -305,7 +305,7 @@ def main():
         f.write(",".join(hdr) + "\n")
         for r in rows:
             f.write(",".join(str(r[h]) for h in hdr) + "\n")
-    print(f"\nscritti {a.out}.json e {a.out}.csv")
+    print(f"\nwritten {a.out}.json and {a.out}.csv")
 
 
 if __name__ == "__main__":

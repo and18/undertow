@@ -1,6 +1,6 @@
-# Exporter minimale per Varnish, costruito sull'immagine di Varnish
-# perche' deve invocare varnishstat e vedere la stessa working directory
-# di varnishd (montata come volume condiviso).
+# Minimal Varnish exporter, built on the Varnish image because it must
+# invoke varnishstat and see the same working directory as varnishd
+# (mounted as a shared volume).
 
 FROM varnish:7.5
 USER root

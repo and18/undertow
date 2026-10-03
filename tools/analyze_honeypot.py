@@ -1,48 +1,48 @@
 #!/usr/bin/env python3
 """
-analyze_honeypot.py - Caratterizzazione del traffico automatico osservato.
+analyze_honeypot.py - Characterisation of the observed automated traffic.
 
-COSA MISURA, E PERCHE'
+WHAT IT MEASURES, AND WHY
 
-Il dibattito corrente sul traffico automatico e' organizzato attorno
-all'IDENTITA': chi e' questo client, si e' dichiarato, ha firmato.
-Questo script misura invece il COMPORTAMENTO, perche' e' il
-comportamento a determinare il costo infrastrutturale.
+The current debate on automated traffic is organised around
+IDENTITY: who is this client, did it declare itself, did it sign.
+This script measures BEHAVIOUR instead, because it is
+behaviour that determines the infrastructure cost.
 
-Le dimensioni misurate, in ordine di importanza:
+The dimensions measured, in order of importance:
 
-  riuso connessione   richieste per connessione TCP. Un client che apre
-                      una connessione nuova per ogni richiesta impone il
-                      costo di handshake ogni volta e annulla ogni
-                      affinita' di edge. Non risulta pubblicato per
-                      singolo operatore in nessuna fonte.
+  connection reuse    requests per TCP connection. A client that opens
+                      a new connection for every request imposes the
+                      handshake cost every time and voids any edge
+                      affinity. Not reported per individual operator
+                      in any published source.
 
-  duplicazione        richieste / URL distinte. Un rapporto di 2 significa
-                      che meta' del carico e' lavoro gia' fatto.
+  duplication         requests / distinct URLs. A ratio of 2 means
+                      that half of the load is work already done.
 
-  spreco              404 e richieste a percorsi mai linkati. Carico che
-                      non produce nemmeno dati validi.
+  waste               404s and requests to never-linked paths. Load that
+                      does not even produce valid data.
 
-  localita'           frazione di richieste concentrata sulle URL piu'
-                      richieste da quel client. Alta = poche pagine molto
-                      visitate (cacheable). Bassa = scansione uniforme.
+  locality            fraction of requests concentrated on the URLs most
+                      requested by that client. High = few pages heavily
+                      visited (cacheable). Low = uniform scan.
 
-  rivalidazione       304 contro 200. Un client che rivalida costa molto
-                      meno di uno che riscarica.
+  revalidation        304 against 200. A client that revalidates costs much
+                      less than one that re-downloads.
 
-  copertura           quante URL distinte del sito ha toccato.
+  coverage            how many distinct URLs of the site it touched.
 
-CAVEAT SUL CONTEGGIO DELLE CONNESSIONI
+CAVEAT ON THE CONNECTION COUNT
 
-$connection di nginx e' un numero seriale PER WORKER: due worker possono
-assegnare lo stesso numero a connessioni diverse. La chiave usata qui e'
-(ip, connection), il che riduce le collisioni ma non le elimina. Il
-numero di connessioni distinte e' quindi una STIMA PER DIFETTO, e
-richieste-per-connessione una stima PER ECCESSO. La direzione
-dell'errore e' nota: chi risulta a 1,0 richieste per connessione lo e'
-davvero, perche' nessuna collisione puo' abbassare quel valore.
+nginx's $connection is a serial number PER WORKER: two workers may
+assign the same number to different connections. The key used here is
+(ip, connection), which reduces the collisions but does not eliminate them. The
+number of distinct connections is therefore an UNDERESTIMATE, and
+requests-per-connection an OVERESTIMATE. The direction of the
+error is known: whoever shows 1.0 requests per connection really is at 1.0,
+because no collision can lower that value.
 
-Uso:
+Usage:
     python3 analyze_honeypot.py /var/log/nginx/agentic.log*
     python3 analyze_honeypot.py --exclude-ip 192.0.2.10 198.51.100.20 -- <file>
 """
@@ -56,8 +56,8 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 
-# Classificazione per operatore. L'ordine conta: la prima regola che
-# corrisponde vince, quindi le regole specifiche precedono quelle generiche.
+# Classification by operator. Order matters: the first rule that
+# matches wins, so specific rules precede generic ones.
 OPERATORS = [
     ("GPTBot",        r"GPTBot"),
     ("OAI-SearchBot", r"OAI-SearchBot"),
@@ -84,7 +84,7 @@ OPERATORS = [
 ]
 OPERATORS = [(n, re.compile(p, re.I)) for n, p in OPERATORS]
 
-# Categorie AI, per gli aggregati.
+# AI categories, for the aggregates.
 AI_TRAINING = {"GPTBot", "ClaudeBot", "CCBot", "Bytespider", "Amazonbot",
                "Google-Extended", "Applebot"}
 AI_SEARCH = {"OAI-SearchBot", "PerplexityBot", "DuckAssistBot"}
@@ -128,8 +128,8 @@ def parse(paths, exclude_ips):
                         continue
                     if r.get("ip") in exclude_ips:
                         continue
-                    # I file ruotati possono sovrapporsi: si deduplica
-                    # sulla combinazione che identifica una richiesta.
+                    # Rotated files may overlap: we deduplicate
+                    # on the combination that identifies a request.
                     key = (r.get("t"), r.get("ip"), r.get("conn"),
                            r.get("conn_req"), r.get("u"))
                     if key in seen:
@@ -180,7 +180,7 @@ def collect(rows):
             s.chapter_hits += 1
         ip = r.get("ip", "")
         s.ips.add(ip)
-        # Vedi il caveat in testa sul conteggio delle connessioni.
+        # See the caveat at the top on the connection count.
         s.conns.add((ip, r.get("conn", "")))
         s.status[r.get("s", 0)] += 1
         s.bytes += r.get("b", 0) or 0
@@ -201,11 +201,11 @@ def collect(rows):
 
 
 def locality(url_counts, top_frac=0.01):
-    """Frazione di richieste concentrata sull'1% di URL piu' richieste.
+    """Fraction of requests concentrated on the 1% most requested URLs.
 
-    E' una misura diretta della localita' temporale, calcolabile dai soli
-    log. Vicino a 1 = poche pagine molto visitate, quindi cacheable.
-    Vicino alla frazione stessa (0,01) = accesso uniforme, non cacheable.
+    It is a direct measure of temporal locality, computable from the logs
+    alone. Close to 1 = few pages heavily visited, hence cacheable.
+    Close to the fraction itself (0.01) = uniform access, not cacheable.
     """
     if not url_counts:
         return 0.0
@@ -215,7 +215,7 @@ def locality(url_counts, top_frac=0.01):
 
 
 def gini(url_counts):
-    """Disuguaglianza della distribuzione degli accessi. 0 = uniforme."""
+    """Inequality of the access distribution. 0 = uniform."""
     v = sorted(url_counts.values())
     n = len(v)
     if n < 2:
@@ -236,7 +236,7 @@ def median(xs):
 
 
 def gap_stats(times):
-    """Intervalli fra richieste successive: mediana e burstiness."""
+    """Intervals between successive requests: median and burstiness."""
     if len(times) < 3:
         return 0.0, 0.0
     gaps = [b - a for a, b in zip(times, times[1:]) if b >= a]
@@ -247,8 +247,8 @@ def gap_stats(times):
     if mean <= 0:
         return med, 0.0
     var = sum((g - mean) ** 2 for g in gaps) / len(gaps)
-    # Indice di dispersione: 1 per un processo di Poisson, molto maggiore
-    # per arrivi a raffica.
+    # Dispersion index: 1 for a Poisson process, much greater
+    # for bursty arrivals.
     return med, (var / mean) if mean > 0 else 0.0
 
 
@@ -256,7 +256,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("logs", nargs="+")
     ap.add_argument("--exclude-ip", nargs="*", default=[],
-                    help="IP da escludere: traffico proprio, health check")
+                    help="IPs to exclude: own traffic, health checks")
     ap.add_argument("--min-requests", type=int, default=20)
     ap.add_argument("--site-pages", type=int, default=18720)
     ap.add_argument("--json-out", default=None)
@@ -265,32 +265,32 @@ def main():
     excl = set(args.exclude_ip)
     rows, bad = parse(args.logs, excl)
     if not rows:
-        sys.exit("nessuna riga valida trovata")
+        sys.exit("no valid row found")
 
     by = collect(rows)
     total = len(rows)
 
     print("=" * 96)
-    print("CARATTERIZZAZIONE DEL TRAFFICO AUTOMATICO")
+    print("CHARACTERISATION OF THE AUTOMATED TRAFFIC")
     print("=" * 96)
-    print(f"finestra   {rows[0].get('t')}  ->  {rows[-1].get('t')}")
-    print(f"richieste  {total:,}   righe non parsabili: {bad}")
+    print(f"window     {rows[0].get('t')}  ->  {rows[-1].get('t')}")
+    print(f"requests   {total:,}   unparsable rows: {bad}")
     if excl:
-        print(f"esclusi    {', '.join(sorted(excl))}")
+        print(f"excluded   {', '.join(sorted(excl))}")
 
-    # --- volume per giorno -------------------------------------------------
+    # --- volume per day ----------------------------------------------------
     days = Counter(r.get("t", "")[:10] for r in rows)
-    print("\nVOLUME PER GIORNO")
+    print("\nVOLUME PER DAY")
     for d in sorted(days):
         print(f"  {d}  {days[d]:>8,}")
 
-    # --- tabella principale ------------------------------------------------
+    # --- main table --------------------------------------------------------
     print("\n" + "=" * 96)
-    print("COMPORTAMENTO PER OPERATORE")
+    print("BEHAVIOUR PER OPERATOR")
     print("=" * 96)
-    print(f"{'operatore':<16}{'req':>9}{'url':>8}{'req/url':>8}"
+    print(f"{'operator':<16}{'req':>9}{'url':>8}{'req/url':>8}"
           f"{'req/conn':>9}{'IP':>5}{'404%':>7}{'304%':>7}"
-          f"{'local':>7}{'gini':>6}{'firma':>6}")
+          f"{'local':>7}{'gini':>6}{'signed':>6}")
     print("-" * 96)
 
     ordered = sorted(by.items(), key=lambda kv: -kv[1].n)
@@ -305,7 +305,7 @@ def main():
         e304 = 100 * s.status.get(304, 0) / s.n
         loc = locality(s.url_counts)
         g = gini(s.url_counts)
-        sig = "si" if s.signed else "-"
+        sig = "yes" if s.signed else "-"
         print(f"{name:<16}{s.n:>9,}{nurl:>8,}{rpu:>8.2f}{rpc:>9.1f}"
               f"{len(s.ips):>5}{e404:>7.1f}{e304:>7.1f}"
               f"{loc:>7.3f}{g:>6.2f}{sig:>6}")
@@ -329,65 +329,65 @@ def main():
             "hours": dict(sorted(s.hours.items())),
         }
 
-    # --- dettaglio ---------------------------------------------------------
+    # --- detail ------------------------------------------------------------
     print("\n" + "=" * 96)
-    print("DETTAGLIO")
+    print("DETAIL")
     print("=" * 96)
     for name, s in ordered:
         if s.n < args.min_requests:
             continue
         d = export[name]
-        print(f"\n{name}   {s.n:,} richieste, {s.bytes/1e6:.1f} MB")
-        print(f"  connessioni {d['connections']:,} su {d['ips']} IP"
-              f"   ->  {d['req_per_conn']} richieste per connessione")
-        print(f"  copertura del sito {d['coverage_pct']}%"
-              f"   capitoli {d['chapter_pct']}% delle richieste")
-        print(f"  intervallo mediano {d['median_gap_s']}s"
+        print(f"\n{name}   {s.n:,} requests, {s.bytes/1e6:.1f} MB")
+        print(f"  connections {d['connections']:,} over {d['ips']} IPs"
+              f"   ->  {d['req_per_conn']} requests per connection")
+        print(f"  site coverage {d['coverage_pct']}%"
+              f"   chapters {d['chapter_pct']}% of the requests")
+        print(f"  median interval {d['median_gap_s']}s"
               f"   burstiness {d['burstiness_index']}"
-              f"   gzip offerto {d['gzip_offered_pct']}%")
+              f"   gzip offered {d['gzip_offered_pct']}%")
         print(f"  protocolli {dict(s.proto)}")
-        print(f"  stati {dict(s.status.most_common(5))}")
+        print(f"  statuses {dict(s.status.most_common(5))}")
         if s.signed:
-            print(f"  *** Web Bot Auth: {s.signed:,} richieste firmate")
+            print(f"  *** Web Bot Auth: {s.signed:,} signed requests")
         top_ua = s.uas.most_common(1)[0]
         print(f"  ua  {top_ua[0]}")
 
-    # --- aggregati per categoria ------------------------------------------
+    # --- aggregates per category ------------------------------------------
     print("\n" + "=" * 96)
-    print("AGGREGATI")
+    print("AGGREGATES")
     print("=" * 96)
     for label, members in [("AI training", AI_TRAINING),
                            ("AI search", AI_SEARCH),
                            ("AI agent (retrieval)", AI_AGENT),
-                           ("motori tradizionali", SEARCH),
+                           ("traditional engines", SEARCH),
                            ("SEO", SEO)]:
         n = sum(by[m].n for m in members if m in by)
         conns = sum(len(by[m].conns) for m in members if m in by)
         urls = sum(len(by[m].urls) for m in members if m in by)
         if n == 0:
-            print(f"  {label:<22} assente")
+            print(f"  {label:<22} absent")
             continue
-        print(f"  {label:<22}{n:>9,} richieste "
+        print(f"  {label:<22}{n:>9,} requests "
               f"({100*n/total:>5.1f}%)  "
               f"req/conn {n/conns if conns else 0:>6.1f}  "
               f"req/url {n/urls if urls else 0:>5.2f}")
 
-    # --- firmatari ---------------------------------------------------------
-    print("\nWEB BOT AUTH — chi firma")
+    # --- signers -----------------------------------------------------------
+    print("\nWEB BOT AUTH — who signs")
     signers = [(k, v.signed, v.n) for k, v in by.items() if v.signed]
     if signers:
         for k, sg, n in sorted(signers, key=lambda x: -x[1]):
             rpc = by[k].n / len(by[k].conns) if by[k].conns else 0
-            print(f"  {k:<16}{sg:>8,} firmate su {n:,}"
-                  f"   ({rpc:.1f} richieste per connessione)")
-        print("\n  L'identita' verificabile non predice il costo: confrontare")
-        print("  le richieste per connessione dei firmatari con quelle dei")
-        print("  non firmatari nella tabella principale.")
+            print(f"  {k:<16}{sg:>8,} signed out of {n:,}"
+                  f"   ({rpc:.1f} requests per connection)")
+        print("\n  Verifiable identity does not predict cost: compare")
+        print("  the requests per connection of the signers with those of the")
+        print("  non-signers in the main table.")
     else:
-        print("  nessun operatore firma")
+        print("  no operator signs")
 
-    # --- percorsi mai linkati ---------------------------------------------
-    print("\nSPRECO — percorsi inesistenti piu' richiesti")
+    # --- never-linked paths -----------------------------------------------
+    print("\nWASTE — most requested nonexistent paths")
     miss = Counter(r.get("u", "") for r in rows if r.get("s") == 404)
     for u, c in miss.most_common(15):
         print(f"  {c:>6}  {u[:80]}")
@@ -399,22 +399,22 @@ def main():
         print(f"\nJSON: {args.json_out}")
 
     print("\n" + "=" * 96)
-    print("COME LEGGERE")
+    print("HOW TO READ")
     print("=" * 96)
-    print("  req/conn   richieste per connessione TCP. Valori vicini a 1")
-    print("             significano una connessione nuova per ogni richiesta:")
-    print("             costo di handshake ripetuto e nessuna affinita' di")
-    print("             edge. Stima per eccesso (vedi caveat nel sorgente).")
-    print("  req/url    1,0 = nessuna duplicazione. 2,0 = ogni pagina")
-    print("             scaricata due volte, meta' del carico e' spreco.")
-    print("  local      frazione di richieste sull'1% di URL piu' visitate.")
-    print("             Alta = cacheable. Vicina a 0,01 = scansione uniforme.")
-    print("  gini       disuguaglianza degli accessi. 0 = perfettamente")
-    print("             uniforme, quindi il caso peggiore per una cache.")
-    print("  404%       richieste a percorsi inesistenti: chi indovina")
-    print("             invece di seguire i link.")
-    print("  304%       rivalidazioni. Un client che rivalida costa molto")
-    print("             meno di uno che riscarica ogni volta.")
+    print("  req/conn   requests per TCP connection. Values close to 1")
+    print("             mean a new connection for every request:")
+    print("             repeated handshake cost and no edge")
+    print("             affinity. Overestimate (see the caveat in the source).")
+    print("  req/url    1.0 = no duplication. 2.0 = every page")
+    print("             downloaded twice, half of the load is waste.")
+    print("  local      fraction of requests on the 1% most visited URLs.")
+    print("             High = cacheable. Close to 0.01 = uniform scan.")
+    print("  gini       inequality of the accesses. 0 = perfectly")
+    print("             uniform, hence the worst case for a cache.")
+    print("  404%       requests to nonexistent paths: whoever guesses")
+    print("             instead of following the links.")
+    print("  304%       revalidations. A client that revalidates costs much")
+    print("             less than one that re-downloads every time.")
 
 
 if __name__ == "__main__":

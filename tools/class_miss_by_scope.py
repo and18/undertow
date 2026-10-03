@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-class_miss_by_scope.py — fattori di miss per classe, quota agentica 13% -> 30%, ai tre
-scope dello sweep AGENT_SCOPE (claim A2; FIG-02 pannello a).
+class_miss_by_scope.py — per-class miss factors, agentic share 13% -> 30%, at the three
+scopes of the AGENT_SCOPE sweep (claim A2; FIG-02 panel a).
 
-Per ogni scope e classe, dai points.csv dei due run (stessi run di FIG-01, via
-scope_ttest.py; mappatura separata, 5 ripetizioni ciascuno):
-    miss = media(1 - h) sulle ripetizioni, SE = stdev / sqrt(n)
-    fattore = miss a quota 13% / miss a quota 30%  (rapporto delle medie, regola v3)
-    fold    = max / min delle due medie, con la direzione (down se il miss scende):
-              e' il «fattore» di A2 e l'etichetta di FIG-02 a
-Colonne di points.csv: h_zipf (umana), h_trav (esaustiva), h_agent (agentica).
+For each scope and class, from the points.csv of the two runs (same runs as FIG-01, via
+scope_ttest.py; separate mapping, 5 repetitions each):
+    miss = mean(1 - h) over the repetitions, SE = stdev / sqrt(n)
+    factor = miss at 13% share / miss at 30% share  (ratio of the means, rule v3)
+    fold    = max / min of the two means, with the direction (down if the miss falls):
+              it is the «factor» of A2 and the label of FIG-02 a
+Columns of points.csv: h_zipf (human), h_trav (exhaustive), h_agent (agentic).
 
-Scrive:
-    data/derived/fig02a_miss_by_class.csv        (scope 0,02, quello di FIG-02 a)
-    data/derived/class_miss_by_scope.csv         (tutti e tre gli scope)
-Per l'agentica il fattore coincide con l'elasticita' di figA_data.py (B3, B4).
+Writes:
+    data/derived/fig02a_miss_by_class.csv        (scope 0.02, the one of FIG-02 a)
+    data/derived/class_miss_by_scope.csv         (all three scopes)
+For the agentic class the factor coincides with the elasticity of figA_data.py (B3, B4).
 
-Il lab resta in sola lettura: solo `ssh lab cat`.
+The lab stays read-only: only `ssh lab cat`.
 
-Uso:
+Usage:
     python3 tools/class_miss_by_scope.py
 """
 import csv
@@ -39,7 +39,7 @@ CLASSES = (("human", "h_zipf"), ("exhaustive", "h_trav"), ("agentic", "h_agent")
 def points(run):
     rows = list(csv.DictReader(st.lab_cat(run, "points.csv").splitlines()))
     if not rows:
-        sys.exit(f"points.csv vuoto: {run}")
+        sys.exit(f"points.csv empty: {run}")
     return rows
 
 
@@ -63,7 +63,7 @@ def main():
                 fig02a.append([cls, f"{m13:.4f}", f"{s13:.4f}", f"{m30:.4f}", f"{s30:.4f}",
                                f"{fold:.4f}", way, f"{lo_id}+{hi_id}"])
             print(f"  scope {scope} {cls:10s} miss {m13:.4f} +/- {s13:.4f} -> "
-                  f"{m30:.4f} +/- {s30:.4f}   fattore {f:.4f}   fold {fold:.4f} {way}")
+                  f"{m30:.4f} +/- {s30:.4f}   factor {f:.4f}   fold {fold:.4f} {way}")
     with OUT_ALL.open("w", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["scope", "class", "miss_share13", "se13", "miss_share30", "se30",
@@ -74,7 +74,7 @@ def main():
         w.writerow(["class", "miss_share13", "se13", "miss_share30", "se30", "fold",
                     "direction", "runs"])
         w.writerows(fig02a)
-    print(f"scritti {OUT_ALL} e {OUT_FIG02A}")
+    print(f"written {OUT_ALL} and {OUT_FIG02A}")
 
 
 if __name__ == "__main__":

@@ -1,40 +1,40 @@
 #!/usr/bin/env bash
 #
-# sweep.sh - Sweep sulla composizione del traffico a volume costante.
+# sweep.sh - Sweep over the traffic composition at constant volume.
 #
-# L'ESPERIMENTO
+# THE EXPERIMENT
 #
-# Unica variabile indipendente: alpha, la frazione di traffico agentico.
-# Il ritmo totale lambda resta COSTANTE. Se il volume crescesse con
-# alpha, un eventuale ginocchio dimostrerebbe solo che piu' carico satura
-# un sistema — risultato noto dal 1961.
+# Only independent variable: alpha, the fraction of agentic traffic.
+# The total rate lambda stays CONSTANT. If the volume grew with
+# alpha, any knee would only show that more load saturates
+# a system — a result known since 1961.
 #
-# Previsione del modello (parametri misurati, cache 128m):
+# Model prediction (measured parameters, cache 128m):
 #   h_H = 0.830   h_A = 0.493   C = 74 req/s   r = 2.98
 #   lambda_origin(alpha) = lambda * 0.170 * (1 + 1.98*alpha)
-#   ginocchio previsto ad alpha = 0.35, partendo da u_0 = 0.60
+#   predicted knee at alpha = 0.35, starting from u_0 = 0.60
 #
-# GINOCCHIO — definizione pre-registrata (docs/decisions.md §15)
+# KNEE — pre-registered definition (docs/decisions.md §15)
 #   K = inf{ alpha : p99(alpha) > 10 * p99(0) }
 #
-# ORDINE RANDOMIZZATO
+# RANDOMISED ORDER
 #
-# I punti non si eseguono in ordine crescente di alpha. Su una campagna
-# di sei ore la macchina deriva — temperatura, frammentazione, stato del
-# kernel — e con ordine monotono la deriva sarebbe indistinguibile
-# dall'effetto di alpha. La randomizzazione la trasforma in rumore
-# distribuito. Il seed e' fisso, quindi l'ordine e' riproducibile.
+# The points are not run in increasing order of alpha. Over a six-hour
+# campaign the machine drifts — temperature, fragmentation, kernel
+# state — and with a monotonic order the drift would be indistinguishable
+# from the effect of alpha. Randomisation turns it into distributed
+# noise. The seed is fixed, so the order is reproducible.
 #
-# RIPRESA
+# RESUMPTION
 #
-# Ogni misura completata viene scritta subito su CSV. Rilanciando lo
-# script con lo stesso OUT, i punti gia' presenti vengono saltati: una
-# interruzione a cinque ore non costa cinque ore.
+# Every completed measurement is written to CSV immediately. By rerunning the
+# script with the same OUT, the points already present are skipped: an
+# interruption at five hours does not cost five hours.
 #
-# Uso:
-#   DRY=1 ./load/sweep.sh          prova rapida della logica (~15 min)
-#   ./load/sweep.sh                campagna completa (~6.5 h)
-#   OUT=results/sweep-XXX ./load/sweep.sh    riprende una campagna
+# Usage:
+#   DRY=1 ./load/sweep.sh          quick test of the logic (~15 min)
+#   ./load/sweep.sh                full campaign (~6.5 h)
+#   OUT=results/sweep-XXX ./load/sweep.sh    resumes a campaign
 #
 set -uo pipefail
 
@@ -44,7 +44,7 @@ cd "$HARNESS"
 LAMBDA="${LAMBDA:-260}"
 ALPHAS="${ALPHAS:-0.00 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50}"
 REPS="${REPS:-5}"
-REPS_NEAR="${REPS_NEAR:-10}"          # ripetizioni nei punti vicini al ginocchio
+REPS_NEAR="${REPS_NEAR:-10}"          # repetitions at the points near the knee
 NEAR="${NEAR:-0.30 0.35 0.40}"
 WARMUP="${WARMUP:-180}"
 MEASURE="${MEASURE:-180}"
@@ -66,8 +66,8 @@ log() { printf '\033[1m==>\033[0m %s\n' "$*" | tee -a "$LOG"; }
 vmq() { curl -s "http://localhost:8428/api/v1/query?query=$1" \
         | jq -r '.data.result[0].value[1] // "0"'; }
 
-# Annotazione Grafana: linee verticali sui grafici, indispensabili per
-# rileggere una campagna notturna senza contare i minuti a mano.
+# Grafana annotation: vertical lines on the charts, indispensable for
+# rereading an overnight campaign without counting minutes by hand.
 annotate() {
     curl -s -X POST http://localhost:3000/api/annotations \
         -H 'Content-Type: application/json' -u "admin:$(grep -oP '^GRAFANA_ADMIN_PASSWORD=\K.*' .env 2>/dev/null)" \
@@ -75,12 +75,12 @@ annotate() {
         >/dev/null 2>&1 || true
 }
 
-# --- verifiche preliminari ------------------------------------------------
+# --- preliminary checks ---------------------------------------------------
 for svc in varnish app db victoriametrics; do
     docker compose ps --status running --format '{{.Service}}' | grep -qx "$svc" || {
-        echo "ERRORE: il servizio $svc non e' attivo. docker compose up -d" >&2; exit 1; }
+        echo "ERROR: service $svc is not running. docker compose up -d" >&2; exit 1; }
 done
-[[ -f "$HARNESS/.env" ]] || { echo "ERRORE: .env mancante" >&2; exit 1; }
+[[ -f "$HARNESS/.env" ]] || { echo "ERROR: .env missing" >&2; exit 1; }
 
 if [[ ! -f "$CSV" ]]; then
     echo "alpha,rep,lambda,scheduled,completed,dropped,failed,timeout,p50,p95,p99,p999,max,hit_h,miss_h,hit_a,miss_a,inflight,app_cpu,db_cpu,ts" > "$CSV"
@@ -93,7 +93,7 @@ fi
   grep -E '^(THREADS|BACKLOG|DB_POOL|VARNISH_SIZE|CPUSET_)' .env
 } >> "$LOG"
 
-# --- costruzione della lista di lavori, poi mescolata ---------------------
+# --- building the job list, then shuffled ---------------------------------
 jobs=()
 for a in $ALPHAS; do
     n=$REPS
@@ -104,26 +104,26 @@ mapfile -t jobs < <(printf '%s\n' "${jobs[@]}" | shuf --random-source=<(yes "$SE
 
 total=${#jobs[@]}
 done_n=$(( $(wc -l < "$CSV") - 1 ))
-log "$total misure da eseguire, $done_n gia' presenti"
-log "durata stimata: $(( total * (WARMUP+MEASURE+DRAIN+20) / 60 )) minuti"
+log "$total measurements to run, $done_n already present"
+log "estimated duration: $(( total * (WARMUP+MEASURE+DRAIN+20) / 60 )) minutes"
 
-# --- ciclo principale -----------------------------------------------------
+# --- main loop ------------------------------------------------------------
 i=0
 for job in "${jobs[@]}"; do
     a="${job%:*}"; rep="${job#*:}"
     i=$((i+1))
 
     if grep -q "^$a,$rep," "$CSV" 2>/dev/null; then
-        printf '  [%3d/%3d] alpha=%s rep=%s  gia fatto\n' "$i" "$total" "$a" "$rep"
+        printf '  [%3d/%3d] alpha=%s rep=%s  already done\n' "$i" "$total" "$a" "$rep"
         continue
     fi
 
     printf '  [%3d/%3d] alpha=%s rep=%s ... ' "$i" "$total" "$a" "$rep"
     tag="a${a}-r${rep}"
 
-    # Cache fredda a ogni punto: senza, la storia di sfratto del punto
-    # precedente contamina il successivo, e i punti eseguiti piu' tardi
-    # partirebbero avvantaggiati.
+    # Cold cache at every point: without it, the eviction history of the
+    # previous point contaminates the next, and the points run later
+    # would start with an advantage.
     docker compose restart varnish >/dev/null 2>&1
     sleep 8
 
@@ -143,7 +143,7 @@ for job in "${jobs[@]}"; do
         > "$OUT/k6-$tag.log" 2>&1 &
     kp=$!
 
-    # Campionamento dell'occupazione durante la misura
+    # Sampling of the occupancy during the measurement
     sleep 20
     inf=0; ac=0; dc=0; ns=0
     while kill -0 $kp 2>/dev/null && [[ $ns -lt 40 ]]; do
@@ -161,10 +161,10 @@ for job in "${jobs[@]}"; do
     f="$HARNESS/results/m-$tag.json"
     if [[ -f "$f" ]]; then
         mv "$f" "$OUT/"; f="$OUT/m-$tag.json"
-        # Failure accounting completo: un p99 di 2 secondi con il 30% di
-        # richieste perse racconta una storia diversa da un p99 di 2
-        # secondi con tutte le richieste servite. La latenza da sola,
-        # vicino al collasso, e' fuorviante.
+        # Complete failure accounting: a p99 of 2 seconds with 30% of
+        # requests lost tells a different story from a p99 of 2
+        # seconds with all requests served. Latency alone,
+        # near the collapse, is misleading.
         read -r sched compl drop fail p50 p95 p99 p999 pmax hh mh ha ma <<<"$(jq -r '
           [ ((.metrics.iterations.values.count // 0) + (.metrics.dropped_iterations.values.count // 0)),
             (.metrics.http_reqs.values.count // 0),
@@ -185,20 +185,20 @@ for job in "${jobs[@]}"; do
         printf 'p99=%s ms  inflight=%s  drop=%s\n' "$p99" "$inf" "$drop"
     else
         echo "$a,$rep,$LAMBDA,,,,,,,,,,,,,,,$inf,$ac,$dc,$(date -Is)" >> "$CSV"
-        echo "FALLITO — vedi $OUT/k6-$tag.log"
+        echo "FAILED — see $OUT/k6-$tag.log"
     fi
 
     sleep "$DRAIN"
 done
 
-# --- riepilogo ------------------------------------------------------------
-log "campagna completata"
+# --- summary --------------------------------------------------------------
+log "campaign completed"
 {
   echo
   echo "================================================================"
-  echo "RIEPILOGO — mediana per alpha"
+  echo "SUMMARY — median per alpha"
   echo "================================================================"
-  printf '%-7s %5s %10s %10s %10s %9s %9s\n' alpha n 'p99 ms' 'p95 ms' 'hit tot' inflight 'perse%'
+  printf '%-7s %5s %10s %10s %10s %9s %9s\n' alpha n 'p99 ms' 'p95 ms' 'hit tot' inflight 'lost%'
   awk -F, 'NR>1 && $11!="" {
       a=$1; n[a]++; p99[a,n[a]]=$11; p95[a,n[a]]=$10
       h[a]+=$14+$16; m[a]+=$15+$17; inf[a]+=$18; to[a]+=$8
@@ -215,8 +215,8 @@ log "campagna completata"
     }
   }' "$CSV" | sort -n
   echo
-  echo "Ginocchio: primo alpha con p99 mediano oltre 10x il valore ad alpha=0"
-  echo "(definizione pre-registrata, docs/decisions.md §15)"
+  echo "Knee: first alpha with median p99 beyond 10x the value at alpha=0"
+  echo "(pre-registered definition, docs/decisions.md §15)"
   echo
-  echo "Dati grezzi: $CSV"
+  echo "Raw data: $CSV"
 } | tee -a "$LOG"

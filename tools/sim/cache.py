@@ -1,13 +1,13 @@
 """
-cache.py — LRU a capienza in byte: riproduzione di harness/varnish/default.vcl.tpl con
+cache.py — LRU with byte capacity: reproduction of harness/varnish/default.vcl.tpl with
 `-s malloc,128m` (docs/PREREG-simulatore-fase1.md, «Cache»).
 
-  - chiave = indice di capitolo (URL, nessuna normalizzazione, nessun Vary);
-  - miss: inserimento in testa, sfratto dalla coda finche' c'e' spazio;
-  - hit: l'oggetto passa in testa (LRU esatto; Varnish usa lru_interval = 2 s);
-  - footprint = byte del corpo + H;
-  - TTL: scadenza assoluta, controllata al momento della richiesta (86 400 s: nella fase 1
-    non scade mai dentro una ripetizione).
+  - key = chapter index (URL, no normalisation, no Vary);
+  - miss: insertion at the head, eviction from the tail until there is room;
+  - hit: the object moves to the head (exact LRU; Varnish uses lru_interval = 2 s);
+  - footprint = body bytes + H;
+  - TTL: absolute expiry, checked at request time (86,400 s: in phase 1 it
+    never expires within a repetition).
 """
 from collections import OrderedDict
 
@@ -18,11 +18,11 @@ TTL = 86_400
 class LRU:
     def __init__(self, sizes, h, capacity=CAPACITY, ttl=TTL):
         self.sizes, self.h, self.capacity, self.ttl = sizes, h, capacity, ttl
-        self.d = OrderedDict()               # idx -> scadenza
+        self.d = OrderedDict()               # idx -> expiry
         self.used = 0
 
     def get(self, idx, now):
-        """True se hit. Un miss inserisce l'oggetto."""
+        """True if hit. A miss inserts the object."""
         exp = self.d.get(idx)
         if exp is not None:
             if now < exp:

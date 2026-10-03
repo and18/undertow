@@ -1,17 +1,17 @@
 """
-trace.py — generatore di tracce: riproduzione di harness/load/workload.js come lo lancia
+trace.py — trace generator: reproduction of harness/load/workload.js as launched by
 harness/load/treclassi.sh (docs/PREREG-simulatore-fase1.md, «Generatore»).
 
-Una ripetizione = warm-up (300 s) + misura (620 s), due invocazioni k6 separate:
-  - iterazione i al tempo i/λ, λ·durata iterazioni (constant-arrival-rate);
-  - classe da un solo sorteggio u: esaustiva se u < α, agentica se u < α+β, umana altrimenti;
-  - umana: permute(min(floor(N^u), N-1)), moltiplicatore 2654435761, SEED 42;
-  - agentica: sessione di AGENT_SESSION capitoli contigui per VU; VU = i mod nVU,
-    nVU = min(max(ceil(2λ), 200), 4000); stato di sessione vuoto a inizio invocazione;
-  - esaustiva: permuteTrav(offset + TRAV_SKIP + i), i = iterationInTest (tutte le classi);
-    TRAV_SKIP = 0 nel warm-up, int(300·λ·α) nella misura (printf "%d" di awk: tronca).
-Math.random di k6 non ha seme: qui random.Random(seme). Stessa distribuzione, non la sequenza.
-Gli interi sono esatti in Python; in double lo sono anche in k6 (prodotti < 2^53).
+One repetition = warm-up (300 s) + measurement (620 s), two separate k6 invocations:
+  - iteration i at time i/λ, λ·duration iterations (constant-arrival-rate);
+  - class from a single draw u: exhaustive if u < α, agentic if u < α+β, human otherwise;
+  - human: permute(min(floor(N^u), N-1)), multiplier 2654435761, SEED 42;
+  - agentic: session of AGENT_SESSION contiguous chapters per VU; VU = i mod nVU,
+    nVU = min(max(ceil(2λ), 200), 4000); session state empty at the start of the invocation;
+  - exhaustive: permuteTrav(offset + TRAV_SKIP + i), i = iterationInTest (all classes);
+    TRAV_SKIP = 0 in the warm-up, int(300·λ·α) in the measurement (awk's printf "%d": truncates).
+k6's Math.random has no seed: here random.Random(seed). Same distribution, not the sequence.
+The integers are exact in Python; in double they are also in k6 (products < 2^53).
 """
 import bisect
 import csv
@@ -29,7 +29,7 @@ CLASS_NAMES = ("human", "agentic", "exhaustive")
 
 
 def corpus():
-    """(ids, cum): vettore cumulativo nell'ordine di /library (books.csv)."""
+    """(ids, cum): cumulative vector in the order of /library (books.csv)."""
     ids, cum, t = [], [], 0
     with open(ROOT / "data" / "corpus" / "books.csv", newline="") as f:
         for r in csv.DictReader(f):
@@ -46,7 +46,7 @@ def locate(ids, cum, idx):
 
 def phase(rnd, n, lam, alpha, beta, scope, agent_mul, duration, trav_skip,
           session=3, skew=0.6):
-    """Richieste di un'invocazione k6: lista di (classe, indice di capitolo, VU)."""
+    """Requests of a k6 invocation: list of (class, chapter index, VU)."""
     iters = int(round(lam * duration))
     nvu = min(max(math.ceil(2 * lam), 200), 4000)
     s_bases = max(1, math.floor(n * scope))
@@ -77,7 +77,7 @@ def phase(rnd, n, lam, alpha, beta, scope, agent_mul, duration, trav_skip,
 
 
 def repetition(seed, n, lam, alpha, beta, scope, agent_mul):
-    """(warm-up, misura) di una ripetizione."""
+    """(warm-up, measurement) of a repetition."""
     rnd = random.Random(seed)
     warm = phase(rnd, n, lam, alpha, beta, scope, agent_mul, WARMUP, 0)
     skip = int(WARMUP * lam * alpha)
@@ -86,7 +86,7 @@ def repetition(seed, n, lam, alpha, beta, scope, agent_mul):
 
 
 def contiguity(meas, ids, cum):
-    """Metrica di C5 sulle richieste agentiche della misura, sessione = VU."""
+    """C5 metric on the agentic requests of the measurement, session = VU."""
     seq = {}
     for c, idx, v in meas:
         if c == AGENT:

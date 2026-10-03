@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# policy.sh - Le politiche di ammissione a confronto, al ginocchio.
+# policy.sh - The admission policies compared, at the knee.
 #
-#   A   nessuna politica                 il default del web
-#   B   blocco della classe esaustiva    ammissione per identita'
-#   C   blocco di esaustiva e agentica   default Cloudflare, 15 set 2026
-#   D4  budget con rinvio, 4 slot        la nostra mitigazione
-#   D6  budget con rinvio, 6 slot
+#   A   no policy                        the web default
+#   B   block the exhaustive class       admission by identity
+#   C   block exhaustive and agentic     Cloudflare default, 15 Sep 2026
+#   D4  budget with deferral, 4 slots    our mitigation
+#   D6  budget with deferral, 6 slots
 #
-# Il confronto che decide e' C contro D: C rifiuta la classe che costa
-# meno servire, D rimanda quella che costa di piu'. Se D ottiene una
-# latenza interattiva vicina a quella di C continuando a servire la
-# classe agentica, il blocco per identita' paga un prezzo che non serve.
+# The deciding comparison is C against D: C rejects the class that costs
+# less to serve, D defers the one that costs more. If D achieves an
+# interactive latency close to that of C while continuing to serve the
+# agentic class, blocking by identity pays a price that is not needed.
 #
-# Il blocco e' all'origine, non al bordo: una richiesta bloccata che
-# trova l'oggetto in cache viene comunque servita da Varnish. Sul carico
-# all'origine l'effetto e' identico, perche' un hit non raggiunge
-# l'origine in nessun caso.
+# The block is at the origin, not at the edge: a blocked request that
+# finds the object in cache is served by Varnish anyway. On the origin
+# load the effect is identical, because a hit does not reach the origin
+# in any case.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 LAM="${LAM:-185}"
-echo "lambda=$LAM  alpha=0.35  beta=0.10  cache=128MB  3 ripetizioni"
+echo "lambda=$LAM  alpha=0.35  beta=0.10  cache=128MB  3 repetitions"
 for P in "A::0" "B:low:0" "C:low,agent:0" "D4::4" "D6::6"; do
   N="${P%%:*}"; R="${P#*:}"; B="${R%%:*}"; BU="${R##*:}"
-  printf '\n######## politica %s  block=[%s] budget=%s ########  %s\n' \
+  printf '\n######## policy %s  block=[%s] budget=%s ########  %s\n' \
       "$N" "$B" "$BU" "$(date +%H:%M)"
   BLOCK_CLASSES="$B" BUDGET_LOW="$BU" BUDGET_WAIT=0 LAMBDA="$LAM" \
     REPS=3 GATE=0 WARMUP=300 MEASURE_FORCE=620 TOTAL_MB=128 \

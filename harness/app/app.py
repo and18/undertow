@@ -1,22 +1,22 @@
 """
-app.py - Applicazione del sistema sotto test.
+app.py - Application of the system under test.
 
-Modella un archivio testuale con due nature di endpoint:
+Models a text archive with two kinds of endpoint:
 
-  CACHEABLE      indici e capitoli, serviti con Cache-Control esplicito.
-                 E' il caso studiato da Zhang et al. (SoCC 2025).
+  CACHEABLE      indexes and chapters, served with explicit Cache-Control.
+                 This is the case studied by Zhang et al. (SoCC 2025).
 
-  NON CACHEABLE  ricerca full-text, che colpisce il database a ogni
-                 richiesta. E' il caso che nessuno ha misurato, e dove
-                 il collasso e' piu' rapido perche' la cache non puo'
-                 assorbire nulla.
+  NON-CACHEABLE  full-text search, which hits the database on every
+                 request. This is the case nobody has measured, and where
+                 the collapse is faster because the cache can absorb
+                 nothing.
 
-La risorsa limitata e' il pool di thread di gunicorn (worker gthread,
-processo singolo): concettualmente identico a un Work Manager WebLogic.
-Quando i thread finiscono, le richieste si accodano nel backlog del
-socket, e la latenza smette di degradare linearmente.
+The limited resource is the gunicorn thread pool (gthread worker,
+single process): conceptually identical to a WebLogic Work Manager.
+When the threads run out, requests queue in the socket backlog, and
+the latency stops degrading linearly.
 
-Metriche esposte su /metrics per lo scrape.
+Metrics exposed on /metrics for scraping.
 """
 
 import os
@@ -31,49 +31,48 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest,
 )
 
-# OBJECT_TTL, se impostato, ha precedenza: e' la variabile
-# dell'esperimento sulla scadenza. Il corpus Gutenberg non cambia mai,
-# quindi con un TTL lungo un oggetto vive finche' non viene sfrattato e
-# misuriamo il limite superiore del riuso. Su un sito reale la vita
-# utile e' min(residenza, TTL), e la classe con l'intervallo di ritorno
-# piu' lungo e' la prima a perdere il beneficio.
+# OBJECT_TTL, if set, takes precedence: it is the experiment's
+# variable on expiry. The Gutenberg corpus never changes, so with a
+# long TTL an object lives until it is evicted and we measure the upper
+# bound of reuse. On a real site the useful life is min(residency, TTL),
+# and the class with the longest return interval is the first to lose
+# the benefit.
 CACHE_TTL = int(os.environ.get("OBJECT_TTL") or os.environ.get("CACHE_TTL") or 3600)
 DB_POOL_MIN = int(os.environ.get("DB_POOL_MIN", "2"))
 DB_POOL_MAX = int(os.environ.get("DB_POOL_MAX", "16"))
 
-# ------------------------------------------------------ budget per classe --
+# ------------------------------------------------------ per-class budget --
 
 BUDGET_LOW = int(os.environ.get("BUDGET_LOW", "0"))
-# Attesa zero, e la ragione e' strutturale.
+# Zero wait, and the reason is structural.
 #
-# Il semaforo viene acquisito da before_request, che gira gia' su un
-# thread di gunicorn. Una richiesta che ATTENDE uno slot tiene occupato
-# quel thread mentre aspetta: con BUDGET_WAIT=0.5 la campagna del
-# 2026-08-23 ha misurato un peggioramento monotono, fino a 6,4 volte il
-# riferimento con budget=1. Il meccanismo aggiungeva latenza senza
-# liberare nulla.
+# The semaphore is acquired by before_request, which already runs on a
+# gunicorn thread. A request that WAITS for a slot keeps that thread
+# busy while it waits: with BUDGET_WAIT=0.5 the 2026-08-23 campaign
+# measured a monotonic worsening, up to 6.4 times the reference with
+# budget=1. The mechanism added latency without freeing anything.
 #
-# Con attesa zero, la richiesta o ottiene subito uno slot o riceve subito
-# 503 con Retry-After, e il thread torna libero in microsecondi. Solo
-# cosi' la classe batch occupa al massimo BUDGET_LOW thread e alla classe
-# interattiva ne restano garantiti THREADS meno BUDGET_LOW.
+# With zero wait, the request either gets a slot at once or immediately
+# receives 503 with Retry-After, and the thread is free again in
+# microseconds. Only this way does the batch class occupy at most
+# BUDGET_LOW threads and the interactive class keep THREADS minus
+# BUDGET_LOW guaranteed.
 BUDGET_WAIT = float(os.environ.get("BUDGET_WAIT", "0"))
 
-# Ammissione per identita': le classi elencate qui ricevono 403 PRIMA
-# di qualunque lavoro — nessuna query, nessuno slot di pool, nessun
-# oggetto inserito in cache. E' la politica che l'industria sta
-# adottando (Cloudflare, default del 15 settembre 2026), portata
-# all'origine invece che al bordo.
+# Admission by identity: the classes listed here receive 403 BEFORE any
+# work — no query, no pool slot, no object inserted in
+# cache. It is the policy the industry is adopting (Cloudflare, default
+# of 15 September 2026), brought to the origin instead of the edge.
 #
-# Vuoto = nessun blocco, cioe' il comportamento preesistente. I nomi
-# sono quelli che l'applicazione assegna a request._cls, non gli user
-# agent: vanno letti da ut_requests_inflight_class prima di usarli.
+# Empty = no block, i.e. the pre-existing behaviour. The names
+# are those the application assigns to request._cls, not the user
+# agents: read them from ut_requests_inflight_class before using them.
 #
-# LIMITE DA DICHIARARE: il blocco e' all'origine, quindi una richiesta
-# della classe bloccata che trova l'oggetto in cache viene comunque
-# servita da Varnish. Sul carico all'origine l'effetto e' identico a
-# un blocco al bordo (un hit non raggiunge l'origine in nessun caso);
-# differisce solo su quante richieste il client vede soddisfatte.
+# LIMIT TO DECLARE: the block is at the origin, so a request
+# of the blocked class that finds the object in cache is served
+# by Varnish anyway. On the origin load the effect is identical to
+# a block at the edge (a hit does not reach the origin in any case);
+# it differs only in how many requests the client sees satisfied.
 BLOCK_CLASSES = {c.strip() for c in
                  os.environ.get("BLOCK_CLASSES", "").split(",")
                  if c.strip()}
@@ -81,41 +80,41 @@ BLOCK_CLASSES = {c.strip() for c in
 _low_sem = (threading.BoundedSemaphore(BUDGET_LOW)
             if BUDGET_LOW > 0 else None)
 
-# Insieme fisso di termini di ricerca. Il costo di una ricerca full-text
-# dipende da quanti capitoli contengono il termine — 83 ms per "whale",
-# 1330 ms per "night" — quindi un termine scelto liberamente renderebbe
-# il costo della query una variabile non controllata del workload. Con un
-# insieme fisso, campionato in modo identico dai due profili, il costo
-# medio per richiesta e' una costante nota dell'esperimento.
-# I termini vanno scelti misurandoli sul corpus: vedi tools/pick_terms.py.
-SEARCH_TERMS = []  # popolato da profiles/search-terms.txt
+# Fixed set of search terms. The cost of a full-text search
+# depends on how many chapters contain the term — 83 ms for "whale",
+# 1330 ms for "night" — so a freely chosen term would make
+# the query cost an uncontrolled variable of the workload. With a
+# fixed set, sampled identically by the two profiles, the average cost
+# per request is a known constant of the experiment.
+# The terms must be chosen by measuring them on the corpus: see tools/pick_terms.py.
+SEARCH_TERMS = []  # populated from profiles/search-terms.txt
 
 app = Flask(__name__)
 
-# --------------------------------------------------------------- metriche --
+# --------------------------------------------------------------- metrics --
 
-REQ = Counter("ut_requests_total", "Richieste servite",
+REQ = Counter("ut_requests_total", "Requests served",
               ["endpoint", "status", "cacheable"])
-LAT = Histogram("ut_request_seconds", "Latenza lato applicazione",
+LAT = Histogram("ut_request_seconds", "Application-side latency",
                 ["endpoint", "cacheable"],
                 buckets=(.001, .005, .01, .025, .05, .1, .25, .5,
                          1, 2.5, 5, 10, 30, 60))
-INFLIGHT = Gauge("ut_requests_inflight", "Richieste in elaborazione")
-INFLIGHT_CLS = Gauge("ut_requests_inflight_class", "In volo per classe", ["cls"])
-BUDGET_ADMITTED = Counter("ut_budget_admitted_total", "Amesse", ["cls"])
-BUDGET_SHED = Counter("ut_budget_shed_total", "Rifiutate per budget", ["cls"])
-BLOCKED = Counter("ut_blocked_total", "Richieste rifiutate per classe",
+INFLIGHT = Gauge("ut_requests_inflight", "Requests being processed")
+INFLIGHT_CLS = Gauge("ut_requests_inflight_class", "In flight per class", ["cls"])
+BUDGET_ADMITTED = Counter("ut_budget_admitted_total", "Admitted", ["cls"])
+BUDGET_SHED = Counter("ut_budget_shed_total", "Rejected by budget", ["cls"])
+BLOCKED = Counter("ut_blocked_total", "Requests rejected per class",
                   ["cls"])
-BUDGET_WAITED = Histogram("ut_budget_wait_seconds", "Attesa per uno slot",
+BUDGET_WAITED = Histogram("ut_budget_wait_seconds", "Wait for a slot",
                           buckets=(.001, .01, .05, .1, .25, .5, 1, 2))
-DBWAIT = Histogram("ut_db_pool_wait_seconds", "Attesa per una connessione DB",
+DBWAIT = Histogram("ut_db_pool_wait_seconds", "Wait for a DB connection",
                    buckets=(.0001, .001, .005, .01, .05, .1, .5, 1, 5, 10))
-DBBUSY = Gauge("ut_db_pool_busy", "Connessioni DB in uso")
+DBBUSY = Gauge("ut_db_pool_busy", "DB connections in use")
 DBEXHAUSTED = Counter("ut_db_pool_exhausted_total",
-                      "Tentativi falliti di ottenere una connessione")
-POOLCFG = Gauge("ut_pool_config", "Parametri di configurazione", ["param"])
+                      "Failed attempts to obtain a connection")
+POOLCFG = Gauge("ut_pool_config", "Configuration parameters", ["param"])
 
-# ------------------------------------------------------------- pool di DB --
+# ------------------------------------------------------------- DB pool --
 
 _pool = None
 _busy = 0
@@ -137,11 +136,11 @@ def get_pool():
 
 @contextmanager
 def db():
-    """Connessione dal pool, con misura del tempo di attesa.
+    """Connection from the pool, measuring the wait time.
 
-    Il tempo di attesa e' la metrica chiave: cresce da zero a valori
-    macroscopici nel momento in cui il pool si esaurisce, ed e' il
-    secondo anello della catena di saturazione.
+    The wait time is the key metric: it grows from zero to macroscopic
+    values the moment the pool is exhausted, and it is the
+    second link in the saturation chain.
     """
     global _busy
     t0 = time.perf_counter()
@@ -183,14 +182,14 @@ def query(sql, args=(), one=False):
 # ------------------------------------------------------------ middleware --
 
 def request_class():
-    """Classifica la richiesta per il banco prova."""
+    """Classify the request for the test bench."""
     ua = request.headers.get("User-Agent", "")
-    # Tre classi, non due. Il profilo agentico esiste in workload.js dal
-    # 9 settembre, ma l'applicazione non lo distingueva: finiva in "high"
-    # insieme al traffico umano, quindi non era ne' osservabile ne'
-    # governabile separatamente. Serve per la politica che blocca
-    # training e agent lasciando passare search, cioe' il default
-    # Cloudflare dal 15 settembre 2026.
+    # Three classes, not two. The agentic profile has existed in workload.js
+    # since 9 September, but the application did not distinguish it: it ended up in "high"
+    # together with human traffic, so it was neither observable nor
+    # governable separately. It is needed for the policy that blocks
+    # training and agent while letting search through, i.e. the
+    # Cloudflare default since 15 September 2026.
     if "lowloc" in ua:
         return "low"
     if "undertow-agent" in ua:
@@ -206,8 +205,8 @@ def _start():
     INFLIGHT.inc()
     INFLIGHT_CLS.labels(request._cls).inc()
 
-    # Prima del semaforo e prima di ogni query: una richiesta bloccata
-    # non deve consumare lavoro all'origine.
+    # Before the semaphore and before any query: a blocked request
+    # must not consume work at the origin.
     if request._cls in BLOCK_CLASSES:
         BLOCKED.labels(request._cls).inc()
         abort(403)
@@ -268,15 +267,15 @@ def uncacheable(resp):
     return resp
 
 
-# ------------------------------------------------------------- endpoint  --
+# ------------------------------------------------------------- endpoints --
 
 @app.get("/health")
 def health():
-    """Endpoint banale: nessun accesso al DB.
+    """Trivial endpoint: no DB access.
 
-    Serve al test nullo, che deve verificare che il generatore di carico
-    regga un multiplo del ritmo di prova senza che il bersaglio sia il
-    limite. Se anche /health degrada, il problema e' altrove.
+    Used by the null test, which must verify that the load generator
+    holds a multiple of the test rate without the target being the
+    limit. If /health also degrades, the problem is elsewhere.
     """
     return uncacheable(jsonify(ok=True))
 
@@ -310,14 +309,14 @@ def book(book_id):
 
 @app.get("/book/<int:book_id>/ch/<int:n>")
 def chapter(book_id, n):
-    """Capitolo: cacheable, nella coda lunga.
+    """Chapter: cacheable, in the long tail.
 
-    Fa quello che fa una pagina reale: contenuto, metadati del libro,
-    indice per la navigazione, link uscenti. Una singola lookup su chiave
-    primaria costerebbe ~5 ms, e a quel costo il pool di thread non si
-    riempirebbe a nessuna composizione del traffico: l'esperimento non
-    potrebbe produrre il fenomeno che deve misurare. Il costo qui non e'
-    gonfiato artificialmente, e' quello di una pagina applicativa vera.
+    It does what a real page does: content, book metadata,
+    index for navigation, outgoing links. A single primary-key lookup
+    would cost ~5 ms, and at that cost the thread pool would not
+    fill up at any traffic composition: the experiment could not
+    produce the phenomenon it must measure. The cost here is not
+    artificially inflated, it is that of a real application page.
     """
     row = query(
         "SELECT book_id, n, title, body FROM chapters"
@@ -331,12 +330,12 @@ def chapter(book_id, n):
     row["toc"] = query(
         "SELECT n, title, words FROM chapters WHERE book_id = %s ORDER BY n",
         (book_id,))
-    # Estratti dei capitoli collegati. Una pagina cacheable e' costosa da
-    # generare — e' per questo che la si mette in cache. Senza questo
-    # lavoro il capitolo costa ~6 ms, e per la legge di Little il pool da
-    # 16 thread saturerebbe solo oltre 2600 req/s all'origine: un ritmo
-    # che il GIL non lascia raggiungere. L'esperimento non potrebbe
-    # produrre il fenomeno che deve misurare.
+    # Excerpts of the linked chapters. A cacheable page is expensive to
+    # generate — that is why it is put in cache. Without this
+    # work the chapter costs ~6 ms, and by Little's law the 16-thread pool
+    # would saturate only beyond 2600 req/s at the origin: a rate
+    # the GIL does not allow reaching. The experiment could not
+    # produce the phenomenon it must measure.
     row["related"] = query(
         "SELECT c.book_id, c.n, c.title, b.title AS book_title,"
         "       left(c.body, 400) AS excerpt,"
@@ -349,11 +348,11 @@ def chapter(book_id, n):
         "WHERE l.src_book = %s AND l.src_n = %s",
         (row["title"], book_id, n))
     resp = cacheable(row and jsonify(row))
-    # TTL come variabile d'esperimento. Il corpus Gutenberg non cambia mai,
-    # quindi senza questo un oggetto in cache vive finche' non viene
-    # sfrattato: misuriamo il limite superiore del riuso. Su un sito reale
-    # la vita utile e' min(residenza, TTL), e la classe con l'intervallo di
-    # ritorno piu' lungo e' la prima a perdere il beneficio.
+    # TTL as an experiment variable. The Gutenberg corpus never changes,
+    # so without this an object in cache lives until it is
+    # evicted: we measure the upper bound of reuse. On a real site
+    # the useful life is min(residency, TTL), and the class with the longest
+    # return interval is the first to lose the benefit.
     ttl = int(os.environ.get("OBJECT_TTL", "0"))
     if ttl > 0:
         resp.headers["Cache-Control"] = f"public, max-age={ttl}"
@@ -364,21 +363,21 @@ def chapter(book_id, n):
 
 @app.get("/search")
 def search():
-    """Ricerca full-text: NON cacheable, costosa.
+    """Full-text search: NOT cacheable, expensive.
 
-    Nessuna cache puo' assorbirla. E' il caso assente dal lavoro
-    esistente e quello dove la saturazione arriva prima.
+    No cache can absorb it. It is the case absent from existing
+    work and the one where saturation arrives first.
     """
     q = (request.args.get("q") or "").strip()
     if not q:
         return uncacheable(jsonify(error="q required")), 400
     rows = query(
-        # ts_headline va applicato DOPO il LIMIT, non prima. Calcolato
-        # sull'intero insieme di corrispondenze, il costo dipende da quanti
-        # capitoli contengono il termine: 77 ms per "whale", 2075 ms per
-        # "love". Il costo della query diventerebbe una variabile non
-        # controllata del workload. Con la sottoquery, gli snippet si
-        # generano su esattamente 25 righe qualunque sia il termine.
+        # ts_headline must be applied AFTER the LIMIT, not before. Computed
+        # on the whole set of matches, the cost depends on how many
+        # chapters contain the term: 77 ms for "whale", 2075 ms for
+        # "love". The query cost would become an uncontrolled
+        # variable of the workload. With the subquery, the snippets are
+        # generated on exactly 25 rows whatever the term.
         "SELECT book_id, n, title, rank,"
         "       ts_headline('english', body, plainto_tsquery('english', %s),"
         "                   'MaxFragments=3, MaxWords=40') AS snippet "
@@ -393,17 +392,17 @@ def search():
 
 @app.get("/links/<int:book_id>/<int:n>")
 def links(book_id, n):
-    """Link uscenti da un capitolo: alimenta l'attraversamento agentico."""
+    """Outgoing links from a chapter: feeds the agentic traversal."""
     rows = query(
         "SELECT dst_book, dst_n FROM links WHERE src_book = %s AND src_n = %s",
         (book_id, n))
     return cacheable(jsonify(rows))
 
 
-# Le metriche NON devono passare dal pool di thread dell'applicazione:
-# quando il pool satura, lo scrape si accoderebbe e la strumentazione si
-# spegnerebbe proprio nell'istante che si vuole misurare. start_http_server
-# apre un socket e un thread propri, indipendenti da gunicorn.
+# The metrics must NOT go through the application's thread pool:
+# when the pool saturates, the scrape would queue up and the instrumentation
+# would switch off at exactly the moment we want to measure. start_http_server
+# opens a socket and a thread of its own, independent of gunicorn.
 from prometheus_client import start_http_server
 
 def _init_metrics():

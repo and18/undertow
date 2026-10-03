@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 #
-# verifiche.sh - Le tre prove che possono chiudere la direzione.
+# verifiche.sh - The three tests that can close the direction.
 #
-# A  TTL. Il costo endogeno della classe agentica poggia sulla residenza
-#    di un insieme piccolo. Con una scadenza realistica quella residenza
-#    sparisce e l'effetto con lei. Previsione registrata prima della
-#    misura: crollo fra TTL 30 e 120 s, con la classe agentica che perde
-#    molto piu' di quella umana (intervallo di ritorno ~45 s contro
-#    frazioni di secondo).
+# A  TTL. The endogenous cost of the agentic class rests on the residency
+#    of a small set. With a realistic expiry that residency disappears
+#    and the effect with it. Prediction recorded before the
+#    measurement: collapse between TTL 30 and 120 s, with the agentic class
+#    losing much more than the human one (return interval ~45 s against
+#    fractions of a second).
 #
-# B  Endogeneita' su un intervallo piu' fitto. Se il costo unitario della
-#    classe agentica dipende dalla sua stessa quota, la curva deve essere
-#    monotona e non un artefatto di due punti.
+# B  Endogeneity on a denser interval. If the unit cost of the
+#    agentic class depends on its own share, the curve must be
+#    monotonic and not an artefact of two points.
 #
-# C  Secondo collo di bottiglia. Finora satura sempre la CPU di
-#    PostgreSQL. Stringendo il pool di connessioni sotto il pool di
-#    thread, la risorsa che satura cambia natura: si esaurisce per posti,
-#    non per calcolo. Se il ginocchio resta allo stesso rho, la
-#    generalita' e' dimostrata; se scende, abbiamo trovato la variabile
-#    mancante (la variabilita' del tempo di servizio).
+# C  Second bottleneck. So far it is always the PostgreSQL CPU that
+#    saturates. Tightening the connection pool below the thread pool, the
+#    resource that saturates changes nature: it runs out of slots,
+#    not of compute. If the knee stays at the same rho, generality is
+#    demonstrated; if it falls, we have found the missing variable
+#    (the variability of the service time).
 #
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -30,7 +30,7 @@ for T in 0 300 120 60 30; do
       POINTS="0.25:0.02 0.25:0.20"
 done
 
-run "B  endogeneita' della classe agentica" LAMBDA=110 REPS=2 GATE=0 \
+run "B  endogeneity of the agentic class" LAMBDA=110 REPS=2 GATE=0 \
     POINTS="0.25:0.02 0.25:0.05 0.25:0.10 0.25:0.15 0.25:0.20 0.25:0.30"
 
 for P in 4 12; do
@@ -40,8 +40,8 @@ done
 
 echo
 echo "================================================================"
-echo "  A: se hit agente crolla fra TTL 120 e 30, l'effetto e' un"
-echo "     artefatto del contenuto immutabile e la direzione e' chiusa."
-echo "  B: la curva deve essere monotona su sei punti, non due."
-echo "  C: se il ginocchio resta a rho 0,89-0,97 con pool 4, la soglia"
-echo "     e' una proprieta' delle code e non del nostro database."
+echo "  A: if agent hit collapses between TTL 120 and 30, the effect is an"
+echo "     artefact of immutable content and the direction is closed."
+echo "  B: the curve must be monotonic over six points, not two."
+echo "  C: if the knee stays at rho 0.89-0.97 with pool 4, the threshold"
+echo "     is a property of queues and not of our database."

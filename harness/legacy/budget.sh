@@ -1,45 +1,45 @@
 #!/usr/bin/env bash
 #
-# budget.sh - Un budget di risorse per classe protegge il traffico
-#             interattivo senza penalizzare quello batch?
+# budget.sh - Does a per-class resource budget protect interactive
+#             traffic without penalising batch traffic?
 #
-# LA DOMANDA
+# THE QUESTION
 #
-# Al ginocchio le due classi competono per gli stessi thread. La classe a
-# bassa localita' ha volume alto e nessuno in attesa; quella ad alta
-# localita' ha volume minore e una persona che aspetta. Oggi vince chi
-# arriva prima, quindi la seconda aspetta dietro la prima.
+# At the knee the two classes compete for the same threads. The low-locality
+# class has high volume and nobody waiting; the high-locality one
+# has lower volume and a person waiting. Today whoever arrives first wins,
+# so the second waits behind the first.
 #
-# Il budget limita quante richieste a bassa localita' possono essere in
-# elaborazione contemporaneamente. Le eccedenti attendono brevemente e,
-# se lo slot non si libera, ricevono 503 con Retry-After: un rinvio, non
-# un rifiuto. Il carico non viene perso, viene spostato nel tempo — cosa
-# che un crawler batch puo' permettersi e un utente in attesa no.
+# The budget limits how many low-locality requests can be in
+# progress at the same time. The excess ones wait briefly and,
+# if the slot does not free up, receive 503 with Retry-After: a deferral, not
+# a refusal. The load is not lost, it is shifted in time — something
+# a batch crawler can afford and a waiting user cannot.
 #
-# PREVISIONE ASIMMETRICA, ED E' IL PUNTO
+# ASYMMETRIC PREDICTION, AND IT IS THE POINT
 #
-#   la classe interattiva recupera molto
-#   la classe batch perde poco
+#   the interactive class recovers a lot
+#   the batch class loses little
 #
-# perche' la classe batch non era limitata dai thread: era limitata dalla
-# contesa che creava lei stessa. Se il conto torna, il conflitto e'
-# apparente e non serve bloccare nessuno.
+# because the batch class was not limited by the threads: it was limited by
+# the contention it created itself. If the numbers add up, the conflict is
+# apparent and there is no need to block anyone.
 #
-# CRITERIO, FISSATO PRIMA DEI DATI
+# CRITERION, FIXED BEFORE THE DATA
 #
-#   riuscito   p99 della classe interattiva sotto 500 ms
-#              E throughput completato della classe batch entro il 20%
-#              del valore di riferimento
+#   succeeded  p99 of the interactive class below 500 ms
+#              AND completed throughput of the batch class within 20%
+#              of the reference value
 #
-#   fallito    il throughput della classe batch cala in proporzione al
-#              budget. In quel caso l'asimmetria non esiste e la tesi
-#              va abbandonata.
+#   failed     the throughput of the batch class drops in proportion to the
+#              budget. In that case the asymmetry does not exist and the thesis
+#              must be abandoned.
 #
-# Il punto di lavoro e' alpha = 0.20, dove il p99 mediano e' 2681 ms e
-# l'occupazione del pool 93%: appena oltre il ginocchio, dove c'e'
-# qualcosa da recuperare.
+# The working point is alpha = 0.20, where the median p99 is 2681 ms and
+# the pool occupancy 93%: just beyond the knee, where there is
+# something to recover.
 #
-# Uso:
+# Usage:
 #   DRY=1 ./load/budget.sh
 #   ./load/budget.sh
 #   ALPHA=0.25 BUDGETS="0 4 2" ./load/budget.sh
@@ -51,26 +51,26 @@ cd "$HARNESS"
 
 LAMBDA="${LAMBDA:-260}"
 ALPHA="${ALPHA:-0.20}"
-# 0 = budget disattivato, riferimento. Gli altri valori sono slot
-# concorrenti concessi alla classe a bassa localita', su THREADS totali.
+# 0 = budget disabled, reference. The other values are concurrent slots
+# granted to the low-locality class, out of THREADS in total.
 BUDGETS="${BUDGETS:-0 6 4 3 2 1}"
-# Attesa zero, e non e' negoziabile.
+# Zero wait, and it is not negotiable.
 #
-# Il semaforo viene acquisito da before_request, che gira gia' su un
-# thread di gunicorn: una richiesta che ATTENDE uno slot tiene occupato
-# quel thread mentre aspetta, quindi il budget aggiunge latenza senza
-# liberare nulla per l'altra classe — l'opposto del suo scopo.
+# The semaphore is acquired by before_request, which already runs on a
+# gunicorn thread: a request that WAITS for a slot keeps that thread
+# busy while it waits, so the budget adds latency without freeing
+# anything for the other class — the opposite of its purpose.
 #
-# Misurato due volte con lo stesso esito, su x86 il 2026-08-23 e su ARM
-# il 2026-08-27: peggioramento monotono al restringersi del budget, fino
-# a 2,5 volte il riferimento. Entrambi i run sono invalidi.
+# Measured twice with the same outcome, on x86 on 2026-08-23 and on ARM
+# on 2026-08-27: monotonic worsening as the budget narrows, up to
+# 2.5 times the reference. Both runs are invalid.
 #
-# Il valore corretto e' gia' in env.*, ma questo script riscrive .env a
-# ogni valore di budget: il default qui deve corrispondere.
+# The correct value is already in env.*, but this script rewrites .env at
+# every budget value: the default here must match.
 BUDGET_WAIT="${BUDGET_WAIT:-0}"
 REPS="${REPS:-5}"
-# 180 s e' il warm-up validato per la cache da 128m; la dimensione della
-# cache non varia in questo esperimento.
+# 180 s is the validated warm-up for the 128m cache; the cache size
+# does not vary in this experiment.
 WARMUP="${WARMUP:-180}"
 MEASURE="${MEASURE:-180}"
 DRAIN="${DRAIN:-30}"
@@ -96,7 +96,7 @@ vmq() { curl -gs -G --data-urlencode "query=$1" \
 
 HEADER="budget,rep,alpha,lambda,p99_high,p99_low,p95_high,p95_low,ok_high,ok_low,shed_high,shed_low,hit_high,miss_high,hit_low,miss_low,inflight,app_cpu,db_cpu,ts"
 if [[ -e "$CSV" ]]; then
-    [[ "$(head -n1 "$CSV")" == "$HEADER" ]] || { echo "schema CSV incompatibile" >&2; exit 1; }
+    [[ "$(head -n1 "$CSV")" == "$HEADER" ]] || { echo "incompatible CSV schema" >&2; exit 1; }
 else
     echo "$HEADER" > "$CSV"
 fi
@@ -110,18 +110,18 @@ fi
 
 total=0
 for b in $BUDGETS; do for r in $(seq 1 "$REPS"); do total=$((total+1)); done; done
-log "$total misure, stima $(( total * (WARMUP+MEASURE+DRAIN+50) / 60 )) minuti"
+log "$total measurements, estimate $(( total * (WARMUP+MEASURE+DRAIN+50) / 60 )) minutes"
 
 i=0
 for budget in $BUDGETS; do
     if [[ "$budget" == "0" ]]; then
-        log "budget disattivato (riferimento)"
+        log "budget disabled (reference)"
     else
-        log "budget = $budget slot concorrenti per la classe a bassa localita'"
+        log "budget = $budget concurrent slots for the low-locality class"
     fi
 
-    # Il budget si applica all'avvio del processo: cambiarlo richiede di
-    # ricreare il container dell'applicazione.
+    # The budget is applied at process start: changing it requires
+    # recreating the application container.
     grep -q '^BUDGET_LOW=' .env && sed -i "s/^BUDGET_LOW=.*/BUDGET_LOW=$budget/" .env \
         || echo "BUDGET_LOW=$budget" >> .env
     grep -q '^BUDGET_WAIT=' .env && sed -i "s/^BUDGET_WAIT=.*/BUDGET_WAIT=$BUDGET_WAIT/" .env \
@@ -129,15 +129,15 @@ for budget in $BUDGETS; do
     docker compose up -d --force-recreate app >/dev/null 2>&1
     sleep 12
 
-    # Le ripetizioni si mescolano dentro ogni valore di budget: e' li'
-    # che la deriva temporale della macchina potrebbe confondersi con
-    # l'effetto. Il budget stesso non si randomizza perche' cambiarlo
-    # richiede il riavvio dell'applicazione.
+    # The repetitions are shuffled inside each budget value: that is where
+    # the machine's temporal drift could be confounded with the
+    # effect. The budget itself is not randomised because changing it
+    # requires restarting the application.
     mapfile -t reps < <(seq 1 "$REPS" | shuf --random-source=<(yes "$SEED"))
 
     for rep in "${reps[@]}"; do
         i=$((i+1))
-        grep -q "^$budget,$rep," "$CSV" 2>/dev/null && { echo "  [$i/$total] gia fatto"; continue; }
+        grep -q "^$budget,$rep," "$CSV" 2>/dev/null && { echo "  [$i/$total] already done"; continue; }
 
         printf '  [%2d/%2d] budget=%-2s rep=%s ... ' "$i" "$total" "$budget" "$rep"
         tag="b${budget}-r${rep}"
@@ -190,20 +190,20 @@ for budget in $BUDGETS; do
                 (.metrics.ut_hit_traversal.values.count // 0),
                 (.metrics.ut_miss_traversal.values.count // 0)] | @tsv' "$f")"
             echo "$budget,$rep,$ALPHA,$LAMBDA,$p99h,$p99l,$p95h,$p95l,$okh,$okl,$shh,$shl,$hh,$mh,$hl,$ml,$inf,$ac,$dc,$(date -Is)" >> "$CSV"
-            printf 'p99 alta=%s bassa=%s   ok bassa=%s   rinviate=%s\n' "$p99h" "$p99l" "$okl" "$shl"
+            printf 'p99 high=%s low=%s   ok low=%s   deferred=%s\n' "$p99h" "$p99l" "$okl" "$shl"
         else
             echo "$budget,$rep,$ALPHA,$LAMBDA,,,,,,,,,,,,$inf,$ac,$dc,$(date -Is)" >> "$CSV"
-            echo "FALLITO — vedi $OUT/k6-$tag.log"
+            echo "FAILED — see $OUT/k6-$tag.log"
         fi
         sleep "$DRAIN"
     done
 done
 
-# --- riepilogo -------------------------------------------------------------
+# --- summary ---------------------------------------------------------------
 {
   echo
   echo "================================================================"
-  echo "RISULTATO — mediane per budget"
+  echo "RESULT — medians per budget"
   echo "================================================================"
   awk -F, 'NR>1 && $5!="" {
       b=$1; n[b]++
@@ -213,7 +213,7 @@ done
   function med(k, c,   i,j,t,arr) { return 0 }
   END {
     printf "%-8s %5s %11s %11s %12s %12s %10s\n",
-           "budget","n","p99 alta","p99 bassa","ok bassa","rinviate","% rinvio"
+           "budget","n","p99 high","p99 low","ok low","deferred","% deferred"
     for (b in n) {
       c=n[b]
       for(i=1;i<=c;i++) for(j=i+1;j<=c;j++) {
@@ -230,27 +230,27 @@ done
   }' "$CSV" | (read -r hdr; echo "$hdr"; sort -k1,1)
 
   echo
-  echo "COME LEGGERE"
+  echo "HOW TO READ"
   echo
-  echo "  p99 alta     latenza della classe interattiva, quella con una"
-  echo "               persona in attesa. E' il numero che deve scendere."
-  echo "  ok bassa     richieste della classe batch completate con 200."
-  echo "               E' il numero che NON deve crollare."
-  echo "  rinviate     richieste della classe batch che hanno ricevuto"
-  echo "               503 con Retry-After. Non sono perse: sono spostate."
+  echo "  p99 high     latency of the interactive class, the one with a"
+  echo "               person waiting. It is the number that must go down."
+  echo "  ok low       batch-class requests completed with 200."
+  echo "               It is the number that must NOT collapse."
+  echo "  deferred     batch-class requests that received"
+  echo "               503 with Retry-After. They are not lost: they are shifted."
   echo
-  echo "  RIUSCITO se esiste un budget con p99 alta sotto 500 ms e ok"
-  echo "  bassa entro il 20% del riferimento. Significa che proteggere"
-  echo "  il traffico interattivo costa poco a quello batch, e quindi"
-  echo "  che il conflitto e' apparente."
+  echo "  SUCCEEDED if there is a budget with p99 high below 500 ms and ok"
+  echo "  low within 20% of the reference. It means that protecting"
+  echo "  interactive traffic costs the batch traffic little, and therefore"
+  echo "  that the conflict is apparent."
   echo
-  echo "  FALLITO se ok bassa cala in proporzione al budget. L'asimmetria"
-  echo "  non esiste, la classe batch era davvero limitata dai thread, e"
-  echo "  la tesi va abbandonata."
+  echo "  FAILED if ok low falls in proportion to the budget. The asymmetry"
+  echo "  does not exist, the batch class really was limited by the threads, and"
+  echo "  the thesis must be abandoned."
   echo
-  echo "  DA GUARDARE ANCHE: se p99 bassa sale molto mentre ok bassa"
-  echo "  resta alta, il crawler viene servito piu' lentamente ma"
-  echo "  completamente — che e' esattamente il comportamento voluto."
+  echo "  ALSO WORTH LOOKING AT: if p99 low rises a lot while ok low"
+  echo "  stays high, the crawler is served more slowly but"
+  echo "  completely — which is exactly the intended behaviour."
   echo
-  echo "Dati: $CSV"
+  echo "Data: $CSV"
 } | tee -a "$LOG"

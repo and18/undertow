@@ -1,42 +1,42 @@
 #!/usr/bin/env python3
 """
-honeypot_scope.py - Il controllo che ancora il generatore agentico alla realta'.
+honeypot_scope.py - The check that anchors the agentic generator to reality.
 
-PERCHE' ADESSO
-  Lo sweep di AGENT_SCOPE misura come cambia la sensibilita' del costo al
-  variare dell'ampiezza dell'insieme di lavoro di una classe. Quel risultato
-  vale come descrizione del mondo solo se sappiamo DOVE, su quell'asse, si
-  trovano gli agenti veri. L'honeypot e' l'unica fonte che ce lo puo' dire, ed
-  e' offline: non costa tempo di laboratorio e gira in parallelo allo sweep.
+WHY NOW
+  The AGENT_SCOPE sweep measures how the cost sensitivity changes as the
+  width of a class's working set varies. That result holds as a description
+  of the world only if we know WHERE, on that axis, the real agents sit.
+  The honeypot is the only source that can tell us, and it is offline: it
+  costs no lab time and runs in parallel with the sweep.
 
-  Misura le quattro quantita' che tarano il generatore, e nient'altro:
+  It measures the four quantities that calibrate the generator, and nothing else:
 
-    AGENT_SESSION = 3      <- pagine per sessione
-    AGENT_SCOPE   = 0,02   <- frazione del sito toccata da un singolo client
-    AGENT_SKEW    = 0,6    <- concentrazione delle richieste di un client
-    3 capitoli contigui    <- contiguita' delle richieste in una sessione
+    AGENT_SESSION = 3      <- pages per session
+    AGENT_SCOPE   = 0.02   <- fraction of the site touched by a single client
+    AGENT_SKEW    = 0.6    <- concentration of a client's requests
+    3 contiguous chapters  <- contiguity of the requests in a session
 
-COSA NON PUO' DIMOSTRARE, e va scritto nel paper
-  Niente sul costo: l'honeypot non ha un backend confrontabile. Niente di
-  causale. E nessuna generalizzazione: e' un sito, per di piu' costruito per
-  essere visitato. Serve a giustificare una taratura, non a sostenere un claim.
+WHAT IT CANNOT PROVE, and it must be written in the paper
+  Nothing about cost: the honeypot has no comparable backend. Nothing
+  causal. And no generalisation: it is one site, and moreover built to
+  be visited. It serves to justify a calibration, not to support a claim.
 
 PRIVACY
-  Gli indirizzi IP non vengono mai stampati ne' scritti. Servono solo come
-  chiave di raggruppamento e sono sostituiti da un hash troncato.
+  IP addresses are never printed or written. They serve only as a
+  grouping key and are replaced by a truncated hash.
 
-Uso:
-  python3 honeypot_scope.py --peek                 # mostra i campi del log
-  python3 honeypot_scope.py /path/ai/log [--pages 18720]
+Usage:
+  python3 honeypot_scope.py --peek                 # shows the log fields
+  python3 honeypot_scope.py /path/to/log [--pages 18720]
 """
 import sys, os, json, gzip, glob, hashlib, argparse, re
 from collections import defaultdict, Counter
 
 ap = argparse.ArgumentParser()
 ap.add_argument("path", nargs="?", default="data/hplogs")
-ap.add_argument("--pages", type=int, default=18720, help="pagine totali del sito")
+ap.add_argument("--pages", type=int, default=18720, help="total pages of the site")
 ap.add_argument("--peek", action="store_true")
-ap.add_argument("--min-req", type=int, default=5, help="client sotto questa soglia ignorati")
+ap.add_argument("--min-req", type=int, default=5, help="clients below this threshold ignored")
 A = ap.parse_args()
 
 def lines(path):
@@ -52,13 +52,13 @@ def lines(path):
                         try: yield json.loads(ln)
                         except Exception: pass
         except Exception as e:
-            print(f"  (salto {os.path.basename(f)}: {e})", file=sys.stderr)
+            print(f"  (skipping {os.path.basename(f)}: {e})", file=sys.stderr)
 
 if A.peek:
     for i, r in enumerate(lines(A.path)):
         print(json.dumps(r, indent=2)[:1500]); break
     else:
-        print(f"nessuna riga JSON trovata in {A.path}")
+        print(f"no JSON row found in {A.path}")
     sys.exit()
 
 def field(r, *names):
@@ -82,7 +82,7 @@ def classify(ua):
     return "unknown"
 
 def bookchap(p):
-    """(libro, capitolo) da /book/33118-slug/chapter-008.html; None se non e' un capitolo."""
+    """(book, chapter) from /book/33118-slug/chapter-008.html; None if it is not a chapter."""
     m = re.search(r"/book/(\d+)[^/]*/chapter-0*(\d+)", p or "")
     if m: return (m.group(1), int(m.group(2)))
     n = re.findall(r"(\d+)", p or "")
@@ -95,7 +95,7 @@ conn_meta = {}
 total = skipped = 0
 tmin = tmax = None
 
-print(f"lettura di {A.path} ...", file=sys.stderr)
+print(f"reading {A.path} ...", file=sys.stderr)
 for r in lines(A.path):
     total += 1
     path = field(r, "u", "request_uri", "uri", "path", "request", "url")
@@ -122,13 +122,13 @@ for r in lines(A.path):
         conns[k].append((int(cnum) if str(cnum).isdigit() else len(conns[k]), path))
         conn_meta[k] = classify(ua)
 
-print(f"\n{'='*66}\n  HONEYPOT - taratura del generatore agentico\n{'='*66}")
-print(f"richieste lette      : {total:,}   (scartate {skipped:,})")
-print(f"periodo              : {tmin} -> {tmax}")
-print(f"client distinti      : {len(clients):,}")
-print(f"connessioni distinte : {len(conns):,}" if conns else
-      "connessioni          : campo assente, la sezione 1 sara' saltata")
-print(f"pagine del sito      : {A.pages:,}")
+print(f"\n{'='*66}\n  HONEYPOT - calibration of the agentic generator\n{'='*66}")
+print(f"requests read        : {total:,}   (discarded {skipped:,})")
+print(f"period               : {tmin} -> {tmax}")
+print(f"distinct clients     : {len(clients):,}")
+print(f"distinct connections : {len(conns):,}" if conns else
+      "connections          : field absent, section 1 will be skipped")
+print(f"site pages           : {A.pages:,}")
 
 def pct(v, q):
     if not v: return 0
@@ -139,8 +139,8 @@ CLS = ["agent", "training", "search", "other-bot", "browser", "unknown"]
 
 # ---- 1. AGENT_SESSION -------------------------------------------------
 if conns:
-    print(f"\n--- 1. PAGINE PER SESSIONE  (tara AGENT_SESSION, valore attuale 3)")
-    print(f"{'classe':12s} {'sessioni':>9s} {'mediana':>8s} {'media':>7s} {'p75':>5s} {'p90':>5s} {'p99':>6s}")
+    print(f"\n--- 1. PAGES PER SESSION  (calibrates AGENT_SESSION, current value 3)")
+    print(f"{'class':12s} {'sessions':>9s} {'median':>8s} {'mean':>7s} {'p75':>5s} {'p90':>5s} {'p99':>6s}")
     per = defaultdict(list)
     for k, v in conns.items(): per[conn_meta[k]].append(len(v))
     for cl in CLS:
@@ -150,10 +150,10 @@ if conns:
               f"{pct(L,.75):5d} {pct(L,.90):5d} {pct(L,.99):6d}")
 
 # ---- 2. AGENT_SCOPE ---------------------------------------------------
-print(f"\n--- 2. AMPIEZZA DELL'INSIEME DI LAVORO  (tara AGENT_SCOPE, attuale 0,0200)")
-print("    frazione del sito toccata da un singolo client, sui client con"
-      f" almeno {A.min_req} richieste")
-print(f"{'classe':12s} {'client':>7s} {'mediana':>9s} {'media':>9s} {'p90':>9s} {'max':>9s}")
+print(f"\n--- 2. WIDTH OF THE WORKING SET  (calibrates AGENT_SCOPE, current 0.0200)")
+print("    fraction of the site touched by a single client, over clients with"
+      f" at least {A.min_req} requests")
+print(f"{'class':12s} {'clients':>7s} {'median':>9s} {'mean':>9s} {'p90':>9s} {'max':>9s}")
 scopes = defaultdict(list)
 for c, d in clients.items():
     if d["n"] < A.min_req: continue
@@ -163,13 +163,13 @@ for cl in CLS:
     if not S: continue
     print(f"{cl:12s} {len(S):7,d} {pct(S,.5):9.4f} {sum(S)/len(S):9.4f} "
           f"{pct(S,.90):9.4f} {max(S):9.4f}")
-print("\n    >>> il valore da confrontare con AGENT_SCOPE=0,0200 e' la mediana"
-      " della riga 'agent'")
+print("\n    >>> the value to compare with AGENT_SCOPE=0.0200 is the median"
+      " of the 'agent' row")
 
 # ---- 3. AGENT_SKEW ----------------------------------------------------
-print(f"\n--- 3. CONCENTRAZIONE  (tara AGENT_SKEW, attuale 0,6)")
-print("    quota delle richieste di un client che cade sul 10% di URL piu' visitati")
-print(f"{'classe':12s} {'client':>7s} {'mediana':>9s} {'media':>9s}")
+print(f"\n--- 3. CONCENTRATION  (calibrates AGENT_SKEW, current 0.6)")
+print("    share of a client's requests that falls on the 10% most visited URLs")
+print(f"{'class':12s} {'clients':>7s} {'median':>9s} {'mean':>9s}")
 conc = defaultdict(list)
 for c, d in clients.items():
     if d["n"] < max(10, A.min_req): continue
@@ -180,13 +180,13 @@ for cl in CLS:
     C = conc.get(cl)
     if not C: continue
     print(f"{cl:12s} {len(C):7,d} {pct(C,.5):9.3f} {sum(C)/len(C):9.3f}")
-print("    riferimento: uniforme = 0,10   Zipf(0,6) su 339 = ~0,30   Zipf(1) = ~0,55")
+print("    reference: uniform = 0.10   Zipf(0.6) over 339 = ~0.30   Zipf(1) = ~0.55")
 
-# ---- 4. contiguita' ---------------------------------------------------
+# ---- 4. contiguity ----------------------------------------------------
 if conns:
-    print(f"\n--- 4. CONTIGUITA'  (tara il modello 'capitoli contigui')")
-    print("    quota di richieste consecutive con numero di pagina adiacente")
-    print(f"{'classe':12s} {'sessioni':>9s} {'contigue':>9s} {'ripetute':>9s}")
+    print(f"\n--- 4. CONTIGUITY  (calibrates the 'contiguous chapters' model)")
+    print("    share of consecutive requests with an adjacent page number")
+    print(f"{'class':12s} {'sessions':>9s} {'contiguous':>10s} {'repeated':>9s}")
     adj = defaultdict(lambda: [0, 0, 0])
     for k, v in conns.items():
         if len(v) < 2: continue
@@ -195,7 +195,7 @@ if conns:
         for x, y in zip(seq, seq[1:]):
             if x is None or y is None: continue
             t += 1
-            if x[0] == y[0]:                      # stesso libro
+            if x[0] == y[0]:                      # same book
                 if abs(y[1]-x[1]) == 1: a += 1
                 if y[1] == x[1]:        r += 1
         if t:
@@ -205,32 +205,32 @@ if conns:
         if not s or not s[2]: continue
         print(f"{cl:12s} {s[2]:9,d} {s[0]/s[2]:9.3f} {s[1]/s[2]:9.3f}")
 
-# ---- 5. composizione --------------------------------------------------
-print(f"\n--- 5. COMPOSIZIONE DEL TRAFFICO")
+# ---- 5. composition ---------------------------------------------------
+print(f"\n--- 5. TRAFFIC COMPOSITION")
 tot = Counter()
 for d in clients.values():
     for cl, n in d["cls"].items(): tot[cl] += n
 S = sum(tot.values()) or 1
 for cl in CLS:
-    if tot.get(cl): print(f"{cl:12s} {tot[cl]:10,d} richieste  {100*tot[cl]/S:5.1f}%")
+    if tot.get(cl): print(f"{cl:12s} {tot[cl]:10,d} requests  {100*tot[cl]/S:5.1f}%")
 
-print(f"\n--- 6. RICHIESTE FIRMATE  (Web Bot Auth, campi sig_agent / sig_input)")
+print(f"\n--- 6. SIGNED REQUESTS  (Web Bot Auth, fields sig_agent / sig_input)")
 tt = sum(sum(c.values()) for c in signed.values())
 if tt:
-    print(f"{'classe':12s} {'firmate':>10s} {'totali':>10s} {'quota':>7s}")
+    print(f"{'class':12s} {'signed':>10s} {'total':>10s} {'share':>7s}")
     for cl in CLS:
         c = signed.get(cl)
         if not c: continue
         n = sum(c.values())
         print(f"{cl:12s} {c[True]:10,d} {n:10,d} {100*c[True]/n:6.2f}%")
     tot_s = sum(c[True] for c in signed.values())
-    print(f"{'TOTALE':12s} {tot_s:10,d} {tt:10,d} {100*tot_s/tt:6.2f}%")
-    print("    dato reale sull'adozione di webbotauth: utile in Related Work,")
-    print("    non sostiene nessun claim sul costo")
+    print(f"{'TOTAL':12s} {tot_s:10,d} {tt:10,d} {100*tot_s/tt:6.2f}%")
+    print("    real data on the adoption of webbotauth: useful in Related Work,")
+    print("    it supports no claim on cost")
 
 print(f"\n{'='*66}")
-print("  Questo output giustifica o smentisce i parametri del generatore.")
-print("  Se la mediana di scope per la classe 'agent' e' lontana da 0,0200,")
-print("  va detto nel paper, e lo sweep di scope diventa ancora piu' utile")
-print("  perche' copre l'intervallo in cui cade il valore vero.")
+print("  This output justifies or refutes the generator's parameters.")
+print("  If the median scope for the 'agent' class is far from 0.0200,")
+print("  it must be said in the paper, and the scope sweep becomes even more useful")
+print("  because it covers the interval in which the true value falls.")
 print(f"{'='*66}")

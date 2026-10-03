@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-fase2scen.py — fase 2 rieseguita con la traversata esaustiva in scenario proprio (SCEN), come da
-docs/PREREG-simulatore-fase2.md, emendamento 2. Stesse politiche (policies.py), stessi punti,
-semi, grandezze e criteri di fase2.py; cambia solo il generatore:
+fase2scen.py — phase 2 rerun with the exhaustive traversal in a scenario of its own (SCEN), as per
+docs/PREREG-simulatore-fase2.md, amendment 2. Same policies (policies.py), same points,
+seeds, quantities and criteria as fase2.py; only the generator changes:
 
-  GEN   esplora_artefatto.phase_scen (esaustiva a α·λ, arrivi regolari, contatore proprio;
-        umana e agentica a (1 − α)·λ, agentica con probabilita' β/(1 − α))
-  REAL  stesso schema; le richieste agentiche seguono la catena di fase2.phase_real con p_r e p_c
-        calibrati nella fase 2 (non ricalibrati)
+  GEN   esplora_artefatto.phase_scen (exhaustive at α·λ, regular arrivals, own counter;
+        human and agentic at (1 − α)·λ, agentic with probability β/(1 − α))
+  REAL  same scheme; the agentic requests follow the chain of fase2.phase_real with p_r and p_c
+        calibrated in phase 2 (not recalibrated)
 
-Passi nell'ordine dell'emendamento 2 (un solo comando): R0-SCEN, G0-R-SCEN, lancio, criteri.
-Ogni numero e' SIMULATO. Nessun dato del lab.
+Steps in the order of amendment 2 (a single command): R0-SCEN, G0-R-SCEN, launch, criteria.
+Every number is SIMULATED. No lab data.
 
-Uso:  python3 tools/sim/fase2scen.py
+Usage:  python3 tools/sim/fase2scen.py
 """
 import csv
 import math
@@ -36,13 +36,13 @@ ROOT = fase1.ROOT
 OUT = ROOT / "data" / "sim" / "fase2-scen"
 POINTS = fase1.POINTS
 SEEDS = fase1.SEEDS
-P_R, P_C = 0.190751953, 0.037933502          # data/sim/fase2/calibrazione.csv, non ricalibrati
+P_R, P_C = 0.190751953, 0.037933502          # data/sim/fase2/calibrazione.csv, not recalibrated
 
 
 def phase_scen_real(rnd, n, lam, alpha, beta, scope, mul, duration, trav_skip, p_r, p_c,
                     skew=0.6):
-    """Come esplora_artefatto.phase_scen, con la catena di sessione di fase2.phase_real per
-    l'agentica. Record: (t, classe, indice, VU)."""
+    """As esplora_artefatto.phase_scen, with the session chain of fase2.phase_real for
+    the agentic class. Record: (t, class, index, VU)."""
     out = []
     ra, rb = alpha * lam, (1 - alpha) * lam
     offset = (tr.SEED * 7919) % n
@@ -91,7 +91,7 @@ def trace_of(session, seed, name):
 
 
 def run_policy(cls, warm, meas):
-    """Uscite come fase2.run_policy, con i tempi del record (t, classe, indice, ...)."""
+    """Outputs as fase2.run_policy, with the times of the record (t, class, index, ...)."""
     sizes = fase2._SIZES
     c = cls(sizes, fase1.H)
     for rec in warm:
@@ -140,7 +140,7 @@ def write(name, cm, header, rows):
         w.writerow(header + ["stato"])
         for r in rows:
             w.writerow(list(r) + ["SIMULATO"])
-    print(f"scritto {path.relative_to(ROOT)}")
+    print(f"written {path.relative_to(ROOT)}")
 
 
 def r0_scen(cm):
@@ -153,8 +153,8 @@ def r0_scen(cm):
     bad = sum([*r["req"], *r["miss"]] != [int(ref[(r["point"], r["seed"])][c]) for c in cols]
               for r in res)
     ok = bad == 0 and len(res) == len(ref)
-    print(f"== R0-SCEN: LRU x Q-GEN (SCEN) contro esplorativo-artefatto SCEN: {len(res)} righe su "
-          f"{len(ref)}, diverse {bad}  {fase2.verdict(ok)}")
+    print(f"== R0-SCEN: LRU x Q-GEN (SCEN) against esplorativo-artefatto SCEN: {len(res)} rows out of "
+          f"{len(ref)}, different {bad}  {fase2.verdict(ok)}")
     write("r0.csv", cm, ["gate", "rows", "rows_ref", "rows_different", "verdict"],
           [["R0-SCEN", len(res), len(ref), bad, fase2.verdict(ok)]])
     return ok
@@ -170,8 +170,8 @@ def g0r_scen(cm):
     c = statistics.fmean(100 * a / n for n, a, _ in stats)
     r = statistics.fmean(100 * b / n for n, _, b in stats)
     okc, okr = abs(c - fase2.TARGET_C) <= 0.5, abs(r - fase2.TARGET_R) <= 1.0
-    print(f"== G0-R-SCEN: contigue {c:.2f}% (4,25 ± 0,5) {fase2.verdict(okc)}; ripetute {r:.2f}% "
-          f"(19,44 ± 1,0) {fase2.verdict(okr)}")
+    print(f"== G0-R-SCEN: contiguous {c:.2f}% (4.25 ± 0.5) {fase2.verdict(okc)}; repeated {r:.2f}% "
+          f"(19.44 ± 1.0) {fase2.verdict(okr)}")
     write("g0r.csv", cm, ["gate", "quantity", "sim", "target", "rule", "verdict"],
           [["G0-R-SCEN", "contiguous_pct_S12", f"{c:.4f}", fase2.TARGET_C, "|x-4.25|<=0.5",
             fase2.verdict(okc)],
@@ -181,7 +181,7 @@ def g0r_scen(cm):
 
 
 def criteria(res, cm, sessions):
-    """Stessi criteri e stessa lettura di fase2.lancio."""
+    """Same criteria and same reading as fase2.lancio."""
     ms, welch = fase1.mean_se, fase2.welch
     by = {}
     for r in res:
@@ -209,8 +209,8 @@ def criteria(res, cm, sessions):
             dep = d1 > 0 and t1 >= 3 and d2 > 0 and t2 >= 3
             t20 = m["0.20"][0] / m["0.20"][1]
             sign = dep and m["0.02"][0] < 0 and t02 <= -3 and m["0.20"][0] > 0 and t20 >= 3
-            print(f"  segno negativo a 0,02: {a1}; dipendenza: m06-m02 t {t1:+.2f}, m20-m06 t "
-                  f"{t2:+.2f}: {'regge' if dep else 'non regge'}; cambio di segno: "
+            print(f"  negative sign at 0.02: {a1}; dependence: m06-m02 t {t1:+.2f}, m20-m06 t "
+                  f"{t2:+.2f}: {'regge' if dep else 'non regge'}; sign change: "
                   f"{'regge' if sign else 'non regge'}")
             dd = {}
             for q in ("12", "36"):
@@ -225,7 +225,7 @@ def criteria(res, cm, sessions):
             n_, se_, t_, df_ = welch(O["S36"], O["P0"])
             q = t_quantile(0.975, df_)
             net = "non negativo" if t_ > -2 else "negativo"
-            print(f"  netto P0 -> 36: {n_:+.4f} ± {se_:.4f}  t {t_:+.2f}  IC95 "
+            print(f"  net P0 -> 36: {n_:+.4f} ± {se_:.4f}  t {t_:+.2f}  IC95 "
                   f"[{n_ - q * se_:+.4f}, {n_ + q * se_:+.4f}]: {net}")
             rows.append([sess, pol, "net_S36_P0", f"{n_:.6f}", f"{se_:.6f}", f"{t_:.3f}",
                          f"IC95 [{n_ - q * se_:.6f}, {n_ + q * se_:.6f}] df {df_:.3f}; {net}"])
@@ -236,7 +236,7 @@ def criteria(res, cm, sessions):
                     dh.append(f"{sc}/{tag} {d:+.4f}±{se:.4f}")
                     rows.append([sess, pol, f"dmiss_h_scope{sc}_q{tag}", f"{d:.6f}", f"{se:.6f}",
                                  f"{t:.3f}", f"miss_h P0 {mh['P0'][0]:.6f}"])
-            print(f"  Δ miss umano (contro P0 {mh['P0'][0]:.4f}): " + "; ".join(dh))
+            print(f"  Δ human miss (against P0 {mh['P0'][0]:.4f}): " + "; ".join(dh))
             for pt in POINTS:
                 rows.append([sess, pol, f"origin_{pt}", f"{O[pt][0]:.6f}", f"{O[pt][1]:.6f}", "",
                              "miss per classe " + "/".join(
@@ -248,21 +248,21 @@ def criteria(res, cm, sessions):
                          f"cambio di segno {'regge' if sign else 'non regge'}; A3 {a3}; netto {net}"])
             summary[key] = (a1, dep, sign, a3, net)
     write("criteri.csv", cm, ["session", "policy", "quantity", "value", "se", "t", "note"], rows)
-    print("\n==== Risposta alla domanda (SCEN)")
+    print("\n==== Answer to the question (SCEN)")
     for k, (a1, dep, sign, a3, net) in summary.items():
         ok = a1 == "regge" and dep and a3 == "regge"
-        print(f"  {k}: {'regge' if ok else 'non regge'} (segno {a1}; dipendenza "
-              f"{'si' if dep else 'no'}; cambio di segno {'si' if sign else 'no'}; A3 {a3}; "
-              f"netto {net})")
+        print(f"  {k}: {'regge' if ok else 'non regge'} (sign {a1}; dependence "
+              f"{'yes' if dep else 'no'}; sign change {'yes' if sign else 'no'}; A3 {a3}; "
+              f"net {net})")
 
 
 def main():
     cm = fase1.commit()
     if not r0_scen(cm):
-        sys.exit("R0-SCEN non passa: ci si ferma")
+        sys.exit("R0-SCEN does not pass: stopping")
     sessions = ("GEN", "REAL") if g0r_scen(cm) else ("GEN",)
     if sessions == ("GEN",):
-        print("G0-R-SCEN non passa: (b) e (c) non si valutano con SCEN")
+        print("G0-R-SCEN does not pass: (b) and (c) are not evaluated with SCEN")
     res = run_jobs([(s, p, seed, fase2.POLICY_ORDER) for s in sessions for p in POINTS
                     for seed in SEEDS])
     write("reps.csv", cm, ["session", "policy"] + fase1.REP_HDR,

@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-frontier_tc.py — tempo caratteristico approssimato per ciascuna politica della frontiera
-(claim A4, A5, A6, D2, D5; docs/VERIFICA-finale-20261002.md, punto 1; claims v3.11).
+frontier_tc.py — approximate characteristic time for each frontier policy
+(claim A4, A5, A6, D2, D5; docs/VERIFICA-finale-20261002.md, point 1; claims v3.11).
 
-PERCHE'
-  I run della frontiera (19-20 set, λ = 185, α = 0,35, β = 0,10) usano il contatore di
-  traversata condiviso: un capitolo passa nella traversata ogni N/λ = 91,6 s ed e' richiesto
-  dall'esaustiva con probabilita' α. Se il ritorno cade entro il tempo caratteristico T della
-  cache, gli hit esaustivi possono essere gonfiati. T dipende dalla politica.
+WHY
+  The frontier runs (19-20 Sep, λ = 185, α = 0.35, β = 0.10) use the shared
+  traversal counter: a chapter goes through the traversal every N/λ = 91.6 s and is requested
+  by the exhaustive class with probability α. If the return falls within the cache's
+  characteristic time T, the exhaustive hits can be inflated. T depends on the policy.
 
-COME
-  T ≈ C / origin_rps, con C = 5 263 oggetti (C2, data/derived/cache_capacity.csv) e origin_rps
-  la media delle ripetizioni di points.csv. origin_rps conta i miss serviti con 200
-  (workload.js): i 403 del blocco sono no-store e i 503 del rinvio non sono cacheabili, quindi
-  e' il tasso con cui entrano oggetti in cache. E' un'approssimazione, non una misura di T.
+HOW
+  T ≈ C / origin_rps, with C = 5,263 objects (C2, data/derived/cache_capacity.csv) and origin_rps
+  the mean of the repetitions of points.csv. origin_rps counts the misses served with 200
+  (workload.js): the 403s of the block are no-store and the 503s of the deferral are not cacheable, so
+  it is the rate at which objects enter the cache. It is an approximation, not a measurement of T.
 
-Il lab resta in sola lettura: solo `ssh lab cat` (a lab spento, ~/undertow-backup/shim-scope).
+The lab stays read-only: only `ssh lab cat` (with the lab off, ~/undertow-backup/shim-scope).
 
-Uso:
+Usage:
     python3 tools/frontier_tc.py
 """
 import csv
@@ -33,7 +33,7 @@ OUT_CSV = ROOT / "data" / "derived" / "frontier_tc.csv"
 CAP_CSV = ROOT / "data" / "derived" / "cache_capacity.csv"
 CORPUS, LAMBDA, ALPHA = 16954, 185, 0.35
 
-# politica -> run (registry: frontiera del 19-20 set)
+# policy -> run (registry: frontier of 19-20 Sep)
 POLICIES = [
     ("A", "no policy", "tre-20260919-072040"),
     ("B", "block exhaustive", "tre-20260919-080920"),
@@ -57,15 +57,15 @@ def main():
         t = cap / org
         within = "yes" if ret < t else "no"
         rows.append([key, label, run, len(pts), f"{org:.4f}", f"{t:.1f}", f"{ret:.1f}", within])
-        print(f"  {key:3s} {label:30s} origine {org:7.3f}  T {t:6.1f} s  ritorno {ret:.1f} s  "
-              f"entro T: {within}")
+        print(f"  {key:3s} {label:30s} origin {org:7.3f}  T {t:6.1f} s  return {ret:.1f} s  "
+              f"within T: {within}")
     with OUT_CSV.open("w", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["policy", "label", "run", "reps", "origin_rps", "T_s", "return_s",
                     "return_within_T"])
         w.writerows(rows)
-    print(f"capienza {cap:.1f} oggetti; ritorno nella traversata {ret:.1f} s "
-          f"(richiesto dall'esaustiva con probabilita' {ALPHA})\nscritto {OUT_CSV}")
+    print(f"capacity {cap:.1f} objects; return in the traversal {ret:.1f} s "
+          f"(requested by the exhaustive class with probability {ALPHA})\nwritten {OUT_CSV}")
 
 
 if __name__ == "__main__":

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-esplora_artefatto.py — ESPLORATIVO, non pre-registrato. Estensione dell'artefatto della
-traversata esaustiva (fase 2b) ad A1, A3 e A7, e previsioni per un rilancio sul lab.
-Solo LRU (tools/sim/cache.py), sessioni del generatore, semi 1..20. Ogni numero e' SIMULATO.
+esplora_artefatto.py — EXPLORATORY, not pre-registered. Extension of the artefact of the exhaustive
+traversal (phase 2b) to A1, A3 and A7, and predictions for a rerun on the lab.
+LRU only (tools/sim/cache.py), generator sessions, seeds 1..20. Every number is SIMULATED.
 
-Varianti della traversata esaustiva:
-  GLOB  workload.js attuale: indice = iterationInTest (tutte le classi)          [trace.phase]
-  OWN   contatore delle sole richieste esaustive, arrivi estratti come in GLOB   [fase2b.phase_own]
-  SCEN  implementabile in k6: l'esaustiva e' uno scenario proprio a rate α·λ (arrivi regolari,
-        il suo iterationInTest e' il contatore; TRAV_SKIP = int(300·α·λ) nella misura); umana e
-        agentica in un secondo scenario a rate (1−α)·λ, agentica con probabilita' β/(1−α), VU
-        in giro su quel solo scenario.
+Variants of the exhaustive traversal:
+  GLOB  current workload.js: index = iterationInTest (all classes)               [trace.phase]
+  OWN   counter of the exhaustive requests only, arrivals drawn as in GLOB      [fase2b.phase_own]
+  SCEN  implementable in k6: the exhaustive class is a scenario of its own at rate α·λ (regular arrivals,
+        its iterationInTest is the counter; TRAV_SKIP = int(300·α·λ) in the measurement); human and
+        agentic in a second scenario at rate (1−α)·λ, agentic with probability β/(1−α), VUs
+        round-robin on that scenario only.
 
-Uso:  python3 tools/sim/esplora_artefatto.py
+Usage:  python3 tools/sim/esplora_artefatto.py
 """
 import csv
 import math
@@ -36,9 +36,9 @@ SEP, SHR = fase1.SEP, fase1.SHR
 SEEDS = fase1.SEEDS
 VARIANTS = ("GLOB", "OWN", "SCEN")
 
-# nome -> (λ, α, β, scope, AGENT_MUL, misura in s)
+# name -> (λ, α, β, scope, AGENT_MUL, measurement in s)
 P = {k: (*v, 620) for k, v in fase1.POINTS.items()}
-P.update({                                      # serie di A7 (16 set): marginale2.sh blocco B
+P.update({                                      # A7 series (16 Sep): marginale2.sh block B
     "A7_00": (67, 0.0000, 0.1791, 0.02, SHR, 1211),
     "A7_14": (81, 0.1728, 0.1481, 0.02, SHR, 1211),
     "A7_28": (95, 0.2947, 0.1263, 0.02, SHR, 1211),
@@ -55,8 +55,8 @@ def _init():
 
 
 def phase_scen(rnd, n, lam, alpha, beta, scope, mul, duration, trav_skip, session=3, skew=0.6):
-    """Due scenari k6: esaustiva a rate α·λ con indice proprio; umana+agentica a (1−α)·λ.
-    Restituisce richieste ordinate per tempo: (t, classe, indice)."""
+    """Two k6 scenarios: exhaustive at rate α·λ with its own index; human+agentic at (1−α)·λ.
+    Returns requests sorted by time: (t, class, index)."""
     out = []
     ra, rb = alpha * lam, (1 - alpha) * lam
     offset = (tr.SEED * 7919) % n
@@ -88,7 +88,7 @@ def phase_scen(rnd, n, lam, alpha, beta, scope, mul, duration, trav_skip, sessio
 
 
 def trace_of(variant, seed, name):
-    """(warm, meas, misura): liste di (t, classe, indice), t relativo all'inizio della fase."""
+    """(warm, meas, measurement): lists of (t, class, index), t relative to the start of the phase."""
     lam, alpha, beta, scope, mul, measure = P[name]
     n = len(_SIZES)
     rnd = random.Random(seed)
@@ -134,7 +134,7 @@ def diff(a, b, div=1.0):
 
 
 def lab_replica():
-    """Replica del 25-26 set dalla copia locale (lab spento): Ō, SE e miss esaustivo."""
+    """Replica of 25-26 Sep from the local copy (lab off): Ō, SE and exhaustive miss."""
     base = Path.home() / "undertow-backup" / "lab-20260928" / "fs" / "harness" / "results"
     out = {}
     for pt, run in fase1.REPLICA.items():
@@ -161,7 +161,7 @@ def main():
         for r in res:
             w.writerow([r["variant"], r["point"], r["seed"], *r["req"], *r["miss"],
                         f"{r['origin_rps']:.6f}", f"{r['n_object']:.3f}", "SIMULATO"])
-    # regressione: GLOB ai 9 punti della fase 1 = data/sim/fase1/reps.csv (richieste e miss)
+    # regression: GLOB at the 9 points of phase 1 = data/sim/fase1/reps.csv (requests and misses)
     with open(ROOT / "data" / "sim" / "fase1" / "reps.csv") as f:
         ref = {(r["point"], int(r["seed"])): r
                for r in csv.DictReader(line for line in f if not line.startswith("#"))}
@@ -169,10 +169,10 @@ def main():
             "miss_exhaustive")
     bad = sum([*r["req"], *r["miss"]] != [int(ref[(r["point"], r["seed"])][c]) for c in cols]
               for r in res if r["variant"] == "GLOB" and (r["point"], r["seed"]) in ref)
-    print(f"== regressione GLOB contro la fase 1: righe diverse {bad}  "
+    print(f"== regression GLOB against phase 1: different rows {bad}  "
           f"{'PASSA' if bad == 0 else 'NON PASSA'}")
     if bad:
-        sys.exit("regressione non passa: ci si ferma")
+        sys.exit("regression does not pass: stopping")
     by = {}
     for r in res:
         by.setdefault((r["variant"], r["point"]), []).append(r)
@@ -184,7 +184,7 @@ def main():
     def out(sec, q, v, x, se, note=""):
         rows.append([sec, q, v, f"{x:.6f}", f"{se:.6f}", note, "SIMULATO"])
 
-    print("== 1. A1: marginali ai tre scope (LRU)")
+    print("== 1. A1: marginals at the three scopes (LRU)")
     m = {}
     for v in VARIANTS:
         for sc, (lo, hi) in fase1.SCOPE_POINTS.items():
@@ -198,17 +198,17 @@ def main():
         sign = order and m[(v, "0.02")][0] < 0 and t02 <= -3 and m[(v, "0.20")][0] > 0 and t20 >= 3
         print(f"  {v:4s}: " + "  ".join(f"m{sc} {m[(v, sc)][0]:+.4f}±{m[(v, sc)][1]:.4f}"
                                       for sc in fase1.SCOPE_POINTS)
-              + f"  | ordinamento {'regge' if order else 'NO'}; cambio di segno "
+              + f"  | ordering {'regge' if order else 'NO'}; sign change "
                 f"{'regge' if sign else 'NO'}")
         out("A1", "ordering_and_sign", v, 0, 0, f"ordinamento {order}; cambio di segno {sign}")
     for v in ("OWN", "SCEN"):
-        print(f"  variazione {v} − GLOB: " + "  ".join(
+        print(f"  change {v} − GLOB: " + "  ".join(
             f"{sc} {diff(m[(v, sc)], m[('GLOB', sc)])[0]:+.4f}±{diff(m[(v, sc)], m[('GLOB', sc)])[1]:.4f}"
             for sc in fase1.SCOPE_POINTS))
         for sc in fase1.SCOPE_POINTS:
             out("A1", f"dm_{sc}_vs_GLOB", v, *diff(m[(v, sc)], m[("GLOB", sc)]))
 
-    print("\n== 2. A3: separata − condivisa a scope 0,02")
+    print("\n== 2. A3: separate − shared at scope 0.02")
     for v in VARIANTS:
         d12 = diff(O[(v, "S12")], O[(v, "C12")])
         d36 = diff(O[(v, "S36")], O[(v, "C36")])
@@ -217,23 +217,23 @@ def main():
         out("A3", "d12", v, *d12)
         out("A3", "d36", v, *d36)
 
-    print("\n== 3. A7: esaustiva 0 -> 42 req/s, condivisa, 1211 s (lab: 0,961 / 0,997 / 0,979; 1,09)")
+    print("\n== 3. A7: exhaustive 0 -> 42 req/s, shared, 1211 s (lab: 0.961 / 0.997 / 0.979; 1.09)")
     seq = ["A7_00", "A7_14", "A7_28", "A7_42"]
     for v in VARIANTS:
         mg = [diff(O[(v, b)], O[(v, a)], A7_RATE[b] - A7_RATE[a]) for a, b in zip(seq, seq[1:])]
         el = E[(v, "A7_42")][0] / E[(v, "A7_14")][0]
-        print(f"  {v:4s}: marginali " + " / ".join(f"{x:.3f}±{s:.3f}" for x, s in mg)
-              + f"   miss esaustivo 14 -> 42: {E[(v, 'A7_14')][0]:.4f} -> {E[(v, 'A7_42')][0]:.4f}"
-                f"  elasticita' {el:.4f}")
+        print(f"  {v:4s}: marginals " + " / ".join(f"{x:.3f}±{s:.3f}" for x, s in mg)
+              + f"   exhaustive miss 14 -> 42: {E[(v, 'A7_14')][0]:.4f} -> {E[(v, 'A7_42')][0]:.4f}"
+                f"  elasticity {el:.4f}")
         for (a, b), (x, s) in zip(zip(seq, seq[1:]), mg):
             out("A7", f"marginal_{a}_{b}", v, x, s)
         out("A7", "elasticity_42_14", v, el, 0, f"miss_e 14 {E[(v, 'A7_14')][0]:.6f}; 42 "
             f"{E[(v, 'A7_42')][0]:.6f}")
 
-    print("\n== 4. Previsioni per un rilancio sul lab con lo scenario proprio (SCEN), 5 punti")
+    print("\n== 4. Predictions for a rerun on the lab with the own scenario (SCEN), 5 points")
     lab = lab_replica()
-    print("  metodo: lab_nuovo = lab_replica + (SCEN − GLOB)_sim x k, k = Ō_lab / Ō_sim,GLOB "
-          "(scala fase 1); IC 95% = ± 1,96·√(SE_lab² + SE_var² + SE_lab²)")
+    print("  method: lab_new = lab_replica + (SCEN − GLOB)_sim x k, k = Ō_lab / Ō_sim,GLOB "
+          "(phase 1 scale); 95% CI = ± 1.96·√(SE_lab² + SE_var² + SE_lab²)")
     pred = {}
     for pt in ("C12", "S12", "S36", "P0", "C36"):
         lo, lse = lab[pt]["O"]
@@ -244,16 +244,16 @@ def main():
         pred[pt] = (x, se)
         de, dese = diff(E[("SCEN", pt)], E[("GLOB", pt)])
         le = lab[pt]["exh"][0]
-        print(f"  {pt}: origin lab {lo:.3f}±{lse:.3f}  k {k:.4f}  variazione simulata "
-              f"{ch:+.3f}±{chse:.3f}  -> previsto {x:.3f}  IC95 [{x - 1.96 * se:.3f}, "
-              f"{x + 1.96 * se:.3f}]   miss esaustivo lab {le:.4f} -> previsto {le + de:.4f}")
+        print(f"  {pt}: origin lab {lo:.3f}±{lse:.3f}  k {k:.4f}  simulated change "
+              f"{ch:+.3f}±{chse:.3f}  -> predicted {x:.3f}  IC95 [{x - 1.96 * se:.3f}, "
+              f"{x + 1.96 * se:.3f}]   lab exhaustive miss {le:.4f} -> predicted {le + de:.4f}")
         out("previsione", f"origin_{pt}", "SCEN", x, se,
             f"lab {lo:.6f}; k {k:.6f}; variazione {ch:.6f}±{chse:.6f}; IC95 "
             f"[{x - 1.96 * se:.6f}, {x + 1.96 * se:.6f}]; miss_e lab {le:.6f} -> {le + de:.6f}")
     for q, (a, b, dv) in {"m_0.02": ("S36", "S12", fase1.D_RATE), "d12": ("S12", "C12", 1.0),
                           "d36": ("S36", "C36", 1.0), "net_S36_P0": ("S36", "P0", 1.0)}.items():
         x, se = diff(pred[a], pred[b], dv)
-        print(f"  {q}: previsto {x:+.4f}  IC95 [{x - 1.96 * se:+.4f}, {x + 1.96 * se:+.4f}]"
+        print(f"  {q}: predicted {x:+.4f}  IC95 [{x - 1.96 * se:+.4f}, {x + 1.96 * se:+.4f}]"
               f"   (lab replica {diff(lab[a]['O'], lab[b]['O'], dv)[0]:+.4f})")
         out("previsione", q, "SCEN", x, se, f"IC95 [{x - 1.96 * se:.6f}, {x + 1.96 * se:.6f}]")
     with open(OUT / "criteri.csv", "w", newline="") as f:
@@ -261,7 +261,7 @@ def main():
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["section", "quantity", "variant", "value", "se", "note", "stato"])
         w.writerows(rows)
-    print(f"scritti {OUT.relative_to(ROOT)}/reps.csv e criteri.csv")
+    print(f"written {OUT.relative_to(ROOT)}/reps.csv and criteri.csv")
 
 
 if __name__ == "__main__":

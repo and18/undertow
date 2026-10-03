@@ -1,38 +1,40 @@
 #!/usr/bin/env bash
 #
-# overnight.sh - Quattro campagne in sequenza, con controllo di deriva.
+# overnight.sh - Four campaigns in sequence, with a drift check.
 #
-# COSA CHIUDE, IN ORDINE DI IMPORTANZA
+# WHAT IT CLOSES, IN ORDER OF IMPORTANCE
 #
-#   1. RETRY   il costo del budget e' lavoro perso o solo lavoro
-#              posticipato? Se la classe batch che rispetta Retry-After
-#              recupera il throughput, il conflitto fra classi e'
-#              apparente e la mitigazione non costa nulla.
+#   1. RETRY   is the cost of the budget lost work or only postponed
+#              work? If the batch class that respects Retry-After
+#              recovers the throughput, the conflict between classes is
+#              apparent and the mitigation costs nothing.
 #
-#   2. POOL    la relazione dipende dalla dimensione del pool? Il
-#              confine di stabilita' e' stato osservato a THREADS=8 in
-#              tutte e cinque le campagne precedenti. Se a 4 e 12 il
-#              ginocchio resta alla stessa occupazione, la
-#              normalizzazione e' dimostrata e non assunta.
+#   2. POOL    does the relation depend on the pool size? The stability
+#              boundary was observed at THREADS=8 in all five previous
+#              campaigns. If at 4 and 12 the knee stays at the same
+#              occupancy, the normalisation is demonstrated and not assumed.
 #
-#   3. F2      rimisura degli hit ratio per classe con l'offset
-#              deterministico. I valori precedenti sono ritrattati
-#              (findings.md, 2026-08-26) e con essi la decomposizione
-#              bidirezionale.
+#   3. F2      re-measurement of the per-class hit ratios with the
+#              deterministic offset. The previous values are retracted
+#              (findings.md, 2026-08-26) and with them the bidirectional
+#              decomposition.
 #
-#   4. BAND    la banda di instabilita' esiste su questa macchina? Su
-#              x86 la dispersione al ginocchio era oltre il 300%, su ARM
-#              il 4%. Venti ripetizioni su passo fine dicono se il
-#              fenomeno e' reale o era variabilita' della piattaforma.
+#   4. BAND    does the instability band exist on this machine? On
+#              x86 the dispersion at the knee was over 300%, on ARM
+#              4%. Twenty repetitions on a fine step tell whether the
+#              phenomenon is real or was platform variability.
 #
-# CONTROLLO DI DERIVA
+# DRIFT CHECK
 #
-# Fra una campagna e l'altra si rimisura lo stesso punto fisso. Se il p99
-# di riferimento cambia oltre il 30%, la macchina non e' piu' quella di
-# prima e le campagne successive non sono confrontabili: lo script si
-# ferma invece di produrre dati non comparabili. E' successo il
-# 2026-08-18, quando PostgreSQL si e' scaldato durante una campagna e il
-# ginocchio e' sparito.
+# Between one campaign and the next the same fixed point is re-measured. If the
+# reference p99 changes by more than 30%, the machine is no longer the one
+# it was and the following campaigns are not comparable: the script stops
+# instead of producing non-comparable data. It happened on
+# 2026-08-18, when PostgreSQL warmed up during a campaign and the
+# knee disappeared.
+#
+# Usage:
+#   nohup bash load/overnight.sh > /tmp/overnight.log 2>&1 &
 #
 # Uso:
 #   nohup bash load/overnight.sh > /tmp/overnight.log 2>&1 &
@@ -47,7 +49,7 @@ LOG="$BASE/overnight.log"
 
 log() { printf '\n\033[1m===> %s\033[0m  (%s)\n' "$*" "$(date +%H:%M)" | tee -a "$LOG"; }
 
-# Punto fisso di controllo: alpha 0.25, lambda 220, budget spento.
+# Fixed control point: alpha 0.25, lambda 220, budget off.
 checkpoint() {
     docker compose restart varnish >/dev/null 2>&1; sleep 8
     docker compose --profile load run --rm -T -e MODEL=mix -e ALPHA=0.25 \
@@ -71,22 +73,22 @@ restore_env() {
 trap restore_env EXIT
 
 REF=$(checkpoint)
-log "riferimento iniziale: p99 alta = ${REF} ms"
-[[ "$REF" -lt 100 ]] && { echo "riferimento implausibile, mi fermo" | tee -a "$LOG"; exit 1; }
+log "initial reference: p99 high = ${REF} ms"
+[[ "$REF" -lt 100 ]] && { echo "implausible reference, stopping" | tee -a "$LOG"; exit 1; }
 
 drift_ok() {
     local now pct
     now=$(checkpoint)
     pct=$(awk -v a="$REF" -v b="$now" 'BEGIN{printf "%.0f", 100*(b-a)/a}')
-    log "controllo deriva: ${now} ms contro ${REF} ms  (${pct}%)"
+    log "drift check: ${now} ms against ${REF} ms  (${pct}%)"
     awk -v p="$pct" 'BEGIN{exit !(p<-30 || p>30)}' && {
-        echo "DERIVA OLTRE IL 30% — campagne successive non confrontabili" | tee -a "$LOG"
+        echo "DRIFT BEYOND 30% — following campaigns not comparable" | tee -a "$LOG"
         return 1; }
     return 0
 }
 
 # --- 1. RETRY ------------------------------------------------------------
-log "1/4  RETRY — il budget costa lavoro o solo tempo?"
+log "1/4  RETRY — does the budget cost work or only time?"
 OUT="$BASE/retry" LAMBDA=220 ALPHA=0.25 BUDGETS="0 5 4" REPS=5 \
     RETRY_MAX=3 MEASURE=300 bash load/budget.sh >> "$LOG" 2>&1
 restore_env
@@ -94,9 +96,9 @@ restore_env
 drift_ok || exit 1
 
 # --- 2. POOL -------------------------------------------------------------
-# Il ritmo si scala con la dimensione del pool per tenere costante
-# l'occupazione attesa: e' il senso della normalizzazione.
-log "2/4  POOL — il confine dipende dalla dimensione del pool?"
+# The rate is scaled with the pool size to keep the expected occupancy
+# constant: that is the meaning of the normalisation.
+log "2/4  POOL — does the boundary depend on the pool size?"
 for t in 4 12; do
     lam=$(awk -v t="$t" 'BEGIN{printf "%.0f", 220*t/8}')
     log "     THREADS=$t  lambda=$lam"
@@ -110,17 +112,17 @@ restore_env
 drift_ok || exit 1
 
 # --- 3. F2 ---------------------------------------------------------------
-log "3/4  F2 — hit ratio per classe, con offset deterministico"
+log "3/4  F2 — per-class hit ratio, with deterministic offset"
 OUT="$BASE/f2" LAMBDA=220 ALPHAS="0.00 0.10 0.20 0.30 0.40 0.50" \
     REPS=3 bash load/sweep.sh >> "$LOG" 2>&1
 
 drift_ok || exit 1
 
 # --- 4. BAND -------------------------------------------------------------
-log "4/4  BAND — la transizione e' bimodale o solo ripida?"
+log "4/4  BAND — is the transition bimodal or only steep?"
 OUT="$BASE/band" LAMBDA=220 ALPHAS="0.22 0.24 0.26 0.28" \
     REPS=20 bash load/sweep.sh >> "$LOG" 2>&1
 
-log "tutte le campagne completate"
-echo "risultati in $BASE" | tee -a "$LOG"
+log "all campaigns completed"
+echo "results in $BASE" | tee -a "$LOG"
 ls -d "$BASE"/*/ | tee -a "$LOG"
