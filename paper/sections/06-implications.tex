@@ -7,18 +7,31 @@
 % (docs/VERIFICHE-chiuse.md).
 % Not written (candidate, NOT in claims.md): fixed per-request price (pay-per-crawl)
 % against a cost that changes sign. Enters only with a D row and a primary source.
-A traffic class does not have a stable marginal cost independent of the state of the
-shared cache.\claim{D1b}
+% Arc as-is -> transition -> to-be (3 Oct 2026): same sentences as before, regrouped; no new
+% claims. As-is: D1, D1b. Transition: D3 with D2 as limit, D4. To-be: D5, D6, P1-P3, the
+% decision map, and the section E rows on protocol and architecture.
+\paragraph{As-is.}
+Today, decisions on automated traffic use its identity and its load: operators allow or
+block declared or verified classes~\cite{cloudflare2026options,ietf-webbotauth}, and
+admission control reacts to load or
+latency~\cite{cho2020breakwater,zhou2018dagor,cho2023protego,park2024topfull}
+(\cref{sec:background,sec:rw}).\claim{D1}
+These mechanisms rest on an assumption that can be measured: that a class of traffic has a
+cost, so that knowing the class tells the operator what admitting more of it will
+do.\claim{D1}
+Our measurements show that a traffic class does not have a stable marginal cost
+independent of the state of the shared cache.\claim{D1b}
 In our testbed this holds for the agentic class: its marginal cost changes sign with its
 reachable set, and its measured cost depends on the classes it shares the cache with.
 The exhaustive class, varied on its own volume, stays close to a constant, so the label does
 not guarantee stability either way (\cref{sec:results}).\claim{D1b}\claim{A1}\claim{A3}\claim{C4}\claim{A7}
+
+\paragraph{Transition.}
 Everything that follows is a design implication that we draw from these measurements;
 none of it is a validated technology.\claim{D3}
-
-\paragraph{Classification during the transition.}
-If infrastructure wants to make class-sensitive decisions, identity alone can be
-insufficient, because the marginal effect of a class is state-dependent.\claim{D1}\claim{D3}
+Identity remains an input, but if infrastructure wants to make class-sensitive decisions,
+identity alone can be insufficient, because the marginal effect of a class is
+state-dependent.\claim{D1}\claim{D3}
 At the knee of the testbed, blocking the exhaustive class by its identity lies on the
 empirical work/latency frontier sampled at that operating point; we did not test policies
 that ignore identity (\cref{sec:r-frontier}).\claim{D2}
@@ -26,25 +39,23 @@ A policy that knows only that traffic is agentic, however, does not necessarily 
 information to estimate its marginal impact,
 since under the same label the marginal cost ranged from $-0.035$ to $+0.421$ origin
 requests per request (\cref{sec:r-sign}).\claim{D1}
+The first quantity to place beside the label, and the one with the strongest support, is how
+wide a class's set of requested objects is, since the width of the reachable set alone
+changed the sign of the marginal cost.\claim{D4}\claim{A1}
+It is observable: the windowed working set is the counterpart of the reachable set in
+request logs, and we computed it over a short window for the clients of our honeypot
+(\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
 
-\paragraph{Three quantities beside the label.}
-As design implications, three quantities would complement the class label.\claim{D4}\claim{D5}\claim{D6}
-The first implication, and the one with the strongest support, is that infrastructure
-should be able to observe or derive how wide a class's set of requested objects is,
-since the width of the reachable set alone changed the sign of the marginal
-cost.\claim{D4}\claim{A1}
-What infrastructure can observe is the windowed working set, the counterpart of the
-reachable set in request logs: we computed it over a short window for the clients of our
-honeypot (\cref{sec:m-honeypot}).\claim{D4}\claim{C3}
-The second implication is that a useful infrastructure would need an estimate of the
-marginal cost of the class in the current state of the shared cache, because in the
-primary design one blocked exhaustive request frees about 0.84 origin requests and one
-agentic request about 0.16.\claim{D5}\claim{A5}
-The third implication is that it should know the effect of a class on the other
-workloads, because the human p99 rose by 26.7\,ms while the human miss ratio changed only
-by a factor of 1.07 (\cref{sec:m-human}).\claim{D6}\claim{B5}
-
-\paragraph{A decision map.}
+\paragraph{To-be: properties, not architecture.}
+The further implications say what infrastructure would need to know, not how to build
+it.\claim{D5}\claim{D6}
+A useful infrastructure would need an estimate of the marginal cost of the class in the
+current state of the shared cache, because in the primary design one blocked exhaustive
+request frees about 0.84 origin requests and one agentic request about
+0.16.\claim{D5}\claim{A5}
+It should also know the effect of a class on the other workloads, because the human p99
+rose by 26.7\,ms while the human miss ratio changed only by a factor of 1.07
+(\cref{sec:m-human}).\claim{D6}\claim{B5}
 As a map of the questions that a class-sensitive decision would have to answer, and not as
 an architecture, these implications line up in one chain:\claim{D3}
 \begin{center}\small
@@ -59,12 +70,13 @@ prioritise or isolate the class.\claim{D3}\claim{D4}\claim{D5}\claim{D6}
 Our measurements bear on the state, cost and externality links; at the decision step,
 blocking and deferring lie on one frontier in our testbed, and isolating the agentic class
 would remove a measured benefit.\claim{A6}\claim{D8}
-
-\paragraph{From evidence to properties.}
 \Cref{tab:bridge} restates these implications as three properties, P1 to P3, and sets
 each one against the evidence that motivates it, the decision it would enable, the closest
-existing line of work and where that line of work falls short for our evidence; it is a
-statement of implications, not an architecture.\claim{D4}\claim{D5}\claim{D6}
+existing line of work and where that line of work falls short for our evidence.\claim{D4}\claim{D5}\claim{D6}
+% Section E rows: "current architecture inadequate" and "new protocol or architecture
+% needed", both NON DIMOSTRATO.
+We do not claim that current infrastructure is inadequate or that a new protocol or
+architecture is needed; our data do not show either.
 
 \begin{table}[t]
 \caption{Design implications, not validated technology: the evidence behind each property, what infrastructure would need to know, the decision it
@@ -140,7 +152,3 @@ set, the overlap between classes as a controlled variable, and the effect on the
 latency of the other classes.\claim{D9}
 Whether admission, placement and priority can move from deciding on identity to deciding
 on state and cost is the question these implications open.\claim{D1}\claim{D3}
-% Section E rows: "current architecture inadequate" and "new protocol or architecture
-% needed", both NON DIMOSTRATO.
-We do not claim that current infrastructure is inadequate or that a new protocol or
-architecture is needed; our data do not show either.

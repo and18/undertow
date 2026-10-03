@@ -2,6 +2,11 @@
 **Versione 3.11, 2 ottobre 2026.** Sostituisce la v3.10, la v3.9, la v3.8, la v3.7, la v3.6, la v3.5, la v3.4, la v3.3, la v3.2, la v3.1, la v3 e la v2. Ogni frase del paper deve
 appartenere a una riga di questa tabella; se non ci appartiene, non entra.
 
+**Aggiunto il 3 ottobre (v3.11, nessun claim nuovo).** Implications riorganizzata in tre
+paragrafi (as-is: D1, D1b; transition: D3 con D2 come limite, D4; to-be: D5, D6, P1-P3, mappa
+decisionale, righe E) con le frasi esistenti. D9: evidenza estesa a due paper di visione
+(arXiv:2511.18354, arXiv:2606.20570), verificati in `docs/VERIFICHE-chiuse.md`.
+
 **Cambiato il 2 ottobre (v3.11, verifica finale del PDF).** Fonte: `docs/VERIFICA-finale-20261002.md`
 (commit `eeb5844`, ramo della verifica). (1) **Frontiera:** la riserva della v3.10 usava il T del
 disegno primario (143 s = 5 274 / 37 req/s). Ora T ≈ 5 263 / tasso d'origine **per politica**
@@ -277,7 +282,7 @@ Fricker · C6 con il riferimento IETF · tre nuove righe in E.
 | D6 | ...e l'**effetto sugli altri workload** | **IMPLICAZIONE** | B5, A8 | sostenuta |
 | D7 | ...e lo **stato condiviso** e la **pressione sulle risorse** | **IMPLICAZIONE DEBOLE** | indiretta | meno enfasi delle altre tre |
 | D8 | Isolare la classe agentica in una cache separata rimuoverebbe un beneficio misurato | **SOSTENUTO** | direzione confermata, ampiezza ridotta: con la traversata in scenario proprio il miss esaustivo scende da **0,8576 a 0,8252** passando da 0 a 36 req/s agentiche (**Δ −0,0324 ± 0,0015**; V4 PASSA, `docs/RISULTATO-lab-trav-own-20260928.md`), sotto separazione. **Misura precedente, traversata globale (R7):** hit esaustivo 0,179 → 0,200 (21 set) e miss 0,8580 → 0,8014 (Δ −0,0566, replica 25-26 set): circa il 57% del calo precedente e' effetto della cache, il resto era artefatto | chiude la domanda sulla cache separata |
-| D9 | **Posizionamento.** Non abbiamo trovato lavori che misurino insieme, in una cache condivisa, il costo marginale all'origine di una richiesta in piu' di una classe, la sua dipendenza dall'ampiezza del reachable set della classe, la sovrapposizione fra classi come variabile controllata e l'effetto sulla coda di latenza delle altre classi | **SOSTENUTO** (ricerca bibliografica) | `docs/VERIFICHE-chiuse.md` (ricerca sistematica 2025-2026; voci verificate il 28 e 30 set e il 2 ott), `docs/UNDERTOW-CONTESTO.md` §7; Bandara et al. (arXiv:2606.19116) e' un paper di visione senza misure su cache o origine | formulazione «we did not find», non «nessuno ha mai» |
+| D9 | **Posizionamento.** Non abbiamo trovato lavori che misurino insieme, in una cache condivisa, il costo marginale all'origine di una richiesta in piu' di una classe, la sua dipendenza dall'ampiezza del reachable set della classe, la sovrapposizione fra classi come variabile controllata e l'effetto sulla coda di latenza delle altre classi | **SOSTENUTO** (ricerca bibliografica) | `docs/VERIFICHE-chiuse.md` (ricerca sistematica 2025-2026; voci verificate il 28 e 30 set e il 2 ott), `docs/UNDERTOW-CONTESTO.md` §7; Bandara et al. (arXiv:2606.19116) e' un paper di visione senza misure su cache o origine; anche Bilal et al. (arXiv:2511.18354) e Dey e Viradecha (arXiv:2606.20570) propongono architetture senza misure su cache condivisa o costo marginale all'origine (verificati il 3 ott) | formulazione «we did not find», non «nessuno ha mai» |
 
 ## E. Claim che NON facciamo
 
