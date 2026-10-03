@@ -7,8 +7,7 @@ type: software
 authors:
   - family-names: Licitra
     given-names: Andrea
-    # TODO: replace the placeholder with the real ORCID iD before publishing.
-    orcid: "https://orcid.org/0000-0000-0000-0000"
+    orcid: "https://orcid.org/0009-0006-9785-5495"
 repository-code: "https://github.com/and18/undertow"
 license:
   - MIT
@@ -26,8 +25,7 @@ preferred-citation:
   authors:
     - family-names: Licitra
       given-names: Andrea
-      # TODO: same ORCID iD as above.
-      orcid: "https://orcid.org/0000-0000-0000-0000"
+      orcid: "https://orcid.org/0009-0006-9785-5495"
   year: 2026
   # TODO: add the arXiv identifier once assigned, e.g.
   # identifiers:

@@ -5,7 +5,10 @@
 % tools/honeypot_aggregate.py (signatures: presence of the headers only).
 
 \subsection{Honeypot}\label{app:honeypot}
-The web server of the public measurement site logs, for each request, the time, URL,
+The public measurement site is \texttt{theslowshelf.org}.
+The data used in this paper cover the window [12 August, 22 September 2026) UTC; traffic
+after the publication of this paper, which names the site, is not comparable with it.
+Its web server logs, for each request, the time, URL,
 status and user agent, an identifier of the TCP connection with the request's position in
 it, and the Web Bot Auth headers \texttt{Signature-Agent} and
 \texttt{Signature-Input}.\claim{C6}
@@ -13,8 +16,8 @@ Clients are classed by their declared user agent into six classes; the \emph{age
 matches fetchers that act for a user, such as \texttt{ChatGPT-User}, \texttt{Claude-User}
 and Perplexity.
 The declaration is not verified.
-All aggregates come from one fingerprinted snapshot of the logs and a fixed window,
-[12 August, 22 September 2026) UTC, with 520,871 requests; the handling of client
+All aggregates come from one fingerprinted snapshot of the logs, with 520,871 requests in
+that window; the handling of client
 addresses is described in \cref{app:ethics}.\claim{C6}
 
 The windowed working set is computed for the clients with at least 5 requests.\claim{C3}
