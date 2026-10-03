@@ -293,9 +293,9 @@ Web. The CPU proxy is validated on this testbed only.
 
 ## Licence
 
-Code under the MIT licence ([`LICENSE`](LICENSE)). Data and figures (`data/`, `figures/`)
-under CC BY 4.0 ([`LICENSE-data`](LICENSE-data)). Corpus public domain (Project Gutenberg),
-not redistributed. Bundled font Source Sans 3 under the SIL Open Font License 1.1.
+Code under the MIT licence ([`LICENSE`](LICENSE)). Data, figures, documentation and paper
+(`data/`, `figures/`, `docs/`, `paper/`) under CC BY 4.0 ([`LICENSE-data`](LICENSE-data)).
+Corpus public domain (Project Gutenberg), not redistributed. Bundled font Source Sans 3 under the SIL Open Font License 1.1.
 
 ## Citation
 
