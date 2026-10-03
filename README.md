@@ -1,5 +1,12 @@
 # Undertow
 
+**Same Label, Opposite Sign: State-Dependent Marginal Origin Cost in Shared Web Caches**
+
+Code, data and LaTeX source of the paper: a k6 → Varnish → gunicorn/Flask → PostgreSQL testbed, its derived data and figure scripts.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC%20BY%204.0-lightgrey.svg)](LICENSE-data)
+
 ## Start here
 
 Three ways in, depending on what you want.

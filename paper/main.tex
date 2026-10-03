@@ -11,8 +11,7 @@
 %      are \input from the .caption.tex files that `make figures` writes. Never edit a
 %      caption here: edit CAPTION in the figure script.
 % Format: Springer LNCS (llncs), named version for arXiv. The measurement site is referred
-% to as "a public measurement site"; \anonrepo stays a placeholder until the repository is
-% published.
+% to as "a public measurement site".
 \documentclass[runningheads]{llncs}
 
 \usepackage[utf8]{inputenc}
@@ -26,6 +25,7 @@
 \usepackage{xcolor}
 \usepackage{cite}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Same Label, Opposite Sign: State-Dependent Marginal Origin Cost in Shared Web Caches}, pdfauthor={Andrea Licitra}}
 \usepackage[capitalise,noabbrev]{cleveref}
 
 % ── claim markers ───────────────────────────────────────────────────────────
@@ -40,8 +40,6 @@
   \newcommand{\claim}[1]{}
 \fi
 \newcommand{\todo}[1]{\textcolor{orange!80!black}{[TODO: #1]}}
-% Repository link: placeholder until the repository is published.
-\newcommand{\anonrepo}{\todo{repository link}}
 
 % ── figures: one command, caption from the build ────────────────────────────
 % \undertowfig{STEM}{short caption for the list of figures}{label}

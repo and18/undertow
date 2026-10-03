@@ -48,6 +48,13 @@ runs are not reachable from here.
 Every figure's provenance file lists the claims it supports (`docs/claims.md`), the data
 files with their hashes, and the runs they came from (`docs/registry.csv`).
 
+### Building the paper
+
+`make paper` (or `cd paper && latexmk -pdf main.tex`) needs a LaTeX installation with
+`latexmk` and the figures from `make figures`. It also needs `llncs.cls` and `splncs04.bst`
+from Springer's LNCS class, which are **not included** in this repository: download them from
+Springer and put them where LaTeX finds them (for instance in `paper/`).
+
 ## Level 2: simulator and post-hoc model
 
 These scripts use only the Python standard library and read only files that are in the

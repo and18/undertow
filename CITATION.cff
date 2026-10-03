@@ -1,7 +1,8 @@
 cff-version: 1.2.0
 message: >-
   If you use this software, data or figures, please cite the paper below
-  (preferred-citation) and, where relevant, this repository.
+  (preferred-citation) and, where relevant, this repository. The code is under the MIT
+  licence; data, figures, docs and paper are under CC BY 4.0 (see LICENSE-data).
 title: "Undertow: testbed, data and analysis for state-dependent marginal origin cost in shared web caches"
 type: software
 authors:
@@ -9,9 +10,7 @@ authors:
     given-names: Andrea
     orcid: "https://orcid.org/0009-0006-9785-5495"
 repository-code: "https://github.com/and18/undertow"
-license:
-  - MIT
-  - CC-BY-4.0
+license: MIT
 keywords:
   - web caching
   - AI agents
