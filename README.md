@@ -1,5 +1,25 @@
 # Undertow
 
+## Start here
+
+Three ways in, depending on what you want.
+
+1. **Understand the result** → read the paper ([`paper/`](paper/), LaTeX source) and look
+   at its figures ([`figures/paper/`](figures/paper/), `FIG-01` first).
+2. **Check a number** → [`docs/claims.md`](docs/claims.md) (the claim and its status) →
+   [`docs/registry.csv`](docs/registry.csv) (the runs behind it) → the script in
+   [`tools/`](tools/) → the file in [`data/derived/`](data/derived/)
+   ([`data/derived/MANIFEST.csv`](data/derived/MANIFEST.csv) says which runs and which script made each file).
+3. **Redo the experiment** → [`REPRODUCE.md`](REPRODUCE.md), which says what works at each of
+   four levels and what does not.
+
+## Why "Undertow"
+
+An undertow is the current beneath the waves, often pulling in a different direction from
+the surface. Traffic labels are the surface; the cost that reaches the origin is the undertow.
+
+---
+
 **Does a class of web traffic have a stable cost?** Undertow is an independent
 measurement study of how automated and AI-agent traffic loads shared web infrastructure.
 It asks a narrow question with a practical consequence: when a site, a CDN or an admission
@@ -72,7 +92,7 @@ of three contiguous chapters drawn from a configurable scope). Working sets of d
 classes can be decorrelated (`AGENT_MUL`).
 
 The honeypot is a public site of 18,720 pages of public-domain literature whose
-`robots.txt` explicitly permits every AI crawler — the inverse of current practice, and
+`robots.txt` (`honeypot/static/robots.txt`) explicitly permits every AI crawler — the inverse of current practice, and
 deliberate: a site that blocks crawlers cannot observe them. It logged 520,871 requests
 in the fixed window [2026-08-12, 2026-09-22) UTC. Only aggregates are published.
 
@@ -100,48 +120,89 @@ not comparable with it: anyone reading this can now find, and visit, the site.
 - **Nothing random unseeded.** A generator parameter drawn at random is an uncontrolled
   variable.
 - **Provenance on every run.** Since 21 September 2026 every run writes its full
-  configuration (`env.txt`); every run, before and after, is classified in
+  configuration (`harness/results/<run>/env.txt`); every run, before and after, is classified in
   [`docs/registry.csv`](docs/registry.csv).
 
 ## Repository layout
 
+One line per folder.
+
 ```
-paper/                   LaTeX source of the paper
-docs/                    claims, run registry, retractions, pre-registrations and their
-                         results, verifications, design decisions, setup
-                         (working documents are in Italian; the paper is in English)
-  archive/               superseded narrative documents, kept for the record
-harness/
-  app/                   Flask application under test
-  load/                  k6 workload and the three-class runner (treclassi.sh) with its wrappers
-  legacy/                runners from earlier phases; no registered run depends on them
-  nginx/  varnish/       per-class router and cache tier
-  observability/         VictoriaMetrics + Grafana (operations only, never in the paper)
-  profiles/              testbed profiles
-  env.*  .env.example    per-host configuration and the credentials template
-honeypot/                static site generator, server config, robots.txt
-tools/                   data extraction, honeypot aggregation, cache simulator (tools/sim/)
-data/derived/            one small CSV per figure — the only input of the figures
-data/sim/  data/posthoc/ simulator and post-hoc model outputs
-analysis/                figure design system, one script per figure, build and QA
-figures/                 generated figures: paper (4.80 in) and editorial (6.20 in)
-Makefile                 make figures, make data (lab only), make paper
-REPRODUCE.md             what a third party can reproduce, level by level
+paper/                       LaTeX source of the paper
+analysis/                    figure design system, one script per figure, build and QA
+figures/paper/               the paper's figures (4.80 in) with captions and provenance
+data/derived/                one small CSV per figure, the only input of the figures; MANIFEST.csv
+data/corpus/                 books.csv: the Gutenberg IDs of the 495 books (texts not included)
+data/sim/  data/posthoc/     outputs of the cache simulator and of the post-hoc model
+tools/                       raw runs and honeypot logs to data/derived/, analyses, replica launchers
+tools/sim/                   the cache simulator (standard library only)
+docs/                        claims, run registry, retractions, pre-registrations and their
+                             results, verifications, design decisions, setup
+                             (working documents are in Italian; the paper is in English)
+docs/archive/                superseded narrative documents, kept for the record
+harness/app/                 Flask application under test
+harness/load/                k6 workload, the three-class runner treclassi.sh and its wrappers
+harness/legacy/              runners from earlier phases; no registered run depends on them
+harness/nginx/               per-class router (template)
+harness/varnish/             cache tier: default.vcl is what docker-compose mounts;
+                             default.vcl.tpl is the same file with host and port as variables,
+                             the one cited by the simulator pre-registration and by tools/sim/cache.py
+harness/observability/       VictoriaMetrics + Grafana (operations only, never in the paper)
+harness/profiles/            testbed profiles (search terms)
+harness/env.*  .env.example  per-host configuration and the credentials template
+honeypot/                    static site generator, server configuration, robots.txt
+Makefile                     make figures, make data (lab only), make paper
+REPRODUCE.md                 what a third party can reproduce, level by level
 ```
 
+**Which wrapper made which runs.** Every registered run (`tre-*` in
+[`docs/registry.csv`](docs/registry.csv)) went through `harness/load/treclassi.sh`. The
+registry names campaigns, not scripts, so the link below was reconstructed from the date, the
+number of runs and the parameters (α, β, repetitions, λ) written in each script. *Exact* means
+the count and the parameters agree run by run; *probable* means they agree but the registry
+labels the campaign differently or does not record the variable that distinguishes the runs.
+The lab's `harness/results/<run>/env.txt` files would settle the probable ones.
+
+| script | what it launches | registry runs | match |
+|---|---|---|---|
+| `harness/load/costmap.sh` | six isolated-class runs (traversal @22 and @44, agent @5 and @22, zipf @44 and @88) | `tre-20260911-135930` … `-164534` ("isolata") | exact |
+| | grid α 0.20–0.40 × β 0.05 and 0.20, λ 110 | `tre-20260911-171746` ("griglia alpha x beta") | exact |
+| | the same series at α 0.25, β 0.02–0.30 with `OBJECT_TTL=60` | `tre-20260911-203812` ("sweep beta a cache piccola") | probable |
+| `harness/load/verifiche.sh` | A: five `OBJECT_TTL` values at α 0.25, β 0.02 and 0.20 | `tre-20260910-212316` … `tre-20260911-013843` ("sweep capienza A–E") | probable |
+| | B: β series 0.02–0.30 at constant λ 110 | `tre-20260911-024234` ("sweep beta a volume costante") | probable |
+| | C: DB pool 4 and 12, λ 160, β 0.05 | `tre-20260911-055256` (invalid), `-072826` ("sweep alpha a carico alto") | probable |
+| `harness/load/verifiche2.sh` | D: durations 620, 1860, 3720 s at β 0.02, plus the control at β 0.30 | `tre-20260914-065458`, `-072714`, `-084049`, `-105624` ("invarianza alla durata") | exact |
+| | M: cache 64, 128, 256, 512 MB, α 0.00 and 0.30 at β 0.05 | `tre-20260914-121000` … `-152139` ("variante di capienza") | exact |
+| `harness/load/marginale.sh` | shared-mapping marginal series, 0/6/12/24/36 agents | `tre-20260914-194419` … `-215321` | exact |
+| `harness/load/marginale2.sh` | B: crawler series, four points, 3 repetitions | `tre-20260916-013722`, `-025527`, `-041332`, `-053137` ("serie crawler"; the registry itself says "blocco B di marginale2") | exact |
+| | A: agent series, 0/12/24/36 agents, 5 repetitions | `tre-20260915-213648`, `-225700`, `tre-20260916-001711`, `-073843`, `-085853` ("serie marginale a 5 ripetizioni" and "ripetizione") | probable |
+| `harness/load/policy.sh` | no policy, block B, block C, deferral with budget 4 and 6 | `tre-20260919-072040` … `-103501` ("frontiera") | exact |
+| `harness/load/frontiera.sh` | deferral with budget 3, 2, 1 | `tre-20260920-061512`, `-070346`, `-075220` | exact |
+| `harness/load/scopesweep.sh` | agentic scope 0.06 and 0.20, two operating points each | `tre-20260921-214946` … `tre-20260922-015010` ("SWEEP SCOPE") | exact |
+
+The other registered groups were launched through `harness/load/treclassi.sh` directly: the "sweep TTL /
+budget" runs of 13–14 September (R9, no wrapper kept), the separate-mapping runs of 21
+September, and the replicas and reruns of 25–29 September, whose launchers are
+`tools/replica-20260924.sh`, `tools/replica-own-20260928.sh` and
+`tools/replica-own-scope-20260929.sh`. `harness/load/capacity.sh`, `harness/load/calibrate.sh`, `harness/load/null-test.sh` and
+`harness/load/measure-model.sh` are validity and calibration steps, not registered runs.
+
 Produced material that can be regenerated is not versioned: `cache/`, `site/`,
-`harness/results/`, `harness/.env`, `figures/narrow/`, `figures/_qa/`. Honeypot logs are
-never versioned.
+`harness/results/`, `harness/.env`, `figures/narrow/`, `figures/editorial/`, `figures/_qa/`.
+Honeypot logs are never versioned.
 
 ## Rebuilding the figures
 
 ```bash
-pip install -r analysis/requirements-figures.txt
+python3 -m venv .venv && .venv/bin/pip install -r analysis/requirements-figures.txt
 make figures                          # on Windows without make: python analysis/build_figures.py
 ```
 
+The virtual environment is needed on current Debian and Ubuntu, where `pip` refuses to install
+into the system Python; `make` uses `.venv/bin/python` when it exists.
+
 This deletes `figures/` and regenerates it from `data/derived/` only: every figure at three
-widths, each with its caption (`*.caption.txt`) and provenance (`*.provenance.txt`: claims,
+widths (only the paper width is versioned), each with its caption (`*.caption.txt`) and provenance (`*.provenance.txt`: claims,
 data hashes, source runs, toolchain). The build refuses to write a figure with a missing
 glyph, text outside the margins or overlapping labels, and checks that every PDF is vector,
 embeds only the bundled font and has the exact target width. Contact sheets, including

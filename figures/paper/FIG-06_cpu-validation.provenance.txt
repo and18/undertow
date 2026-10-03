@@ -1,7 +1,7 @@
 figure     FIG-06_cpu-validation
 claims     C1 (MISURATO)
 data
-           data/derived/fig06_cpu_validation.csv  sha256:7d91ec9d7b40abf2
+           data/derived/fig06_cpu_validation.csv  sha256:2d5469895e0efedc
 runs
            five policy windows of the frontier campaign (A, B, C, D4, D6)
 script     analysis/fig_06_cpu_validation.py  sha256:cf028c6ac070e302

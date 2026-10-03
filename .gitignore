@@ -74,3 +74,7 @@ CLAUDE.md
 docs/recap/
 honeypot/static/989bd4b93d864525a40b9b19bc590fed.txt
 figures/narrow/
+figures/editorial/
+
+# Working copy of the paper without the claims overlay, built locally
+paper/main-clean.*

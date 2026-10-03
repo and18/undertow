@@ -24,19 +24,26 @@ make figures            # on Windows without make: python analysis/build_figures
 
 The build deletes `figures/`, regenerates every figure from `data/derived/` alone (paper,
 narrow and editorial widths, with captions and provenance), and runs a QA pass that refuses
-missing glyphs, text outside the margins and overlapping labels. About 30 seconds.
+missing glyphs, text outside the margins and overlapping labels. About 30 seconds. It writes
+60 files: ten figures at three widths, PDF and PNG each. Only the paper width (20 PDF and PNG
+files in `figures/paper/`) is versioned; `figures/narrow/` and `figures/editorial/` are
+regenerated and ignored by git, like `figures/_qa/`.
 
-**Verified on 2 October 2026** (Python 3.12.3, matplotlib 3.10.9, Linux): rebuilding from a
-clean export of the repository gives PDF and PNG files byte-identical to the committed ones
-(all 54: nine figures at three widths, PDF and PNG; the narrow width is regenerated but
-not versioned). PDFs are
-written without a creation date, so identical inputs give identical bytes. A different
-matplotlib or FreeType version can change PNG pixels without changing the content.
+**Verified on 3 October 2026** (Python 3.12.3, matplotlib 3.10.9, Linux): rebuilding from a
+fresh clone gives PDF and PNG files byte-identical to the 20 committed ones, and `git status`
+stays clean. PDFs are written without a creation date, so identical inputs give identical
+bytes. A different matplotlib or FreeType version can change PNG pixels without changing the
+content.
 
-One known difference: `figures/paper/FIG-06_cpu-validation.provenance.txt` records the
-SHA-256 of `data/derived/fig06_cpu_validation.csv` as it was on the author's disk, with
-CRLF line endings. Git stores and checks out the file with LF, so a fresh clone writes a
-different hash on that one line. The data values are identical.
+*Line endings, fixed on 3 October 2026.* Until then
+`figures/paper/FIG-06_cpu-validation.provenance.txt` recorded the SHA-256 of
+`data/derived/fig06_cpu_validation.csv` as it was on the author's disk, with CRLF line
+endings, so a fresh clone wrote a different hash on that one line. `tools/cpu_validation.py`
+now writes the CSV with `lineterminator="\n"`, and the provenance was regenerated from the
+committed file (hash `2d5469895e0efedc`). The data values did not change: writing the committed
+rows with the new setting reproduces the committed file byte for byte (6 rows), while the old
+setting wrote CRLF on every row. The CSV itself was not regenerated from the lab, whose raw
+runs are not reachable from here.
 
 Every figure's provenance file lists the claims it supports (`docs/claims.md`), the data
 files with their hashes, and the runs they came from (`docs/registry.csv`).
@@ -49,7 +56,10 @@ repository.
 ```bash
 python3 tools/che_posthoc.py           # characteristic-time model, claim B7 (post hoc)
 python3 tools/sim/test_policies.py     # unit gate of the replacement policies
-python3 tools/sim/fase2.py             # simulator phase 2 (pre-registered)
+python3 tools/sim/fase2.py r0          # simulator phase 2 (pre-registered), step 1
+python3 tools/sim/fase2.py calibra     # step 2
+python3 tools/sim/fase2.py g0r         # step 3
+python3 tools/sim/fase2.py lancio      # step 4, then the criteria
 python3 tools/sim/fase2b.py            # phase 2b
 python3 tools/sim/fase2scen.py         # phase 2, amendment 2 (TRAV_MODE=scen generator)
 python3 tools/sim/esplora_artefatto.py # exploratory, labelled as such
@@ -60,13 +70,20 @@ python3 tools/sim/esplora_artefatto.py # exploratory, labelled as such
   parameter: object sizes come from `data/derived/chapter_sizes.csv`, the access
   distribution from `harness/load/workload.js`.
 - `tools/sim/test_policies.py` passes (under 1 s).
-- The phase scripts (`fase2*.py`, `esplora_artefatto.py`) were not re-run for this document.
-  They are seeded and write to `data/sim/`, so a re-run should reproduce the committed
-  values. They must run inside a git clone: they record the commit in their output and
-  refuse to run with uncommitted changes in `tools/sim/`.
+- The phase scripts (`tools/sim/fase2.py`, `tools/sim/fase2b.py`, `tools/sim/fase2scen.py`,
+  `tools/sim/esplora_artefatto.py`) are seeded and write to `data/sim/`. `tools/sim/fase2.py` needs its four steps in the order shown above:
+  each starts only if the previous one wrote a PASSA outcome, and without a step it exits with
+  an error. Re-run on 3 October 2026 from a fresh clone, every step passes and every value is
+  identical to the committed one; times: `tools/sim/fase2b.py` 5 s, `tools/sim/esplora_artefatto.py` 16 s,
+  `tools/sim/fase2scen.py` about 1 minute, `tools/sim/fase2.py` 3 + 3 + 0 + 58 s.
+- **They rewrite one line of the committed CSVs.** Each output starts with
+  `# commit <hash>; ...`, the commit of the clone it ran in. After a re-run, `git status` shows
+  13 modified files in `data/sim/` whose only change is that hash. Discard them with
+  `git checkout -- data/sim`. The scripts must run inside a git clone and refuse to run with
+  uncommitted changes in `tools/sim/`.
 - **Not reproducible outside the lab:** `tools/sim/fase1.py` compares the simulator with
   the lab's raw runs over `ssh lab`, and `tools/sim/object_sizes.py` measured
-  `chapter_sizes.csv` on the lab. Their outputs (`data/sim/fase1/`,
+  `data/derived/chapter_sizes.csv` on the lab. Their outputs (`data/sim/fase1/`,
   `data/derived/chapter_sizes.csv`) are committed and are the inputs of everything above.
 
 Pre-registrations and their results are in `docs/PREREG-*.md` and `docs/RISULTATO-*.md`
@@ -77,9 +94,9 @@ Pre-registrations and their results are in `docs/PREREG-*.md` and `docs/RISULTAT
 `make data` regenerates `data/derived/` from the raw runs. It only works on the author's
 machines:
 
-- `make data-lab` reads each run's `points.csv` and k6 summaries from the lab server over
+- `make data-lab` reads each run's `harness/results/<run>/points.csv` and k6 summaries from the lab server over
   `ssh lab`, read only. The raw runs (`harness/results/`) are **not published**: every run
-  directory contains `env.txt`, the full environment of the shell that launched it, which in
+  directory contains `env.txt` (`harness/results/<run>/env.txt`), the full environment of the shell that launched it, which in
   an SSH session includes the address the operator connected from.
 - `make data-vm` reads CPU and cache-occupancy series from VictoriaMetrics on the lab,
   through an SSH tunnel.
@@ -130,7 +147,7 @@ recalibrate (setup.md, "Deriving the operating point") before comparing.
 your corpus is the same one. There is currently **no script that downloads a given list
 of IDs**: `honeypot/content/generate.py` downloads the *currently most popular* books from
 Gutendex, which will not be the same set today. To rebuild the exact corpus, fetch the IDs
-in `books.csv` into `cache/` in the format `generate.py` writes (`catalog.json` plus one
+in `data/corpus/books.csv` into `cache/` in the format `honeypot/content/generate.py` writes (`catalog.json` plus one
 text file per book), then load it; a different corpus means nothing downstream is
 comparable. Gutenberg rate-limits and blocks some residential ISP ranges.
 
@@ -139,7 +156,7 @@ no run in the registry depends on them.
 
 ## The honeypot
 
-`honeypot/` contains the site generator, the nginx configuration and the `robots.txt` of
+`honeypot/` contains the site generator, the nginx configuration and the `robots.txt` (`honeypot/static/robots.txt`) of
 the public measurement site. The paper's honeypot data cover the fixed window
 [2026-08-12, 2026-09-22) UTC. The site is named in this repository, so traffic after the
 repository was published is not comparable with that window. A new honeypot needs a new

@@ -106,7 +106,7 @@ def main():
 
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     with OUT_CSV.open("w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["policy", "origin_rps", "cpu_cores", "reps"])
         for policy, origin_mean, cpu_mean, reps in rows_out:
             w.writerow([policy, f"{origin_mean:.4f}", f"{cpu_mean:.6f}", reps])
