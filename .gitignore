@@ -65,6 +65,8 @@ paper/*.fdb_latexmk
 paper/*.out
 paper/*.toc
 paper/main.pdf
+# arXiv package, rebuilt by paper/make_arxiv.sh
+paper/arxiv/
 
 # Not published: working notes, assistant configuration, the honeypot's
 # IndexNow key (served by the site, not by the repository), and the narrow
