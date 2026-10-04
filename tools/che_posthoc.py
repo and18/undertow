@@ -26,11 +26,13 @@ Model, for each configuration (point S12 or S36 at scope 0.02 / 0.06 / 0.20):
   T is solved from the capacity equation  sum_j footprint_j · occupancy_j(T) = C  (bisection).
   origin_rps = sum of the miss rates; m = (O(S36) - O(S12)) / 23.9990.
 
-Comparisons: lab with TRAV_MODE=scen (28 and 29 Sep, local copies ~/undertow-backup/lab-2026092*-own,
-direct reading of points.csv, lab off) and SCEN LRU simulator
+Comparisons: lab with TRAV_MODE=scen (28 and 29 Sep; the rows of points.csv it needs are in
+data/derived/lab_reference.csv, series scen) and SCEN LRU simulator
 (data/sim/esplorativo-artefatto/reps.csv).
 
-Usage:  python3 tools/che_posthoc.py
+Usage:  python3 tools/che_posthoc.py [--from-backup]
+  --from-backup  read points.csv from the author's local copies ~/undertow-backup/lab-2026092*-own
+                 instead of data/derived/lab_reference.csv (same values)
 """
 import csv
 import math
@@ -48,6 +50,8 @@ H = 512
 D_RATE = 35.9975 - 11.9985
 SEP, HUM = 3266489917, 2654435761
 OUT = ROOT / "data" / "posthoc" / "che_posthoc.csv"
+REF = ROOT / "data" / "derived" / "lab_reference.csv"
+FROM_BACKUP = "--from-backup" in sys.argv[1:]
 LAB = {  # (scope, point) -> run with TRAV_MODE=scen
     ("0.02", "S12"): "lab-20260928-own/results/tre-20260928-150154",
     ("0.02", "S36"): "lab-20260928-own/results/tre-20260928-162206",
@@ -127,7 +131,11 @@ def config(scope, pt, sizes, model):
 
 
 def lab(scope, pt):
-    rows = list(csv.DictReader(open(Path.home() / "undertow-backup" / LAB[(scope, pt)] / "points.csv")))
+    if FROM_BACKUP:
+        rows = list(csv.DictReader(open(Path.home() / "undertow-backup" / LAB[(scope, pt)] / "points.csv")))
+    else:
+        run = LAB[(scope, pt)].rsplit("/", 1)[1]
+        rows = [r for r in csv.DictReader(open(REF)) if r["series"] == "scen" and r["run"] == run]
     o = [float(r["origin_rps"]) for r in rows]
     return (statistics.fmean(o), statistics.stdev(o) / math.sqrt(len(o)),
             tuple(statistics.fmean(1 - float(r[c]) for r in rows) for c in ("h_zipf", "h_agent", "h_trav")))

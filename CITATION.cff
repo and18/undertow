@@ -10,6 +10,9 @@ authors:
     given-names: Andrea
     orcid: "https://orcid.org/0009-0006-9785-5495"
 repository-code: "https://github.com/and18/undertow"
+doi: 10.5281/zenodo.23127696
+version: 1.0.2
+date-released: 2026-10-04
 license: MIT
 keywords:
   - web caching

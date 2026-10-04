@@ -6,12 +6,14 @@ Code, data and LaTeX source of the paper: a k6 → Varnish → gunicorn/Flask �
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC%20BY%204.0-lightgrey.svg)](LICENSE-data)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23127696.svg)](https://doi.org/10.5281/zenodo.23127696)
 
 ## Start here
 
 Three ways in, depending on what you want.
 
-1. **Understand the result** → read the paper ([`paper/`](paper/), LaTeX source) and look
+1. **Understand the result** → read the paper ([PDF of the latest release](https://github.com/and18/undertow/releases/latest),
+   LaTeX source in [`paper/`](paper/)) and look
    at its figures ([`figures/paper/`](figures/paper/), `FIG-01` first).
 2. **Check a number** → [`docs/claims.md`](docs/claims.md) (the claim and its status) →
    [`docs/registry.csv`](docs/registry.csv) (the runs behind it) → the script in
@@ -307,6 +309,9 @@ Corpus public domain (Project Gutenberg), not redistributed. Bundled font Source
 ## Citation
 
 See [`CITATION.cff`](CITATION.cff); GitHub shows it as "Cite this repository".
+The repository is archived on Zenodo: DOI
+[10.5281/zenodo.23127696](https://doi.org/10.5281/zenodo.23127696) (concept DOI, always
+resolves to the latest version).
 
 ## Author
 

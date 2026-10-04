@@ -12,7 +12,9 @@ Variants of the exhaustive traversal:
         agentic in a second scenario at rate (1−α)·λ, agentic with probability β/(1−α), VUs
         round-robin on that scenario only.
 
-Usage:  python3 tools/sim/esplora_artefatto.py
+Usage:  python3 tools/sim/esplora_artefatto.py [--from-backup]
+  --from-backup  read the replica's points.csv from the author's local copy
+                 ~/undertow-backup/lab-20260928 instead of data/derived/lab_reference.csv (same values)
 """
 import csv
 import math
@@ -134,11 +136,16 @@ def diff(a, b, div=1.0):
 
 
 def lab_replica():
-    """Replica of 25-26 Sep from the local copy (lab off): Ō, SE and exhaustive miss."""
+    """Replica of 25-26 Sep (data/derived/lab_reference.csv, series replica, or the author's local
+    copy with --from-backup): Ō, SE and exhaustive miss."""
     base = Path.home() / "undertow-backup" / "lab-20260928" / "fs" / "harness" / "results"
+    ref = ROOT / "data" / "derived" / "lab_reference.csv"
     out = {}
     for pt, run in fase1.REPLICA.items():
-        rows = list(csv.DictReader(open(base / run / "points.csv")))
+        if "--from-backup" in sys.argv[1:]:
+            rows = list(csv.DictReader(open(base / run / "points.csv")))
+        else:
+            rows = [r for r in csv.DictReader(open(ref)) if r["series"] == "replica" and r["run"] == run]
         out[pt] = {"O": ms([float(r["origin_rps"]) for r in rows]),
                    "exh": ms([1 - float(r["h_trav"]) for r in rows]) if pt else None}
     return out

@@ -76,6 +76,14 @@ python3 tools/sim/esplora_artefatto.py # exploratory, labelled as such
   identical to the committed `data/posthoc/che_posthoc.csv`. It uses no lab measurement as a
   parameter: object sizes come from `data/derived/chapter_sizes.csv`, the access
   distribution from `harness/load/workload.js`.
+- `tools/che_posthoc.py` and `tools/sim/esplora_artefatto.py` compare their results with lab
+  runs. The rows they need (run, repetition, configured α and β, `origin_rps`, hit ratio per
+  class; miss = 1 − hit) are in `data/derived/lab_reference.csv`, extracted once from the
+  `points.csv` of the author's local copies of the runs, without `env.txt`. `--from-backup`
+  reads the same values from those copies (`~/undertow-backup`, not published) instead.
+  Checked on 4 October 2026 from a fresh clone with a `HOME` that has no `~/undertow-backup`:
+  both scripts run, `data/posthoc/che_posthoc.csv` is identical byte for byte, and the outputs
+  of `tools/sim/esplora_artefatto.py` are identical apart from the commit hash on line 1.
 - `tools/sim/test_policies.py` passes (under 1 s).
 - The phase scripts (`tools/sim/fase2.py`, `tools/sim/fase2b.py`, `tools/sim/fase2scen.py`,
   `tools/sim/esplora_artefatto.py`) are seeded and write to `data/sim/`. `tools/sim/fase2.py` needs its four steps in the order shown above:
